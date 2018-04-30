@@ -1,3 +1,6 @@
 [submodule "logger"]
 	path = logger
 	url = git@github.com:paket-core/logger.git
+[submodule "webserver"]
+	path = webserver
+	url = git@github.com:paket-core/webserver.git
