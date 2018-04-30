@@ -72,7 +72,7 @@ fi
 [ "$create_db" ] && export PAKET_CREATE_DB=1 && rm paket.db
 [ "$create_stellar" ] && export PAKET_CREATE_STELLAR=1
 [ "$fund_stellar" ] && export PAKET_FUND_STELLAR=1
-python -c "import api.server; api.server.init_sandbox()"
+python -c "import api; api.init_sandbox()"
 
 if [ "$_test" ]; then
     python -m unittest api.test
@@ -81,9 +81,9 @@ if [ "$_test" ]; then
 
 fi
 
-[ "$shell" ] && python -ic 'import logger; logger.setup(); import db; import paket; p = paket'
+[ "$shell" ] && python -ic 'import api; import db; import paket; p = paket'
 
-[ "$run" ] && FLASK_APP=api/server.py flask run --host=0.0.0.0
+[ "$run" ] && python ./api.py
 
 return 0 2>/dev/null
 exit 0

@@ -1,3 +1,26 @@
+"""Swagger specifications of Identity Server."""
+VERSION = 2
+CONFIG = {
+    'title': 'PaKeT API',
+    'uiversion': 2,
+    'specs_route': '/',
+    'specs': [{
+        'endpoint': '/',
+        'route': '/apispec.json',
+    }],
+    'info': {
+        'title': 'The PaKeT Server API',
+        'version': VERSION,
+        'contact': {
+            'name': 'The PaKeT Project',
+            'email': 'israel@paket.global',
+            'url': 'https://api.paket.global',
+        },
+        'license': {
+            'name': 'GNU GPL 3.0',
+            'url': 'http://www.gnu.org/licenses/'
+        },
+        'description': '''
 Web API Server for The PaKeT Project
 
 What is this?
@@ -26,8 +49,12 @@ Our calls are split into the following security levels:
  - Anonymous functions: no authentication allowed.
  - Authenticated functions: require asymmetric key authentication. Not tested in debug mode.
     - The 'Pubkey' header will contain the user's pubkey. In debug mode this can be substituted with his paket_user.
-    - The 'Fingerprint' header is constructed from the comma separated concatenation of the called URI, all the arguments (as key=value), and an ever increasing nonce (recommended to use Unix time in milliseconds).
-    - The 'Signature' header will contain the signature of the key specified in the 'Pubkey' header on the fingerprint specified in the 'Fingerprint' header, encoded to string as Base64.
+    - The 'Fingerprint' header is constructed from the comma separated
+      concatenation of the called URI, all the arguments (as key=value), and an
+      ever increasing nonce (recommended to use Unix time in milliseconds).
+    - The 'Signature' header will contain the signature of the key specified in
+      the 'Pubkey' header on the fingerprint specified in the 'Fingerprint'
+      header, encoded to string as Base64.
 
 Walkthrough
 ===========
@@ -74,9 +101,17 @@ Create (Launch) a Package
 Use the recipient's pubkey for the recipient_pubkey field and the courier's pubkey for the courier_pubkey field
 (in the debug environment you can use the strings 'RECIPIENT' and 'COURIER' for the built-in pre-funded accounts).
 Set the deadline for the delivery in Unix time (https://en.wikipedia.org/wiki/Unix_time),
-with 22 BULs as payment_buls and 50 BULs as collateral_buls. The call will return an escrow_address, which also serves as the package's ID, a timelocked refund_transaction that can only be submitted once the deadline expires, and a payment_transaction which has to be signed by the recipient to be valid.
-* package: get the package's details. The custodian should now be the launcher. Note that in debug mode the 'events' array is filled with random mock data.
-* get_bul_account: use the escrow_address. Balance should be 0, thresholds should be 1, 2, and 3, and the signers array should contain exaxtly four values: the escrow_address pubkey with a weight of 0, the recipient pubkey with a weight of 1, the payment_transaction hash with a weight of 1, and the refund_transaction hash with a weight of 2.
+with 22 BULs as payment_buls and 50 BULs as collateral_buls. The call will
+return an escrow_address, which also serves as the package's ID, a timelocked
+refund_transaction that can only be submitted once the deadline expires, and a
+payment_transaction which has to be signed by the recipient to be valid.
+* package: get the package's details. The custodian should now be the launcher.
+Note that in debug mode the 'events' array is filled with random mock data.
+* get_bul_account: use the escrow_address. Balance should be 0, thresholds
+should be 1, 2, and 3, and the signers array should contain exaxtly four
+values: the escrow_address pubkey with a weight of 0, the recipient pubkey with
+a weight of 1, the payment_transaction hash with a weight of 1, and the
+refund_transaction hash with a weight of 2.
 * get_bul_account: check and make note of the balances of launcher, courier, and recipient.
 * send_buls: as the launcher, deposit 22 BULs into the escrow_address as promised payment.
 * get_bul_account: use the launcher's pubkey. Should now be 22 BULs poorer.
@@ -84,9 +119,12 @@ with 22 BULs as payment_buls and 50 BULs as collateral_buls. The call will retur
 * get_bul_account: use the courier's pubkey. Should now be 50 BULs poorer.
 * accept_package: accept the package as the courier, with the escrow_address as paket_id.
 * package: get the package's details. The custodian should now be the courier.
-* accept_package: accept the package as the recipient, with the escrow_address as paket_id and the payment_transaction from launch_package as payment_transaction.
+* accept_package: accept the package as the recipient, with the escrow_address
+as paket_id and the payment_transaction from launch_package as
+payment_transaction.
 * package: get the package's details. The custodian should now be the recipient.
-* get_bul_account: use the courier's pubkey. Should now be 72 BULs richer than last time (22 awarded payment + 50 returned collateral).
+* get_bul_account: use the courier's pubkey. Should now be 72 BULs richer than
+last time (22 awarded payment + 50 returned collateral).
 
 Undocumented for Now
 ====================
@@ -97,3 +135,51 @@ submit_transaction
 
 The API
 =======
+        '''
+    }
+}
+
+TEST = {
+    "parameters": [
+        {
+            "name": "palette",
+            "in": "path",
+            "type": "string",
+            "enum": [
+                "all",
+                "rgb",
+                "cmyk"
+                ],
+            "required": "true",
+            "default": "all"
+        }
+    ],
+    "definitions": {
+        "Palette": {
+            "type": "object",
+            "properties": {
+                "palette_name": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Color"
+                    }
+                }
+            }
+        },
+        "Color": {"type": "string"}
+    },
+    "responses": {
+        "200": {
+            "description": "A list of colors (may be filtered by palette)",
+            "schema": {
+                "$ref": "#/definitions/Palette"},
+            "examples": {
+                "rgb": [
+                    "red",
+                    "green",
+                    "blue"
+                ]
+            }
+        }
+    }
+}
