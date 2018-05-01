@@ -40,7 +40,6 @@ class MockPaket:
             raise paket.StellarTransactionFailed('account does not exists')
 
     def get_bul_account(self, pubkey):
-        LOGGER.info(self.balances)
         """Get account details of pubkey."""
         return {'balance': self.balances[pubkey]}
 
