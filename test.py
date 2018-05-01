@@ -3,8 +3,9 @@ import json
 import os
 import unittest
 
-import api.server
-import api.routes
+import webserver
+
+import api
 import db
 import logger
 import paket
@@ -13,6 +14,7 @@ USE_HORIZON = bool(os.environ.get('PAKET_TEST_USE_HORIZON'))
 db.DB_NAME = 'test.db'
 LOGGER = logger.logging.getLogger('pkt.api.test')
 logger.setup()
+APP = webserver.setup(api.BLUEPRINT)
 
 
 class MockPaket:
@@ -50,7 +52,7 @@ class MockPaket:
 
 
 if not USE_HORIZON:
-    api.server.paket = api.routes.paket = MockPaket()
+    api.paket = MockPaket()
 
 
 class TestAPI(unittest.TestCase):
@@ -61,9 +63,9 @@ class TestAPI(unittest.TestCase):
             os.unlink(db.DB_NAME)
         except FileNotFoundError:
             pass
-        api.server.APP.testing = True
-        self.app = api.server.APP.test_client()
-        with api.server.APP.app_context():
+        APP.testing = True
+        self.app = APP.test_client()
+        with APP.app_context():
             db.init_db()
 
     def tearDown(self):
@@ -79,7 +81,7 @@ class TestAPI(unittest.TestCase):
             headers = {'Pubkey': pubkey, 'Fingerprint': '', 'Signature': ''}
         else:
             headers = None
-        response = call_func("/v{}/{}".format(api.routes.VERSION, path), headers=headers, data=kwargs)
+        response = call_func("/v{}/{}".format(api.VERSION, path), headers=headers, data=kwargs)
         response = dict(status_code=response.status_code, **json.loads(response.data.decode()))
         if expected_code:
             self.assertEqual(response['status_code'], expected_code, "{} ({})".format(
@@ -103,7 +105,7 @@ class TestAPI(unittest.TestCase):
 
     def test_send_buls(self):
         """Send BULs and check balance."""
-        api.server.init_sandbox(True, False, False)
+        api.init_sandbox(True, False, False)
         self.test_register()
 
         start_balance = self.call('get', 'bul_account', 200, 'can not get balance', queried_pubkey='stam')['balance']
@@ -116,7 +118,7 @@ class TestAPI(unittest.TestCase):
         """Send BULs and check balance without holding private keys in the server."""
         if not USE_HORIZON:
             return LOGGER.error('not running two stage test with mock paket')
-        api.server.init_sandbox(True, False, False)
+        api.init_sandbox(True, False, False)
         source = db.get_user(db.get_pubkey_from_paket_user('ISSUER'))
         target = db.get_user(db.get_pubkey_from_paket_user('RECIPIENT'))
         start_balance = self.call(

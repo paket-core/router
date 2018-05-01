@@ -59,7 +59,7 @@ if [ "$missing_packages" ]; then
 fi
 
 # Make sure horizon server is reachable.
-if ! curl -m 2 "$PAKET_HORIZON_SERVER"; then
+if ! curl -m 2 "$PAKET_HORIZON_SERVER" | tail -5; then
     echo "Can't connect to horizon server $PAKET_HORIZON_SERVER"
     read -n 1 -p 'Continue anyway? [y|N] ' c
     if ! [ y = "$c" ]; then
@@ -75,9 +75,9 @@ fi
 python -c "import api; api.init_sandbox()"
 
 if [ "$_test" ]; then
-    python -m unittest api.test
-    which pycodestyle && pycodestyle --max-line-length=120 api/ *.py
-    which pylint && pylint api/ *.py
+    python -m unittest test
+    which pycodestyle && pycodestyle --max-line-length=120 *.py
+    which pylint && pylint *.py
 
 fi
 
