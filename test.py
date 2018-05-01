@@ -60,6 +60,7 @@ class TestAPI(unittest.TestCase):
     """Test our API."""
 
     def setUp(self):
+        self.sample_pubkey = 'GBQOQ4LJC5YNIAYIC3WPNGLPHNBKAP6UJTLC3KGXI6QLZSFGJSASEOC4'
         try:
             os.unlink(db.DB_NAME)
             os.unlink(webserver.validation.NONCES_DB_NAME)
@@ -101,20 +102,26 @@ class TestAPI(unittest.TestCase):
         """Register a new user and recover it."""
         phone_number = str(os.urandom(8))
         self.call(
-            'post', 'register_user', 201, 'user creation failed', pubkey='ISSUER',
+            'post', 'register_user', 201, 'user creation failed', pubkey=self.sample_pubkey,
             full_name='First Last', phone_number=phone_number, paket_user='stam')
         self.assertEqual(
-            self.call('post', 'recover_user', 200, 'can not recover user', 'stam')['user_details']['phone_number'],
+            self.call(
+                'post', 'recover_user', 200, 'can not recover user', self.sample_pubkey
+            )['user_details']['phone_number'],
             phone_number, 'user phone_number does not match')
 
     def test_send_buls(self):
         """Send BULs and check balance."""
         self.test_register()
 
-        start_balance = self.call('get', 'bul_account', 200, 'can not get balance', queried_pubkey='stam')['balance']
+        start_balance = self.call(
+            'get', 'bul_account', 200, 'acan not get balance', queried_pubkey=self.sample_pubkey)['balance']
         amount = 123
-        self.call('post', 'send_buls', 201, 'can not send buls', 'ISSUER', to_pubkey='stam', amount_buls=amount)
-        end_balance = self.call('get', 'bul_account', 200, 'can not get balance', queried_pubkey='stam')['balance']
+        self.call(
+            'post', 'send_buls', 201, 'can not send buls', 'ISSUER', to_pubkey=self.sample_pubkey, amount_buls=amount)
+        end_balance = self.call(
+            'get', 'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey
+        )['balance']
         self.assertEqual(end_balance - start_balance, amount, 'balance does not add up after send')
 
     def test_two_stage_send_buls(self):
