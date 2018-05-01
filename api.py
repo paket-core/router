@@ -175,6 +175,7 @@ def create_db_user(paket_user, pubkey, seed):
     try:
         db.create_user(pubkey, paket_user, seed)
         db.update_user_details(pubkey, paket_user, '123-456')
+        webserver.validation.update_nonce(pubkey, 1, paket_user)
     except db.DuplicateUser:
         LOGGER.debug("User %s already exists", paket_user)
 
