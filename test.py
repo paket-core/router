@@ -3,7 +3,7 @@ import json
 import os
 import unittest
 
-import webserver
+import webserver.validation
 
 import api
 import db
@@ -12,6 +12,7 @@ import paket
 
 USE_HORIZON = bool(os.environ.get('PAKET_TEST_USE_HORIZON'))
 db.DB_NAME = 'test.db'
+webserver.validation.NONCES_DB_NAME = 'nonce_test.db'
 LOGGER = logger.logging.getLogger('pkt.api.test')
 logger.setup()
 APP = webserver.setup(api.BLUEPRINT)
@@ -61,8 +62,10 @@ class TestAPI(unittest.TestCase):
     def setUp(self):
         try:
             os.unlink(db.DB_NAME)
+            os.unlink(webserver.validation.NONCES_DB_NAME)
         except FileNotFoundError:
             pass
+        api.init_sandbox(True, False, False)
         APP.testing = True
         self.app = APP.test_client()
         with APP.app_context():
@@ -70,6 +73,7 @@ class TestAPI(unittest.TestCase):
 
     def tearDown(self):
         os.unlink(db.DB_NAME)
+        os.unlink(webserver.validation.NONCES_DB_NAME)
 
     def call(self, call_type, path, expected_code=None, fail_message=None, pubkey=None, **kwargs):
         """Post data to API server."""
@@ -97,7 +101,7 @@ class TestAPI(unittest.TestCase):
         """Register a new user and recover it."""
         phone_number = str(os.urandom(8))
         self.call(
-            'post', 'register_user', 201, 'user creation failed', pubkey='stam',
+            'post', 'register_user', 201, 'user creation failed', pubkey='ISSUER',
             full_name='First Last', phone_number=phone_number, paket_user='stam')
         self.assertEqual(
             self.call('post', 'recover_user', 200, 'can not recover user', 'stam')['user_details']['phone_number'],
@@ -105,7 +109,6 @@ class TestAPI(unittest.TestCase):
 
     def test_send_buls(self):
         """Send BULs and check balance."""
-        api.init_sandbox(True, False, False)
         self.test_register()
 
         start_balance = self.call('get', 'bul_account', 200, 'can not get balance', queried_pubkey='stam')['balance']
@@ -118,7 +121,6 @@ class TestAPI(unittest.TestCase):
         """Send BULs and check balance without holding private keys in the server."""
         if not USE_HORIZON:
             return LOGGER.error('not running two stage test with mock paket')
-        api.init_sandbox(True, False, False)
         source = db.get_user(db.get_pubkey_from_paket_user('ISSUER'))
         target = db.get_user(db.get_pubkey_from_paket_user('RECIPIENT'))
         start_balance = self.call(
