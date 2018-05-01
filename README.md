@@ -41,10 +41,10 @@ pip install -r requirements.txt
   * PAKET_USER_XXX - to specify seeds for builtin prefunded users.
 
 6. Run the deploy script to start the server with the following commands:
-  * l|create-stellar - only if the seeds in your `paket.env` file are fresh, and do not have associated stellar accounts.
-  * f|fund-stellar - only if you wish to fund those accounts with BULs (from the issuer).
-  * d|create-db - to remove existing DBs and recreate them.
-  * t|test - to run tests.
-  * r|run-server - to run the server.
+  * `l|create-stellar` - only if the seeds in your `paket.env` file are fresh, and do not have associated stellar accounts.
+  * `f|fund-stellar` - only if you wish to fund those accounts with BULs (from the issuer).
+  * `d|create-db` - to remove existing DBs and recreate them.
+  * `t|test` - to run tests.
+  * `r|run-server` - to run the server.
 
 7. Access the swagger Web interface from a browser at: http://localhost:5000
