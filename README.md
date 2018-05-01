@@ -34,11 +34,11 @@ pip install -r requirements.txt
 ```
 
 5. Make sure your `paket.env` contains all desired variables. Available values are:
-  * PAKET_HORIZON_SERVER - to specify your horizon server.
-  * PAKET_USER_ISSUER - to specify the issuer seed.
-  * PAKET_DEBUG - to run the api server in debug mode, with debug calls and no signature checking.
-  * FLASK_DEBUG - to run the web server in debug mode with auto reloading.
-  * PAKET_USER_XXX - to specify seeds for builtin prefunded users.
+  * `PAKET_HORIZON_SERVER` - to specify your horizon server.
+  * `PAKET_USER_ISSUER` - to specify the issuer seed.
+  * `PAKET_DEBUG` - to run the api server in debug mode, with debug calls and no signature checking.
+  * `FLASK_DEBUG` - to run the web server in debug mode with auto reloading.
+  * `PAKET_USER_XXX` - to specify seeds for builtin prefunded users.
 
 6. Run the deploy script to start the server with the following commands:
   * `l|create-stellar` - only if the seeds in your `paket.env` file are fresh, and do not have associated stellar accounts.
