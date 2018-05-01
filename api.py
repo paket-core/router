@@ -14,10 +14,6 @@ VERSION = swagger_specs.VERSION
 LOGGER = logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
 
-# pylint: disable=missing-docstring
-# See documentation in swagfiles.
-
-
 # Wallet routes.
 
 
@@ -74,13 +70,15 @@ def send_buls_handler(user_pubkey, to_pubkey, amount_buls):
 def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     """
     Transfer BULs to another pubkey.
-    Use this call to prepare a transaction that sends part of your balance to another user. This function will return an unsigned transaction.
-    You can use the [laboratory](https://www.stellar.org/laboratory/#txsigner?network=test) to sign the transaction with your private key.
-    You can use the /recover_user call to find out your seed.
-    Than, you can either submit the signed transaction in the laboratory,
-    or use the /submit_transaction call to send the signed transaction for submission.
-
-    The to_pubkey can be either a user id, or a wallet pubkey.
+    Use this call to prepare a transaction that sends part of your
+    balance to another user. This function will return an unsigned
+    transaction.  You can use the
+    [laboratory](https://www.stellar.org/laboratory/#txsigner?network=test)
+    to sign the transaction with your private key.  You can use the
+    /recover_user call to find out your seed.  Than, you can either
+    submit the signed transaction in the laboratory, or use the
+    /submit_transaction call to send the signed transaction for
+    submission.
     ---
     :param from_pubkey:
     :param to_pubkey:
@@ -190,9 +188,10 @@ def refund_package_handler(user_pubkey, paket_id, refund_transaction):
 def my_packages_handler(user_pubkey, show_inactive=False, from_date=None, role_in_delivery=None):
     """
     Get list of packages
-    Use this call to get a list of packages.
-    You can filter the list by showing only active packages, or packages originating after a certain date.
-    You can also filter to show only packages where the user has a specific role, such as "launcher" or "receiver".
+    Use this call to get a list of packages.  You can filter the list by
+    showing only active packages, or packages originating after a
+    certain date.  You can also filter to show only packages where the
+    user has a specific role, such as "launcher" or "receiver".
     ---
     :param user_pubkey:
     :param show_inactive:
