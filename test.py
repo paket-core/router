@@ -40,6 +40,7 @@ class MockPaket:
             raise paket.StellarTransactionFailed('account does not exists')
 
     def get_bul_account(self, pubkey):
+        LOGGER.info(self.balances)
         """Get account details of pubkey."""
         return {'balance': self.balances[pubkey]}
 
@@ -95,12 +96,16 @@ class TestAPI(unittest.TestCase):
 
     def test_fresh_db(self):
         """Make sure packages table exists and is empty."""
-        self.assertEqual(db.get_packages(), [], 'packages found in empty db')
-        self.assertEqual(db.get_users(), {}, 'users found in empty db')
+        self.assertEqual(db.get_packages(), [], 'packages found in fresh db')
+        self.assertEqual(len(db.get_users().keys()), 4, 'too many users found in fresh db')
 
     def test_register(self):
         """Register a new user and recover it."""
         phone_number = str(os.urandom(8))
+        try:
+            api.paket.new_account(self.sample_pubkey)
+        except paket.StellarTransactionFailed:
+            pass
         self.call(
             'post', 'register_user', 201, 'user creation failed', pubkey=self.sample_pubkey,
             full_name='First Last', phone_number=phone_number, paket_user='stam')
@@ -115,10 +120,11 @@ class TestAPI(unittest.TestCase):
         self.test_register()
 
         start_balance = self.call(
-            'get', 'bul_account', 200, 'acan not get balance', queried_pubkey=self.sample_pubkey)['balance']
+            'get', 'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey)['balance']
         amount = 123
         self.call(
-            'post', 'send_buls', 201, 'can not send buls', 'ISSUER', to_pubkey=self.sample_pubkey, amount_buls=amount)
+            'post', 'send_buls', 201, 'can not send buls', paket.ISSUER.address().decode(),
+            to_pubkey=self.sample_pubkey, amount_buls=amount)
         end_balance = self.call(
             'get', 'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey
         )['balance']
