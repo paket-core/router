@@ -69,7 +69,7 @@ if ! curl -m 2 "$PAKET_HORIZON_SERVER" | tail -5; then
     echo
 fi
 
-[ "$create_db" ] && export PAKET_CREATE_DB=1 && rm paket.db
+[ "$create_db" ] && export PAKET_CREATE_DB=1 && rm -i *.db
 [ "$create_stellar" ] && export PAKET_CREATE_STELLAR=1
 [ "$fund_stellar" ] && export PAKET_FUND_STELLAR=1
 python -c "import api; api.init_sandbox()"
