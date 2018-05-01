@@ -76,8 +76,8 @@ python -c "import api; api.init_sandbox()"
 
 if [ "$_test" ]; then
     python -m unittest test
-    which pycodestyle && pycodestyle --max-line-length=120 *.py
-    which pylint && pylint *.py
+    which pycodestyle && pycodestyle --max-line-length=120 *.py logger webserver
+    which pylint && pylint *.py logger webserver
 
 fi
 
