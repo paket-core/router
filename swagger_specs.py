@@ -100,7 +100,7 @@ Create (Launch) a Package
 * launch_package: use the new user's pubkey in the header.
 Use the recipient's pubkey for the recipient_pubkey field and the courier's pubkey for the courier_pubkey field
 (in the debug environment you can use the strings 'RECIPIENT' and 'COURIER' for the built-in pre-funded accounts).
-Set the deadline for the delivery in Unix time (https://en.wikipedia.org/wiki/Unix_time),
+Set the deadline for the delivery in [Unix time](https://en.wikipedia.org/wiki/Unix_time),
 with 22 BULs as payment_buls and 50 BULs as collateral_buls. The call will
 return an escrow_address, which also serves as the package's ID, a timelocked
 refund_transaction that can only be submitted once the deadline expires, and a
