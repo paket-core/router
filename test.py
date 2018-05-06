@@ -121,17 +121,16 @@ class TestAPI(unittest.TestCase):
     def test_send_buls(self):
         """Send BULs and check balance."""
         self.test_register()
-
-        #start_balance = self.call(
-        #    'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey)['balance']
-        #amount = 123
-        #self.call(
-        #    'send_buls', 201, 'can not send buls', paket.ISSUER.address().decode(),
-        #    to_pubkey=self.sample_pubkey, amount_buls=amount)
-        #end_balance = self.call(
-        #    'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey
-        #)['balance']
-        #self.assertEqual(end_balance - start_balance, amount, 'balance does not add up after send')
+        start_balance = self.call(
+            'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey)['balance']
+        amount = 123
+        self.call(
+            'send_buls', 201, 'can not send buls', paket.ISSUER.address().decode(),
+            to_pubkey=self.sample_pubkey, amount_buls=amount)
+        end_balance = self.call(
+            'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey
+        )['balance']
+        self.assertEqual(end_balance - start_balance, amount, 'balance does not add up after send')
 
     def test_two_stage_send_buls(self):
         """Send BULs and check balance without holding private keys in the server."""
