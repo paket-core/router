@@ -33,7 +33,7 @@ def submit_transaction_handler(user_pubkey, transaction):
     return {'status': 200, 'transaction': paket.submit_transaction_envelope(user_pubkey, transaction)}
 
 
-@BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['GET'])
+@BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.BUL_ACCOUNT)
 @webserver.validation.call(['queried_pubkey'])
 def bul_account_handler(queried_pubkey):
@@ -64,7 +64,7 @@ def send_buls_handler(user_pubkey, to_pubkey, amount_buls):
     return {'status': 201, 'transaction': paket.send_buls(user_pubkey, to_pubkey, amount_buls)}
 
 
-@BLUEPRINT.route("/v{}/prepare_send_buls".format(VERSION), methods=['GET'])
+@BLUEPRINT.route("/v{}/prepare_send_buls".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PREPARE_SEND_BULS)
 @webserver.validation.call(['from_pubkey', 'to_pubkey', 'amount_buls'])
 def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
@@ -88,7 +88,7 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     return {'status': 200, 'transaction': paket.prepare_send_buls(from_pubkey, to_pubkey, amount_buls)}
 
 
-@BLUEPRINT.route("/v{}/price".format(VERSION), methods=['GET'])
+@BLUEPRINT.route("/v{}/price".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PRICE)
 def price_handler():
     """
@@ -182,7 +182,7 @@ def refund_package_handler(user_pubkey, paket_id, refund_transaction):
 
 # pylint: disable=unused-argument
 # This function does not yet implement the filters.
-@BLUEPRINT.route("/v{}/my_packages".format(VERSION), methods=['GET'])
+@BLUEPRINT.route("/v{}/my_packages".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.MY_PACKAGES)
 @webserver.validation.call(require_auth=True)
 def my_packages_handler(user_pubkey, show_inactive=False, from_date=None, role_in_delivery=None):
@@ -203,7 +203,7 @@ def my_packages_handler(user_pubkey, show_inactive=False, from_date=None, role_i
 # pylint: enable=unused-argument
 
 
-@BLUEPRINT.route("/v{}/package".format(VERSION), methods=['GET'])
+@BLUEPRINT.route("/v{}/package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PACKAGE)
 @webserver.validation.call(['paket_id'])
 def package_handler(paket_id):
@@ -268,7 +268,7 @@ def recover_user_handler(user_pubkey):
 # Debug routes.
 
 
-@BLUEPRINT.route("/v{}/debug/users".format(VERSION), methods=['GET'])
+@BLUEPRINT.route("/v{}/debug/users".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.USERS)
 @webserver.validation.call
 def users_handler():
@@ -281,7 +281,7 @@ def users_handler():
         pubkey: dict(user, bul_account=paket.get_bul_account(pubkey)) for pubkey, user in db.get_users().items()}}
 
 
-@BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['GET'])
+@BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PACKAGES)
 @webserver.validation.call
 def packages_handler():
