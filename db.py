@@ -33,10 +33,6 @@ class DuplicateUser(Exception):
     """Duplicate user."""
 
 
-class InvalidNonce(Exception):
-    """Invalid nonce."""
-
-
 class UnknownPaket(Exception):
     """Unknown paket ID."""
 
@@ -83,11 +79,6 @@ def init_db():
                 collateral INTEGER,
                 kwargs VARCHAR(1024))''')
         LOGGER.debug('packages table created')
-        sql.execute('''
-            CREATE TABLE nonces(
-                pubkey VARCHAR(42) PRIMARY KEY,
-                nonce INTEGER NOT NULL DEFAULT 0)''')
-        LOGGER.debug('nonces table created')
         # This table should vanish once we are in production.
         sql.execute('''
             CREATE TABLE keys(
@@ -115,7 +106,6 @@ def create_user(pubkey, paket_user, seed=None):
     with sql_connection() as sql:
         try:
             sql.execute("INSERT INTO users (pubkey, paket_user) VALUES (?, ?)", (pubkey, paket_user))
-            sql.execute("INSERT INTO nonces (pubkey) VALUES (?)", (pubkey,))
             if seed is not None:
                 sql.execute("INSERT INTO keys (pubkey, seed) VALUES (?, ?)", (pubkey, seed))
         except sqlite3.IntegrityError as exception:
@@ -129,7 +119,6 @@ def get_user(pubkey):
     with sql_connection() as sql:
         sql.execute("""
             SELECT * FROM users
-            JOIN nonces on users.pubkey = nonces.pubkey
             LEFT JOIN keys on users.pubkey = keys.pubkey
             WHERE users.pubkey = ?""", (pubkey,))
         user = sql.fetchone()
@@ -188,17 +177,3 @@ def update_custodian(paket_id, custodian_pubkey):
     """Update a package's custodian."""
     with sql_connection() as sql:
         sql.execute("UPDATE packages SET custodian_pubkey = ? WHERE paket_id = ?", (custodian_pubkey, paket_id))
-
-
-def update_nonce(pubkey, new_nonce):
-    """Update a user's nonce."""
-    with sql_connection() as sql:
-        sql.execute("SELECT nonce FROM nonces WHERE pubkey = ?", (pubkey,))
-        try:
-            if int(new_nonce) <= sql.fetchone()['nonce']:
-                raise InvalidNonce("nonce {} is not bigger than current nonce".format(new_nonce))
-        except TypeError:
-            raise UnknownUser("{} has no current nonce".format(pubkey))
-        except ValueError:
-            raise InvalidNonce("nonce {} is not an integer".format(new_nonce))
-        sql.execute("UPDATE nonces SET nonce = ? WHERE pubkey = ?", (new_nonce, pubkey))

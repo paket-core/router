@@ -1,7 +1,7 @@
+*.db
 *.pyc
 .idea
 env
-paket.db
 paket.env
 paket.log
 venv

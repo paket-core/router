@@ -59,7 +59,7 @@ if [ "$missing_packages" ]; then
 fi
 
 # Make sure horizon server is reachable.
-if ! curl -m 2 "$PAKET_HORIZON_SERVER"; then
+if ! curl -m 2 "$PAKET_HORIZON_SERVER" | tail -5; then
     echo "Can't connect to horizon server $PAKET_HORIZON_SERVER"
     read -n 1 -p 'Continue anyway? [y|N] ' c
     if ! [ y = "$c" ]; then
@@ -69,21 +69,21 @@ if ! curl -m 2 "$PAKET_HORIZON_SERVER"; then
     echo
 fi
 
-[ "$create_db" ] && export PAKET_CREATE_DB=1 && rm paket.db
+[ "$create_db" ] && export PAKET_CREATE_DB=1 && rm -i *.db
 [ "$create_stellar" ] && export PAKET_CREATE_STELLAR=1
 [ "$fund_stellar" ] && export PAKET_FUND_STELLAR=1
-python -c "import api.server; api.server.init_sandbox()"
+python -c "import api; api.init_sandbox()"
 
 if [ "$_test" ]; then
-    python -m unittest api.test
-    which pycodestyle && pycodestyle --max-line-length=120 api/ *.py
-    which pylint && pylint api/ *.py
+    python -m unittest test
+    which pycodestyle && pycodestyle --max-line-length=120 *.py logger webserver
+    which pylint && pylint *.py logger webserver
 
 fi
 
-[ "$shell" ] && python -ic 'import logger; logger.setup(); import db; import paket; p = paket'
+[ "$shell" ] && python -ic 'import api; import db; import paket; p = paket'
 
-[ "$run" ] && FLASK_APP=api/server.py flask run --host=0.0.0.0
+[ "$run" ] && python ./api.py
 
 return 0 2>/dev/null
 exit 0
