@@ -33,12 +33,13 @@ if not USE_HORIZON:
             """Create a new account."""
             if pubkey in self.balances:
                 raise paket.StellarTransactionFailed('account exists')
-            self.balances[pubkey] = 0.0
+            self.balances[pubkey] = False
 
         def trust(self, keypair):
             """Trust an account."""
             if keypair.address().decode() not in self.balances:
                 raise paket.StellarTransactionFailed('account does not exists')
+            self.balances[keypair.address().decode()] = 0.0
 
         def get_bul_account(self, pubkey):
             """Get account details of pubkey."""
@@ -80,12 +81,14 @@ class TestAPI(unittest.TestCase):
         os.unlink(db.DB_NAME)
         os.unlink(webserver.validation.NONCES_DB_NAME)
 
-    def call(self, path, expected_code=None, fail_message=None, pubkey=None, **kwargs):
+    def call(self, path, expected_code=None, fail_message=None, pubkey=None, seed=None, **kwargs):
         """Post data to API server."""
+        if seed is None:
+            seed = self.sample_seed
         if pubkey:
             fingerprint = webserver.validation.generate_fingerprint(
                 "{}/v{}/{}".format(self.host, api.VERSION, path), kwargs)
-            signature = webserver.validation.sign_fingerprint(fingerprint, self.sample_seed)
+            signature = webserver.validation.sign_fingerprint(fingerprint, seed)
             LOGGER.info(fingerprint)
             headers = {'Pubkey': pubkey, 'Fingerprint': fingerprint, 'Signature': signature}
         else:
@@ -107,11 +110,15 @@ class TestAPI(unittest.TestCase):
         phone_number = str(os.urandom(8))
         try:
             api.paket.new_account(self.sample_pubkey)
+            api.paket.trust(self.sample_keypair)
         except paket.StellarTransactionFailed:
             pass
         self.call(
             'register_user', 201, 'user creation failed', pubkey=self.sample_pubkey,
             full_name='First Last', phone_number=phone_number, paket_user='stam')
+        LOGGER.info(
+            "new user account: %s",
+            self.call('bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey)['balance'])
         self.assertEqual(
             self.call(
                 'recover_user', 200, 'can not recover user', self.sample_pubkey
@@ -125,11 +132,10 @@ class TestAPI(unittest.TestCase):
             'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey)['balance']
         amount = 123
         self.call(
-            'send_buls', 201, 'can not send buls', paket.ISSUER.address().decode(),
+            'send_buls', 201, 'can not send buls', paket.ISSUER.address().decode(), paket.ISSUER.seed().decode(),
             to_pubkey=self.sample_pubkey, amount_buls=amount)
         end_balance = self.call(
-            'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey
-        )['balance']
+            'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey)['balance']
         self.assertEqual(end_balance - start_balance, amount, 'balance does not add up after send')
 
     def test_two_stage_send_buls(self):
