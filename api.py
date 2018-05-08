@@ -11,6 +11,7 @@ import swagger_specs
 import webserver.validation
 
 VERSION = swagger_specs.VERSION
+PORT = os.environ.get('PAKET_API_PORT', 8000)
 LOGGER = logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
 
@@ -358,4 +359,4 @@ def init_sandbox(create_db=None, create_stellar=None, fund_stellar=None):
 
 
 if __name__ == '__main__':
-    webserver.run(BLUEPRINT, swagger_specs.CONFIG)
+    webserver.run(BLUEPRINT, swagger_specs.CONFIG, PORT)
