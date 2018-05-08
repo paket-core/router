@@ -72,9 +72,9 @@ def add_memo(builder, memo):
     builder.add_text_memo(memo)
 
 
-def submit_transaction_envelope(from_address, envelope):
+def submit_transaction_envelope(envelope):
     """Submit a transaction from an XDR of the envelope."""
-    builder = stellar_base.builder.Builder(horizon=HORIZON, address=from_address)
+    builder = stellar_base.builder.Builder(horizon=HORIZON, address='')
     builder.import_from_xdr(envelope)
     return submit(builder)
 

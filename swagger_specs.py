@@ -151,15 +151,6 @@ SUBMIT_TRANSACTION = {
     ],
     'parameters': [
         {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
             'name': 'transaction',
             'in': 'formData',
             'description': 'Transaction to submit',

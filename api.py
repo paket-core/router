@@ -20,17 +20,16 @@ BLUEPRINT = flask.Blueprint('api', __name__)
 @BLUEPRINT.route("/v{}/submit_transaction".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.SUBMIT_TRANSACTION)
 @webserver.validation.call(['transaction'])
-def submit_transaction_handler(user_pubkey, transaction):
+def submit_transaction_handler(transaction):
     """
     Submit a signed transaction.
 
     Use this call to submit a signed transaction.
     ---
-    :param user_pubkey:
     :param transaction:
     :return:
     """
-    return {'status': 200, 'transaction': paket.submit_transaction_envelope(user_pubkey, transaction)}
+    return {'status': 200, 'transaction': paket.submit_transaction_envelope(transaction)}
 
 
 @BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['POST'])
@@ -223,31 +222,31 @@ def package_handler(paket_id):
 @flasgger.swag_from(swagger_specs.REGISTER_USER)
 @webserver.validation.call(['full_name', 'phone_number', 'paket_user'], require_auth=True)
 # Note that pubkey is different from user_pubkey in that it does not yet exist in the system.
-def register_user_handler(pubkey, full_name, phone_number, paket_user):
+def register_user_handler(user_pubkey, full_name, phone_number, paket_user):
     """
     Register a new user.
     ---
-    :param pubkey:
+    :param user_pubkey:
     :param full_name:
     :param phone_number:
     :param paket_user:
     :return:
     """
     try:
-        paket.stellar_base.keypair.Keypair.from_address(str(pubkey))
-        db.create_user(pubkey, paket_user)
+        paket.stellar_base.keypair.Keypair.from_address(str(user_pubkey))
+        db.create_user(user_pubkey, paket_user)
 
     # For debug purposes, we generate a pubkey if no valid key is found.
     except paket.stellar_base.utils.DecodeError:
         if not webserver.validation.DEBUG:
-            raise
+            raise webserver.validation.InvalidField("invalid pubkey {}".format(user_pubkey))
         keypair = paket.get_keypair()
-        pubkey, seed = keypair.address().decode(), keypair.seed().decode()
-        db.create_user(pubkey, paket_user, seed)
-        paket.new_account(pubkey)
+        user_pubkey, seed = keypair.address().decode(), keypair.seed().decode()
+        db.create_user(user_pubkey, paket_user, seed)
+        paket.new_account(user_pubkey)
         paket.trust(keypair)
 
-    return {'status': 201, 'user_details': db.update_user_details(pubkey, full_name, phone_number)}
+    return {'status': 201, 'user_details': db.update_user_details(user_pubkey, full_name, phone_number)}
 
 
 @BLUEPRINT.route("/v{}/recover_user".format(VERSION), methods=['POST'])
