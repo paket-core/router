@@ -120,12 +120,9 @@ def launch_package_handler(
     :param collateral_buls:
     :return:
     """
-    escrow_address, refund_transaction, payment_transaction = paket.launch_paket(
-        user_pubkey, recipient_pubkey, courier_pubkey, deadline_timestamp, payment_buls, collateral_buls
-    )
     return {
-        'status': 200, 'escrow_address': escrow_address,
-        'refund_transaction': refund_transaction, 'payment_transaction': payment_transaction}
+        'status': 201, **paket.launch_paket(
+            user_pubkey, recipient_pubkey, courier_pubkey, deadline_timestamp, payment_buls, collateral_buls)}
 
 
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])

@@ -155,8 +155,12 @@ def launch_paket(launcher, recipient, courier, deadline, payment, collateral):
     builder.sign()
     submit(builder)
 
-    db.create_package(escrow.address().decode(), launcher, recipient, deadline, payment, collateral)
-    return escrow.address().decode(), refund_envelope.xdr().decode(), payment_envelope.xdr().decode()
+    package_details = dict(
+        paket_id=escrow.address().decode(),
+        launcher_pubkey=launcher, recipient_pubkey=recipient, deadline=deadline, payment=payment, collateral=collateral,
+        refund_transaction=refund_envelope.xdr().decode(), payment_transaction=payment_envelope.xdr().decode())
+    db.create_package(**package_details)
+    return package_details
 
 
 def confirm_receipt(recipient_pubkey, payment_envelope):
