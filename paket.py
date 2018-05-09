@@ -1,4 +1,5 @@
 """Use PaKeT smart contract."""
+import functools
 import logging
 import os
 import time
@@ -11,26 +12,22 @@ import stellar_base.keypair
 
 import db
 
-LOGGER = logging.getLogger('pkt.paket')
-
+BUL_TOKEN_CODE = 'BUL'
+ISSUER = os.environ['PAKET_USER_ISSUER']
 HORIZON = os.environ['PAKET_HORIZON_SERVER']
 
+LOGGER = logging.getLogger('pkt.paket')
 
 class StellarTransactionFailed(Exception):
     """A stellar transaction failed."""
 
 
-def get_keypair(seed=None):
-    """Get a keypair from seed (default to random)."""
-    keypair = stellar_base.keypair.Keypair.from_seed(
-        seed if seed else stellar_base.keypair.Keypair.random().seed())
-    keypair.__class__ = type('DisplayKeypair', (stellar_base.keypair.Keypair,), {
-        '__repr__': lambda self: "KeyPair ({})".format(self.address())})
-    return keypair
+class MissingTrust(Exception):
+    """The stellar account did not trust our token."""
 
 
 def new_account(address):
-    """Create a new account and fund it with lumens."""
+    """Create a new account and fund it with lumens. Debug only."""
     LOGGER.info("creating and funding account %s", address)
     request = requests.get("https://friendbot.stellar.org/?addr={}".format(address))
     if request.status_code != 200:
@@ -38,22 +35,63 @@ def new_account(address):
         raise StellarTransactionFailed("unable to create account {}".format(address))
 
 
-def get_bul_account(address):
+def get_keypair(address=None, seed=None):
+    """Get a keypair from address or seed (default to random) with a decent string representation."""
+    if address is None:
+        if seed is None:
+            keypair = stellar_base.keypair.Keypair.random()
+        else:
+            keypair = stellar_base.keypair.Keypair.from_seed(seed)
+            keypair.__class__ = type('DisplayUnlockedKeypair', (stellar_base.keypair.Keypair,), {
+                '__repr__': lambda self: "KeyPair {} ({})".format(self.address(), self.seed())})
+    else:
+        keypair = stellar_base.keypair.Keypair.from_address(address)
+        keypair.__class__ = type('DisplayKeypair', (stellar_base.keypair.Keypair,), {
+            '__repr__': lambda self: "KeyPair ({})".format(self.address())})
+    return keypair
+
+
+def get_bul_account(address, accept_untrusted=False):
     """Get address details."""
     try:
         details = stellar_base.address.Address(address, horizon=HORIZON)
         details.get()
     except stellar_base.utils.AccountNotExistError:
-        return None
+        raise AssertionError("no account found for {}".format(address))
+    account = {'sequence': details.sequence, 'signers': details.signers, 'thresholds': details.thresholds}
     for balance in details.balances:
-        if balance.get('asset_code') == 'BUL' and balance.get('asset_issuer') == ISSUER.address().decode():
-            return {
-                'balance': float(balance['balance']), 'sequence': details.sequence,
-                'signers': details.signers, 'thresholds': details.thresholds}
-    return None
+        if balance.get('asset_type') == 'native':
+            account['XLM balance'] = float(balance['balance'])
+        if balance.get('asset_code') == BUL_TOKEN_CODE and balance.get('asset_issuer') == ISSUER:
+            account['BUL balance'] = float(balance['balance'])
+    if 'BUL balance' not in account and not accept_untrusted:
+        raise MissingTrust("account {} does not trust {} from {}".format(address, BUL_TOKEN_CODE, ISSUER))
+    return account
 
 
-ISSUER = get_keypair(os.environ['PAKET_USER_ISSUER'])
+def add_memo(builder, memo):
+    """Add a memo with limited length."""
+    return LOGGER.error("Not using memos ATM because of bug.")
+    max_byte_length = 28
+    utf8 = memo.encode('utf8')
+    if len(utf8) > max_byte_length:
+        LOGGER.warning("memo too long (%s > 28), truncating", len(memo))
+        cursor = max_byte_length
+        while cursor > 0 and not (utf8[cursor] & 0xC0) == 0x80:
+            cursor -= 1
+            memo = utf8[:cursor].decode()
+    builder.add_text_memo(memo)
+    return builder
+
+
+def gen_builder(address='', sequence_delta=None):
+    """Create a builder."""
+    if sequence_delta:
+        sequence = int(get_bul_account(address, accept_untrusted=True)['sequence']) + sequence_delta
+        builder = stellar_base.builder.Builder(horizon=HORIZON, address=address, sequence=sequence)
+    else:
+        builder = stellar_base.builder.Builder(horizon=HORIZON, address=address)
+    return builder
 
 
 def submit(builder):
@@ -64,14 +102,6 @@ def submit(builder):
     return response
 
 
-def add_memo(builder, memo):
-    """Add a memo with limited length."""
-    if len(memo) > 28:
-        LOGGER.warning("memo length too long: %s>28. Memo truncated!", len(memo))
-        memo = memo[:28]
-    builder.add_text_memo(memo)
-
-
 def submit_transaction_envelope(envelope):
     """Submit a transaction from an XDR of the envelope."""
     builder = stellar_base.builder.Builder(horizon=HORIZON, address='')
@@ -79,42 +109,51 @@ def submit_transaction_envelope(envelope):
     return submit(builder)
 
 
-def trust(keypair):
-    """Trust BUL from account."""
-    LOGGER.debug("adding trust to %s", keypair.address().decode())
-    builder = stellar_base.builder.Builder(horizon=HORIZON, secret=keypair.seed())
-    builder.append_trust_op(ISSUER.address().decode(), 'BUL')
-    builder.sign()
-    return submit(builder)
-
-
-def send_buls(from_address, to_address, amount):
-    """Transfer BULs."""
-    LOGGER.info("sending %s BUL from %s to %s", amount, from_address, to_address)
-    source = get_keypair(db.get_user(from_address)['seed'])
-    builder = stellar_base.builder.Builder(horizon=HORIZON, secret=source.seed())
-    builder.append_payment_op(to_address, amount, 'BUL', ISSUER.address().decode())
-    add_memo(builder, "send {} BULs".format(amount))
-    builder.sign()
-    return submit(builder)
+def prepare_trust(from_address):
+    """Prepare trust transaction from account."""
+    builder = gen_builder(from_address)
+    builder.append_trust_op(ISSUER, BUL_TOKEN_CODE)
+    add_memo(builder, "trust BUL {}".format(ISSUER))
+    return builder.gen_te().xdr().decode()
 
 
 def prepare_send_buls(from_address, to_address, amount):
-    """Transfer BULs."""
-    builder = stellar_base.builder.Builder(horizon=HORIZON, address=from_address)
-    builder.append_payment_op(to_address, amount, 'BUL', ISSUER.address().decode())
+    """Prepare BUL transfer."""
+    builder = gen_builder(from_address)
+    builder.append_payment_op(to_address, amount, BUL_TOKEN_CODE, ISSUER)
+    add_memo(builder, "send {} BUL".format(amount))
     return builder.gen_te().xdr().decode()
+
+
+def prepare_refund_transaction(escrow_address, refundee_address, amount, min_time):
+    """Prepare timelocked refund transaction."""
+    builder = gen_builder(escrow_address)
+#    builder.append_payment_op(refundee_address, amount, BUL_TOKEN_CODE, ISSUER)
+#
+#    # Create refund transaction.
+#    builder = stellar_base.builder.Builder(horizon=HORIZON, secret=escrow.seed(), sequence=sequence)
+#    builder.append_payment_op(
+#        launcher, payment + collateral,
+#        BUL_TOKEN_CODE, ISSUER,
+#        escrow.address().decode())
+#    add_memo(builder, "refund minTime: {} maxTime: 0".format(deadline))
+#    refund_envelope = builder.gen_te()
 
 
 def launch_paket(launcher, recipient, courier, deadline, payment, collateral):
     """Launch a paket."""
     escrow = get_keypair()
-    builder = stellar_base.builder.Builder(horizon=HORIZON, secret=db.get_user(launcher)['seed'])
+    builder = stellar_base.builder.Builder(
+        horizon=HORIZON, secret='SC2PO5YMP7VISFX75OH2DWETTEZ4HVZOECMDXOZIP3NBU3OFISSQXAEP')
     builder.append_create_account_op(destination=escrow.address().decode(), starting_balance=5)
     add_memo(builder, "launch {} / {}".format(payment, collateral))
     builder.sign()
     submit(builder)
-    trust(escrow)
+
+    builder = stellar_base.builder.Builder(horizon=HORIZON, secret=escrow.seed())
+    builder.import_from_xdr(prepare_trust(escrow.address().decode()))
+    builder.sign()
+    submit(builder)
 
     sequence = int(get_bul_account(escrow.address().decode())['sequence']) + 1
 
@@ -122,7 +161,7 @@ def launch_paket(launcher, recipient, courier, deadline, payment, collateral):
     builder = stellar_base.builder.Builder(horizon=HORIZON, secret=escrow.seed(), sequence=sequence)
     builder.append_payment_op(
         launcher, payment + collateral,
-        'BUL', ISSUER.address().decode(),
+        'BUL', ISSUER,
         escrow.address().decode())
     add_memo(builder, "refund minTime: {} maxTime: 0".format(deadline))
     refund_envelope = builder.gen_te()
@@ -131,7 +170,7 @@ def launch_paket(launcher, recipient, courier, deadline, payment, collateral):
     builder = stellar_base.builder.Builder(horizon=HORIZON, secret=escrow.seed(), sequence=sequence)
     builder.append_payment_op(
         courier, payment + collateral,
-        'BUL', ISSUER.address().decode(),
+        'BUL', ISSUER,
         escrow.address().decode())
     add_memo(builder, "payment {} BULs".format(payment + collateral))
     payment_envelope = builder.gen_te()
