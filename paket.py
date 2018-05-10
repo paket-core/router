@@ -1,5 +1,4 @@
 """Use PaKeT smart contract."""
-import functools
 import logging
 import os
 import time
@@ -72,6 +71,7 @@ def get_bul_account(address, accept_untrusted=False):
 def add_memo(builder, memo):
     """Add a memo with limited length."""
     return LOGGER.error("Not using memos ATM because of bug.")
+    # pylint: disable=unreachable
     max_byte_length = 28
     utf8 = memo.encode('utf8')
     if len(utf8) > max_byte_length:
@@ -82,6 +82,7 @@ def add_memo(builder, memo):
             memo = utf8[:cursor].decode()
     builder.add_text_memo(memo)
     return builder
+    # pylint: enable=unreachable
 
 
 def gen_builder(address='', sequence_delta=None):
@@ -125,19 +126,64 @@ def prepare_send_buls(from_address, to_address, amount):
     return builder.gen_te().xdr().decode()
 
 
-def prepare_refund_transaction(escrow_address, refundee_address, amount, min_time):
+def prepare_escrow_creation(from_address, new_address, starting_balance=1):
+    """Prepare escrow creation transaction."""
+    builder = gen_builder(from_address)
+    builder.append_create_account_op(destination=new_address, starting_balance=starting_balance)
+    add_memo(builder, 'create escrow')
+    return builder.gen_te().xdr().decode()
+
+
+def prepare_escrow_transactions(
+        escrow_address, refundee_address, payment_address, recipient_address, amount, min_time):
     """Prepare timelocked refund transaction."""
+    # Refund transaction, in case of failed delivery, timelocked.
+    builder = gen_builder(escrow_address, sequence_delta=2)
+    builder.append_payment_op(refundee_address, amount, BUL_TOKEN_CODE, ISSUER)
+    builder.add_time_bounds(type('TimeBound', (), {'minTime': min_time, 'maxTime': 0})())
+    add_memo(builder, 'refund')
+    refund_envelope = builder.gen_te()
+
+    # Payment transaction, in case of successful delivery, requires recipient signature.
+    builder = gen_builder(escrow_address, sequence_delta=2)
+    builder.append_payment_op(payment_address, amount, BUL_TOKEN_CODE, ISSUER)
+    add_memo(builder, 'payment')
+    payment_envelope = builder.gen_te()
+
+    # Merge transaction, to drain the remaining XLM from the account, timelocked.
+    builder = gen_builder(escrow_address, sequence_delta=3)
+    builder.append_account_merge_op(refundee_address)
+    builder.add_time_bounds(type('TimeBound', (), {'minTime': min_time, 'maxTime': 0})())
+    merge_envelope = builder.gen_te()
+
+    # Set transactions and recipient as only signers.
     builder = gen_builder(escrow_address)
-#    builder.append_payment_op(refundee_address, amount, BUL_TOKEN_CODE, ISSUER)
-#
-#    # Create refund transaction.
-#    builder = stellar_base.builder.Builder(horizon=HORIZON, secret=escrow.seed(), sequence=sequence)
-#    builder.append_payment_op(
-#        launcher, payment + collateral,
-#        BUL_TOKEN_CODE, ISSUER,
-#        escrow.address().decode())
-#    add_memo(builder, "refund minTime: {} maxTime: 0".format(deadline))
-#    refund_envelope = builder.gen_te()
+    builder.append_set_options_op(
+        signer_address=refund_envelope.hash_meta(),
+        signer_type='preAuthTx',
+        signer_weight=2)
+    builder.append_set_options_op(
+        signer_address=payment_envelope.hash_meta(),
+        signer_type='preAuthTx',
+        signer_weight=1)
+    builder.append_set_options_op(
+        signer_address=merge_envelope.hash_meta(),
+        signer_type='preAuthTx',
+        signer_weight=2)
+    builder.append_set_options_op(
+        signer_address=recipient_address,
+        signer_type='ed25519PublicKey',
+        signer_weight=1)
+    builder.append_set_options_op(
+        master_weight=0, low_threshold=1, med_threshold=2, high_threshold=3)
+    add_memo(builder, 'freeze')
+    set_options_envelope = builder.gen_te()
+
+    return {
+        'set_options_transaction': set_options_envelope.xdr().decode(),
+        'refund_transaction': refund_envelope.xdr().decode(),
+        'payment_transaction': payment_envelope.xdr().decode(),
+        'merge_transaction': merge_envelope.xdr().decode()}
 
 
 def launch_paket(launcher, recipient, courier, deadline, payment, collateral):
@@ -197,7 +243,7 @@ def launch_paket(launcher, recipient, courier, deadline, payment, collateral):
     package_details = dict(
         paket_id=escrow.address().decode(),
         launcher_pubkey=launcher, recipient_pubkey=recipient, deadline=deadline, payment=payment, collateral=collateral,
-        refund_transaction=refund_envelope.xdr().decode(), payment_transaction=payment_envelope.xdr().decode())
+        bul_refund_transaction=refund_envelope.xdr().decode(), payment_transaction=payment_envelope.xdr().decode())
     db.create_package(**package_details)
     return package_details
 
