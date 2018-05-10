@@ -290,6 +290,22 @@ def packages_handler():
     return {'status': 200, 'packages': db.get_packages()}
 
 
+@BLUEPRINT.route("/v{}/view_log".format(VERSION), methods=['GET'])
+def view_log_handler():
+    """
+    Get last lines of log. Specify
+    ?lines=x  x is number of lines to show. default is 40.
+    """
+    try:
+        lines = abs(int(flask.request.values['lines']))
+    except Exception:
+        lines = 40
+    with open('paket.log') as logfile:
+        log = logfile.readlines()[-lines:]
+
+    return '<br/>'.join(log)
+
+
 # Sandbox setup.
 
 
