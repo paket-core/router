@@ -875,3 +875,25 @@ PACKAGES = {
         }
     }
 }
+
+LOG = {
+    'tags': [
+        'debug'
+    ],
+    'parameters': [
+        {
+            'name': 'lines_num',
+            'required': False,
+            'in': 'formData',
+            'schema': {
+                'type': 'integer',
+                'format': 'integer'
+            }
+        },
+    ],
+    'responses': {
+        '200': {
+            'description': 'log lines',
+        }
+    }
+}

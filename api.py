@@ -1,18 +1,18 @@
 """JSON swagger API to PaKeT."""
-import logging
 import os
 
 import flasgger
 import flask
 
 import db
+import logger
 import paket
 import swagger_specs
 import webserver.validation
 
 VERSION = swagger_specs.VERSION
 PORT = os.environ.get('PAKET_API_PORT', 8000)
-LOGGER = logging.getLogger('pkt.api')
+LOGGER = logger.logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
 
 # Wallet routes.
@@ -290,20 +290,16 @@ def packages_handler():
     return {'status': 200, 'packages': db.get_packages()}
 
 
-@BLUEPRINT.route("/v{}/view_log".format(VERSION), methods=['GET'])
-def view_log_handler():
+@BLUEPRINT.route("/v{}/debug/log".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.LOG)
+@webserver.validation.call
+def view_log_handler(lines_num=10):
     """
-    Get last lines of log. Specify
-    ?lines=x  x is number of lines to show. default is 40.
+    Get last lines of log.
+    Specify lines_num to get the x last lines.
     """
-    try:
-        lines = abs(int(flask.request.values['lines']))
-    except Exception:
-        lines = 40
-    with open('paket.log') as logfile:
-        log = logfile.readlines()[-lines:]
-
-    return '<br/>'.join(log)
+    with open(os.path.join(logger.LOG_DIR_NAME, logger.LOG_FILE_NAME)) as logfile:
+        return {'status': 200, 'log': logfile.readlines()[:-1 - lines_num:-1]}
 
 
 # Sandbox setup.
