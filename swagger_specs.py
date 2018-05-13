@@ -1,5 +1,5 @@
 """Swagger specifications of Identity Server."""
-VERSION = 2
+VERSION = 3
 CONFIG = {
     'title': 'PaKeT API',
     'uiversion': 2,
@@ -33,37 +33,39 @@ commands that can be used to call the server.
 Our Server
 ==========
 We run a centralized server that can be used to interact with PaKeT's bottom
-layers.  Since Layer one is completely implemented on top of the Stellar
+layers. Since Layer one is completely implemented on top of the Stellar
 network, it can be interacted with directly in a fully decentralized fashion.
-We created this server only as a gateway to the bottom layers to simplify the interaction with them.
-
-Another aspect of the server is to interact with our user information.
-Ultimately, we will use decentralize user information solutions, such as Civic,
-but right now we are keeping user for both KYC and app usage. Please review our
-roadmap to see our plans for decentralizing the user data.
+We created this server only as a gateway to the bottom layers to simplify the
+interaction with them.
 
 Security
 ========
 Our calls are split into the following security levels:
- - Debug functions: no authentication allowed. Available only in debug mode.
- - Anonymous functions: no authentication allowed.
+ - Debug functions: require no authentication, available only in debug mode.
+ - Anonymous functions: require no authentication.
  - Authenticated functions: require asymmetric key authentication. Not tested in debug mode.
-    - The 'Pubkey' header will contain the user's pubkey. In debug mode this can be substituted with his paket_user.
+    - The 'Pubkey' header will contain the user's pubkey.
     - The 'Fingerprint' header is constructed from the comma separated
       concatenation of the called URI, all the arguments (as key=value), and an
       ever increasing nonce (recommended to use Unix time in milliseconds).
     - The 'Signature' header will contain the signature of the key specified in
       the 'Pubkey' header on the fingerprint specified in the 'Fingerprint'
-      header, encoded to string as Base64.
+      header, encoded to Base64 ASCII.
 
 Walkthrough
 ===========
-You can follow the following steps one by one.
-They are ordered in a way that demonstrates the main functionality of the API.
+The following steps demonstrate the main functionality of the API. They all require you to have a Stellar compatible ed25519 keypair and a matching funded Stellar account.  The Stellar account creator is your friend: https://www.stellar.org/laboratory/#account-creator
 
-Register a User
+* Check your account by calling /bul_account - you should get a 409 error saying that the account does not trust BULs.
+* Extend trust in BULs from your account by calling /prepare_trust, signing the returned XDR with your private key and submitting it to /submit_transaction.
+* Check your account by calling /bul_account - you should get a BUL balance of 0.
+* If you are 
+
+
+
 ---------------
-First, register a new user:
+* First, create and fund a matching stellar account.
+* Use the 
 * register_user: if you are in debug mode make sure to use the value 'debug' as the Pubkey header. In such a case,
 a keypair will be generated and held on your behalf by the system.
 Your call should return with status code 201 and a JSON with the new user's details.
@@ -82,8 +84,8 @@ a list of thresholds (should all be 0) and a sequence number (should be a large 
 * send_buls: In a production environment, you should use the keypair of a BUL holding account you control for the
 headers. On the debug environment, you should use the value 'ISSUER', which has access to an unlimited supply of BULs,
 for the Pubkey header. Use the pubkey from before as value for the to_pubkey
-field, and send yourself 222 BULs.  Your call should return with a status of
-201, and include the transaction details.  Of these, copy the value of
+field, and send yourself 222 BULs. Your call should return with a status of
+201, and include the transaction details. Of these, copy the value of
 ['transaction']['hash'] and use the form on the following page to fetch and
 examine it:
 https://www.stellar.org/laboratory/#explorer?resource=transactions&endpoint=single&network=test
@@ -100,7 +102,7 @@ Create (Launch) a Package
 * launch_package: use the new user's pubkey in the header.
 Use the recipient's pubkey for the recipient_pubkey field and the courier's
 pubkey for the courier_pubkey field (in the debug environment you can use the
-strings 'RECIPIENT' and 'COURIER' for the built-in pre-funded accounts).  Set
+strings 'RECIPIENT' and 'COURIER' for the built-in pre-funded accounts). Set
 the deadline for the delivery in [Unix
 time](https://en.wikipedia.org/wiki/Unix_time), with 22 BULs as payment_buls
 and 50 BULs as collateral_buls. The call will return an escrow_address, which
@@ -830,6 +832,38 @@ RECOVER_USER = {
     'responses': {
         '200': {
             'description': 'user details retrieved.'
+        }
+    }
+}
+
+FUND = {
+    'tags': [
+        'debug'
+    ],
+    'parameters': [
+        {
+            'name': 'Pubkey',
+            'required': True,
+            'in': 'header',
+            'schema': {
+                'type': 'string',
+                'format': 'string'
+            }
+        },
+    ],
+    'responses': {
+        '200': {
+            'description': 'funding successful',
+            'schema': {
+                'properties': {
+                    'packages': {
+                        'type': 'array',
+                        'items': {
+                            '$ref': '#/definitions/Package-info'
+                        }
+                    }
+                }
+            }
         }
     }
 }

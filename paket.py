@@ -13,6 +13,7 @@ import db
 
 BUL_TOKEN_CODE = 'BUL'
 ISSUER = os.environ['PAKET_USER_ISSUER']
+ISSUER_SEED = os.environ.get('PAKET_SEED_ISSUER')
 HORIZON = os.environ['PAKET_HORIZON_SERVER']
 
 LOGGER = logging.getLogger('pkt.paket')
@@ -21,22 +22,9 @@ class StellarTransactionFailed(Exception):
     """A stellar transaction failed."""
 
 
-class MissingTrust(Exception):
-    """The stellar account did not trust our token."""
-
-
-def new_account(address):
-    """Create a new account and fund it with lumens. Debug only."""
-    LOGGER.info("creating and funding account %s", address)
-    request = requests.get("https://friendbot.stellar.org/?addr={}".format(address))
-    if request.status_code != 200:
-        LOGGER.error("Request to friendbot failed: %s", request.json())
-        raise StellarTransactionFailed("unable to create account {}".format(address))
-
-
-def get_keypair(address=None, seed=None):
-    """Get a keypair from address or seed (default to random) with a decent string representation."""
-    if address is None:
+def get_keypair(pubkey=None, seed=None):
+    """Get a keypair from pubkey or seed (default to random) with a decent string representation."""
+    if pubkey is None:
         if seed is None:
             keypair = stellar_base.keypair.Keypair.random()
         else:
@@ -44,19 +32,19 @@ def get_keypair(address=None, seed=None):
             keypair.__class__ = type('DisplayUnlockedKeypair', (stellar_base.keypair.Keypair,), {
                 '__repr__': lambda self: "KeyPair {} ({})".format(self.address(), self.seed())})
     else:
-        keypair = stellar_base.keypair.Keypair.from_address(address)
+        keypair = stellar_base.keypair.Keypair.from_address(pubkey)
         keypair.__class__ = type('DisplayKeypair', (stellar_base.keypair.Keypair,), {
             '__repr__': lambda self: "KeyPair ({})".format(self.address())})
     return keypair
 
 
-def get_bul_account(address, accept_untrusted=False):
-    """Get address details."""
+def get_bul_account(pubkey, accept_untrusted=False):
+    """Get account details."""
     try:
-        details = stellar_base.address.Address(address, horizon=HORIZON)
+        details = stellar_base.address.Address(pubkey, horizon=HORIZON)
         details.get()
     except stellar_base.utils.AccountNotExistError:
-        raise AssertionError("no account found for {}".format(address))
+        raise AssertionError("no account found for {}".format(pubkey))
     account = {'sequence': details.sequence, 'signers': details.signers, 'thresholds': details.thresholds}
     for balance in details.balances:
         if balance.get('asset_type') == 'native':
@@ -64,7 +52,7 @@ def get_bul_account(address, accept_untrusted=False):
         if balance.get('asset_code') == BUL_TOKEN_CODE and balance.get('asset_issuer') == ISSUER:
             account['BUL balance'] = float(balance['balance'])
     if 'BUL balance' not in account and not accept_untrusted:
-        raise MissingTrust("account {} does not trust {} from {}".format(address, BUL_TOKEN_CODE, ISSUER))
+        raise AssertionError("account {} does not trust {} from {}".format(pubkey, BUL_TOKEN_CODE, ISSUER))
     return account
 
 
@@ -85,13 +73,13 @@ def add_memo(builder, memo):
     # pylint: enable=unreachable
 
 
-def gen_builder(address='', sequence_delta=None):
+def gen_builder(pubkey='', sequence_delta=None):
     """Create a builder."""
     if sequence_delta:
-        sequence = int(get_bul_account(address, accept_untrusted=True)['sequence']) + sequence_delta
-        builder = stellar_base.builder.Builder(horizon=HORIZON, address=address, sequence=sequence)
+        sequence = int(get_bul_account(pubkey, accept_untrusted=True)['sequence']) + sequence_delta
+        builder = stellar_base.builder.Builder(horizon=HORIZON, address=pubkey, sequence=sequence)
     else:
-        builder = stellar_base.builder.Builder(horizon=HORIZON, address=address)
+        builder = stellar_base.builder.Builder(horizon=HORIZON, address=pubkey)
     return builder
 
 
@@ -110,54 +98,54 @@ def submit_transaction_envelope(envelope):
     return submit(builder)
 
 
-def prepare_create_account(from_address, new_address, starting_balance=1):
+def prepare_create_account(from_pubkey, new_pubkey, starting_balance=1):
     """Prepare account creation transaction."""
-    builder = gen_builder(from_address)
-    builder.append_create_account_op(destination=new_address, starting_balance=starting_balance)
+    builder = gen_builder(from_pubkey)
+    builder.append_create_account_op(destination=new_pubkey, starting_balance=starting_balance)
     add_memo(builder, 'create escrow')
     return builder.gen_te().xdr().decode()
 
 
-def prepare_trust(from_address):
+def prepare_trust(from_pubkey):
     """Prepare trust transaction from account."""
-    builder = gen_builder(from_address)
+    builder = gen_builder(from_pubkey)
     builder.append_trust_op(ISSUER, BUL_TOKEN_CODE)
     add_memo(builder, "trust BUL {}".format(ISSUER))
     return builder.gen_te().xdr().decode()
 
 
-def prepare_send_buls(from_address, to_address, amount):
+def prepare_send_buls(from_pubkey, to_pubkey, amount):
     """Prepare BUL transfer."""
-    builder = gen_builder(from_address)
-    builder.append_payment_op(to_address, amount, BUL_TOKEN_CODE, ISSUER)
+    builder = gen_builder(from_pubkey)
+    builder.append_payment_op(to_pubkey, amount, BUL_TOKEN_CODE, ISSUER)
     add_memo(builder, "send {} BUL".format(amount))
     return builder.gen_te().xdr().decode()
 
 
 def prepare_escrow_transactions(
-        escrow_address, launcher_address, courier_address, recipient_address, payment, collateral, deadline):
+        escrow_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey, payment, collateral, deadline):
     """Prepare timelocked refund transaction."""
     # Refund transaction, in case of failed delivery, timelocked.
-    builder = gen_builder(escrow_address, sequence_delta=1)
-    builder.append_payment_op(launcher_address, payment + collateral, BUL_TOKEN_CODE, ISSUER)
+    builder = gen_builder(escrow_pubkey, sequence_delta=1)
+    builder.append_payment_op(launcher_pubkey, payment + collateral, BUL_TOKEN_CODE, ISSUER)
     builder.add_time_bounds(type('TimeBound', (), {'minTime': deadline, 'maxTime': 0})())
     add_memo(builder, 'refund')
     refund_envelope = builder.gen_te()
 
     # Payment transaction, in case of successful delivery, requires recipient signature.
-    builder = gen_builder(escrow_address, sequence_delta=1)
-    builder.append_payment_op(courier_address, payment + collateral, BUL_TOKEN_CODE, ISSUER)
+    builder = gen_builder(escrow_pubkey, sequence_delta=1)
+    builder.append_payment_op(courier_pubkey, payment + collateral, BUL_TOKEN_CODE, ISSUER)
     add_memo(builder, 'payment')
     payment_envelope = builder.gen_te()
 
     # Merge transaction, to drain the remaining XLM from the account, timelocked.
-    builder = gen_builder(escrow_address, sequence_delta=2)
-    builder.append_account_merge_op(launcher_address)
+    builder = gen_builder(escrow_pubkey, sequence_delta=2)
+    builder.append_account_merge_op(launcher_pubkey)
     builder.add_time_bounds(type('TimeBound', (), {'minTime': deadline, 'maxTime': 0})())
     merge_envelope = builder.gen_te()
 
     # Set transactions and recipient as only signers.
-    builder = gen_builder(escrow_address)
+    builder = gen_builder(escrow_pubkey)
     builder.append_set_options_op(
         signer_address=refund_envelope.hash_meta(),
         signer_type='preAuthTx',
@@ -171,7 +159,7 @@ def prepare_escrow_transactions(
         signer_type='preAuthTx',
         signer_weight=2)
     builder.append_set_options_op(
-        signer_address=recipient_address,
+        signer_address=recipient_pubkey,
         signer_type='ed25519PublicKey',
         signer_weight=1)
     builder.append_set_options_op(
@@ -180,7 +168,7 @@ def prepare_escrow_transactions(
     set_options_envelope = builder.gen_te()
 
     package_details = dict(
-        paket_id=escrow_address, launcher_pubkey=launcher_address, recipient_pubkey=recipient_address,
+        paket_id=escrow_pubkey, launcher_pubkey=launcher_pubkey, recipient_pubkey=recipient_pubkey,
         payment=payment, collateral=collateral, deadline=deadline,
         set_options_transaction=set_options_envelope.xdr().decode(),
         refund_transaction=refund_envelope.xdr().decode(),
@@ -226,4 +214,22 @@ def refund(paket_id, refund_envelope):
         if 0 < time_bound.maxTime < now:
             raise StellarTransactionFailed(
                 "transaction can't be sent after {} and it's {}".format(time_bound.maxTime, now))
+    return submit(builder)
+
+
+def new_account(pubkey):
+    """Create a new account and fund it with lumens. Debug only."""
+    LOGGER.info("creating and funding account %s", pubkey)
+    request = requests.get("https://friendbot.stellar.org/?addr={}".format(pubkey))
+    if request.status_code != 200:
+        LOGGER.error("Request to friendbot failed: %s", request.json())
+        raise StellarTransactionFailed("unable to create account {}".format(pubkey))
+
+
+def fund_from_issuer(pubkey, amount):
+    """Fund an account directly from issuer. Debug only."""
+    builder = stellar_base.builder.Builder(horizon=HORIZON, secret=ISSUER_SEED)
+    builder.append_payment_op(pubkey, amount, BUL_TOKEN_CODE, ISSUER)
+    add_memo(builder, 'fund')
+    builder.sign()
     return submit(builder)

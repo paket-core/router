@@ -15,6 +15,7 @@ PORT = os.environ.get('PAKET_API_PORT', 8000)
 LOGGER = logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
 
+
 # Wallet routes.
 
 
@@ -30,10 +31,10 @@ def submit_transaction_handler(transaction):
     :param transaction:
     :return:
     """
-    return {'status': 200, 'transaction': paket.submit_transaction_envelope(transaction)}
+    return {'status': 200, 'response': paket.submit_transaction_envelope(transaction)}
 
 
-@BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['POST'])
+@BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['GET'])
 @flasgger.swag_from(swagger_specs.BUL_ACCOUNT)
 @webserver.validation.call(['queried_pubkey'])
 def bul_account_handler(queried_pubkey):
@@ -45,23 +46,6 @@ def bul_account_handler(queried_pubkey):
     :return:
     """
     return dict(status=200, **paket.get_bul_account(queried_pubkey))
-
-
-@BLUEPRINT.route("/v{}/send_buls".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.SEND_BULS)
-@webserver.validation.call(['to_pubkey', 'amount_buls'], require_auth=True)
-def send_buls_handler(user_pubkey, to_pubkey, amount_buls):
-    """
-    Transfer BULs to another pubkey.
-    Use this call to send part of your balance to another user.
-    The to_pubkey can be either a user id, or a wallet pubkey.
-    ---
-    :param user_pubkey:
-    :param to_pubkey:
-    :param amount_buls:
-    :return:
-    """
-    return {'status': 201, 'transaction': paket.send_buls(user_pubkey, to_pubkey, amount_buls)}
 
 
 @BLUEPRINT.route("/v{}/prepare_send_buls".format(VERSION), methods=['POST'])
@@ -265,7 +249,19 @@ def recover_user_handler(user_pubkey):
 # Debug routes.
 
 
-@BLUEPRINT.route("/v{}/debug/users".format(VERSION), methods=['POST'])
+@BLUEPRINT.route("/v{}/debug/fund".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.FUND)
+@webserver.validation.call(require_auth=True)
+def fund_handler(user_pubkey, amount_buls=1000):
+    """
+    Give an account BULs - for debug only.
+    ---
+    :return:
+    """
+    return {'status': 200, 'response': paket.fund_from_issuer(user_pubkey, amount_buls)}
+
+
+@BLUEPRINT.route("/v{}/debug/users".format(VERSION), methods=['GET'])
 @flasgger.swag_from(swagger_specs.USERS)
 @webserver.validation.call
 def users_handler():
@@ -278,7 +274,7 @@ def users_handler():
         pubkey: dict(user, bul_account=paket.get_bul_account(pubkey)) for pubkey, user in db.get_users().items()}}
 
 
-@BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])
+@BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['GET'])
 @flasgger.swag_from(swagger_specs.PACKAGES)
 @webserver.validation.call
 def packages_handler():
