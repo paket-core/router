@@ -293,66 +293,27 @@ def packages_handler():
 # Sandbox setup.
 
 
-def create_db_user(paket_user, pubkey, seed):
+def create_db_user(paket_user, pubkey):
     """Create a new user in the DB."""
     LOGGER.debug("Creating user %s", paket_user)
     try:
-        db.create_user(pubkey, paket_user, seed)
+        db.create_user(pubkey, paket_user)
         db.update_user_details(pubkey, paket_user, '123-456')
         webserver.validation.update_nonce(pubkey, 1, paket_user)
     except db.DuplicateUser:
         LOGGER.debug("User %s already exists", paket_user)
 
 
-def create_stellar_account(pubkey, keypair):
-    """Create a stellar account."""
-    LOGGER.debug("Creating account %s", pubkey)
-    try:
-        paket.new_account(pubkey)
-    except paket.StellarTransactionFailed:
-        LOGGER.warning("address %s already exists", pubkey)
-    paket.trust(keypair)
-
-
-def fund_stellar_account(pubkey):
-    """Fund a stellar account."""
-    if pubkey == paket.ISSUER.address().decode():
-        return
-    try:
-        balance = paket.get_bul_account(pubkey)['balance']
-    except paket.stellar_base.utils.AccountNotExistError:
-        LOGGER.error("address %s does not exist", pubkey)
-        return
-    if balance < 100:
-        LOGGER.warning("address %s has only %s BUL", pubkey, balance)
-        paket.send_buls(paket.ISSUER.address().decode(), pubkey, 1000 - balance)
-
-
-def init_sandbox(create_db=None, create_stellar=None, fund_stellar=None):
+def init_sandbox():
     """Initialize database with debug values and fund users. For debug only."""
-    if create_db is None and bool(os.environ.get('PAKET_CREATE_DB')):
-        create_db = True
-    if create_stellar is None and bool(os.environ.get('PAKET_CREATE_STELLAR')):
-        create_stellar = True
-    if fund_stellar is None and bool(os.environ.get('PAKET_FUND_STELLAR')):
-        fund_stellar = True
-
-    if create_db:
-        webserver.validation.init_nonce_db()
-        db.init_db()
-    for paket_user, seed in [
+    webserver.validation.init_nonce_db()
+    db.init_db()
+    for paket_user, pubkey in [
             (key.split('PAKET_USER_', 1)[1], value)
             for key, value in os.environ.items()
             if key.startswith('PAKET_USER_')
     ]:
-        keypair = paket.get_keypair(seed)
-        pubkey, seed = keypair.address().decode(), keypair.seed().decode()
-        if create_db:
-            create_db_user(paket_user, pubkey, seed)
-        if create_stellar:
-            create_stellar_account(pubkey, keypair)
-        if fund_stellar:
-            fund_stellar_account(pubkey)
+        create_db_user(paket_user, pubkey)
 
 
 if __name__ == '__main__':

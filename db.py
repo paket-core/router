@@ -77,8 +77,9 @@ def init_db():
                 deadline INTEGER,
                 payment INTEGER,
                 collateral INTEGER,
-                bul_refund_transaction VARCHAR(1024),
-                xlm_merge_transaction VARCHAR(1024),
+                set_options_transaction VARCHAR(1024),
+                refund_transaction VARCHAR(1024),
+                merge_transaction VARCHAR(1024),
                 payment_transaction VARCHAR(1024),
                 kwargs VARCHAR(1024))''')
         LOGGER.debug('packages table created')
@@ -151,16 +152,16 @@ def get_users():
 
 def create_package(
         paket_id, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
-        bul_refund_transaction, xlm_merge_transaction, payment_transaction):
+        set_options_transaction, refund_transaction, merge_transaction, payment_transaction):
     """Create a new package row."""
     with sql_connection() as sql:
         sql.execute("""
             INSERT INTO packages (
                 paket_id, launcher_pubkey, recipient_pubkey, custodian_pubkey, deadline, payment, collateral,
-                bul_refund_transaction, xlm_merge_transaction, payment_transaction
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
+                set_options_transaction, refund_transaction, merge_transaction, payment_transaction
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
                 paket_id, launcher_pubkey, recipient_pubkey, launcher_pubkey, deadline, payment, collateral,
-                bul_refund_transaction, xlm_merge_transaction, payment_transaction))
+                set_options_transaction, refund_transaction, merge_transaction, payment_transaction))
 
 
 def get_package(paket_id):

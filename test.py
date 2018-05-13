@@ -1,6 +1,7 @@
 """Test the PaKeT API."""
 import json
 import os
+import pprint
 import unittest
 
 import webserver.validation
@@ -35,23 +36,15 @@ if not USE_HORIZON:
                 raise paket.StellarTransactionFailed('account exists')
             self.balances[pubkey] = False
 
-        def trust(self, keypair):
-            """Trust an account."""
-            if keypair.address().decode() not in self.balances:
-                raise paket.StellarTransactionFailed('account does not exists')
-            self.balances[keypair.address().decode()] = 0.0
-
         def get_bul_account(self, pubkey):
             """Get account details of pubkey."""
-            return {'balance': self.balances[pubkey]}
+            return {'BUL balance': self.balances[pubkey]}
 
-        def send_buls(self, from_pubkey, to_pubkey, amount):
-            """Get account details of pubkey."""
-            if from_pubkey != paket.ISSUER.address().decode():
-                if self.balances[from_pubkey] < amount:
-                    raise paket.StellarTransactionFailed('insufficient funds')
-                self.balances[from_pubkey] -= amount
-            self.balances[to_pubkey] += amount
+        def submit(self, builder):
+            """Submit a transaction and raise an exception if it fails."""
+            LOGGER.info(pprint.pformat(self.balances))
+            LOGGER.info(pprint.pformat(builder))
+
     api.paket = MockPaket()
 
 
