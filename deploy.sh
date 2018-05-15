@@ -2,7 +2,7 @@
 # Deploy a PaKeT server.
 
 # Parse options
-usage() { echo 'Usage: ./deploy.sh [a|create-all] [l|create-stellar] [f|fund-stellar] [d|create-db] [t|test] [s|shell] [r|run-server]'; }
+usage() { echo 'Usage: ./deploy.sh [d|create-db] [t|test] [s|shell] [r|run-server]'; }
 if ! [ "$1" ]; then
     if [ "$BASH_SOURCE" == "$0" ]; then
         usage
@@ -12,17 +12,6 @@ if ! [ "$1" ]; then
 fi
 while [ "$1" ]; do
     case "$1" in
-        a|all)
-            create_stellar=1
-            fund_stellar=1
-            create_db=1
-            _test=1
-            shell=1
-            run=1;;
-        l|create-stellar)
-            create_stellar=1;;
-        f|fund-stellar)
-            fund_stellar=1;;
         d|create-db)
             create_db=1;;
         t|test)
@@ -51,7 +40,7 @@ if ! which python3; then
     exit 1
 fi
 
-missing_packages="$(comm -23 <(sort requirements.txt) <(pip freeze | grep -v '0.0.0' | sort))"
+missing_packages="$(comm -23 <(sed 's|^../||' requirements.txt | sort) <(pip freeze | grep -v '0.0.0' | sort))"
 if [ "$missing_packages" ]; then
     echo "The following packages are missing: $missing_packages"
     return 1 2>/dev/null
@@ -69,10 +58,10 @@ if ! curl -m 2 "$PAKET_HORIZON_SERVER" | tail -5; then
     echo
 fi
 
-[ "$create_db" ] && export PAKET_CREATE_DB=1 && rm -i *.db
-[ "$create_stellar" ] && export PAKET_CREATE_STELLAR=1
-[ "$fund_stellar" ] && export PAKET_FUND_STELLAR=1
-python -c "import api; api.init_sandbox()"
+if [ "$create_db" ]; then
+    rm -i *.db
+    python -c "import db; db.init_db()"
+fi
 
 if [ "$_test" ]; then
     python -m unittest test
@@ -81,7 +70,7 @@ if [ "$_test" ]; then
 
 fi
 
-[ "$shell" ] && python -ic 'import api; import db; import paket; p = paket'
+[ "$shell" ] && python -ic 'import logger; logger.setup(); import api; import db; import paket; p = paket'
 
 [ "$run" ] && python ./api.py
 
