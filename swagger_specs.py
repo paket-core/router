@@ -74,7 +74,7 @@ escrow account. Repeat the following steps to create each account
 /fund_from_issuer or by calling /prepare_send_buls from your original account,
 signing it, and submitting it to /submit_transaction.
 - From your original account, which will be the launcher account, call
-/prepare_escrow_transactions. Make sure that the payment is not larger than
+/prepare_escrow. Make sure that the payment is not larger than
 your BUL balance, and that the collateral is not larger than the BUL balance of
 the courier.
 - As the escrow account, submit the set options transaction to
@@ -108,489 +108,144 @@ The API
 }
 
 SUBMIT_TRANSACTION = {
-    'tags': [
-        'wallet'
-    ],
+    'tags': ['wallet'],
     'parameters': [
         {
-            'name': 'transaction',
-            'in': 'formData',
-            'description': 'Transaction to submit',
-            'required': True,
-            'type': 'string',
+            'name': 'transaction', 'description': 'transaction to submit',
+            'in': 'formData', 'required': True, 'type': 'string'
         }
     ],
     'responses': {
-        '200': {
-            'description': 'success'
-        }
+        '200': {'description': 'horizon response'}
     }
 }
 
 BUL_ACCOUNT = {
-    'tags': [
-        'wallet'
-    ],
+    'tags': ['wallet'],
     'parameters': [
         {
-            'name': 'queried_pubkey',
-            'in': 'query',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
+            'name': 'queried_pubkey', 'description': 'pubkey of the account',
+            'in': 'query', 'required': True, 'type': 'string'
         }
     ],
     'responses': {
-        '200': {
-            'description': 'balance in BULs',
-            'schema': {
-                'properties': {
-                    'available_buls': {
-                        'type': 'integer',
-                        'format': 'int32',
-                        'minimum': 0,
-                        'description': 'funds available for usage in buls'
-                    }
-                }
-            }
-        }
+        '200': {'description': 'account details'}
     }
 }
 
-SEND_BULS = {
-    'tags': [
-        'wallet'
-    ],
+PREPARE_CREATE_ACCOUNT = {
+    'tags': ['wallet'],
     'parameters': [
         {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
+            'name': 'from_pubkey', 'description': 'creating pubkey (must have a funded account)',
+            'in': 'query', 'required': True, 'type': 'string'
         },
         {
-            'name': 'Fingerprint',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
+            'name': 'new_pubkey', 'description': 'pubkey of account to be created',
+            'in': 'query', 'required': True, 'type': 'string'
         },
         {
-            'name': 'Signature',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'to_pubkey',
-            'in': 'formData',
-            'description': 'target pubkey for transfer',
-            'required': True,
-            'type': 'string'
-        },
-        {
-            'name': 'amount_buls',
-            'in': 'formData',
-            'description': 'amount to transfer',
-            'required': True,
-            'type': 'integer'
+            'name': 'starting_balance', 'description': 'amount of XLM to transfer from creating account',
+            'in': 'query', 'required': True, 'type': 'integer'
         }
     ],
     'responses': {
-        '200': {
-            'description': 'transfer request sent'
+        '201': {'description': 'unsigned account creation transaction'}
+    }
+}
+
+PREPARE_TRUST = {
+    'tags': ['wallet'],
+    'parameters': [
+        {
+            'name': 'from_pubkey', 'description': 'pubkey that wants to add trust in our token',
+            'in': 'query', 'required': True, 'type': 'string'
         }
+    ],
+    'responses': {
+        '201': {'description': 'unsigned add trust transaction'}
     }
 }
 
 PREPARE_SEND_BULS = {
-    'tags': [
-        'wallet'
-    ],
+    'tags': ['wallet'],
     'parameters': [
         {
-            'name': 'from_pubkey',
-            'in': 'query',
-            'description': 'target pubkey for transfer',
-            'required': True,
-            'type': 'string'
+            'name': 'from_pubkey', 'description': 'target pubkey for transfer',
+            'in': 'query', 'required': True, 'type': 'string'
         },
         {
-            'name': 'to_pubkey',
-            'in': 'query',
-            'description': 'target pubkey for transfer',
-            'required': True,
-            'type': 'string'
+            'name': 'to_pubkey', 'description': 'target pubkey for transfer',
+            'in': 'query', 'required': True, 'type': 'string'
         },
         {
-            'name': 'amount_buls',
-            'in': 'query',
-            'description': 'amount to transfer',
-            'required': True,
-            'type': 'integer'
+            'name': 'amount_buls', 'description': 'amount to transfer',
+            'in': 'query', 'required': True, 'type': 'integer'
         }
     ],
     'responses': {
-        '200': {
-            'description': 'transfer request sent'
-        }
+        '200': {'description': 'unsigned BUL transfer transaction'}
     }
 }
 
-PRICE = {
-    'tags': [
-        'wallet'
-    ],
-    'responses': {
-        '200': {
-            'description': 'buy and sell prices',
-            'schema': {
-                'properties': {
-                    'buy_price': {
-                        'type': 'integer',
-                        'format': 'int32',
-                        'minimum': 0,
-                        'description': 'price for which a BUL may me purchased'
-                    },
-                    'sell_price': {
-                        'type': 'integer',
-                        'format': 'int32',
-                        'minimum': 0,
-                        'description': 'price for which a BUL may me sold'
-                    }
-                }
-            }
-        }
-    }
-}
-
-LAUNCH_PACKAGE = {
+PREPARE_ESCROW = {
     'tags': [
         'packages'
     ],
     'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'Fingerprint',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
+            'name': 'courier_pubkey', 'description': 'courier pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'Signature',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
+            'name': 'recipient_pubkey', 'description': 'recipient pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'recipient_pubkey',
-            'in': 'formData',
-            'description': 'Recipient pubkey',
-            'required': True,
-            'type': 'string'
-        },
+            'name': 'payment_buls', 'description': 'BULs promised as payment',
+            'in': 'formData', 'required': True, 'type': 'integer'},
         {
-            'name': 'courier_pubkey',
-            'in': 'formData',
-            'description': 'Courier pubkey (can be id for now)',
-            'required': True,
-            'type': 'string'
-        },
+            'name': 'collateral_buls', 'description': 'BULs promised as collateral',
+            'in': 'formData', 'required': True, 'type': 'integer'},
         {
-            'name': 'deadline_timestamp',
-            'in': 'formData',
-            'description': 'Deadline timestamp',
-            'required': True,
-            'type': 'integer',
-            'example': 1520948634
-        },
-        {
-            'name': 'payment_buls',
-            'in': 'formData',
-            'description': 'BULs promised as payment',
-            'required': True,
-            'type': 'integer'
-        },
-        {
-            'name': 'collateral_buls',
-            'in': 'formData',
-            'description': 'BULs required as collateral',
-            'required': True,
-            'type': 'integer'
-        }
+            'name': 'deadline_timestamp', 'description': 'deadline timestamp',
+            'in': 'formData', 'required': True, 'type': 'integer'},
     ],
     'responses': {
-        '200': {
-            'description': 'Package launched',
-            'content': {
-                'schema': {
-                    'type': 'string',
-                    'example': 'PKT-12345'
-                },
-                'example': {
-                    'PKT-id': 1001
-                }
-            }
+        '201': {
+            'description': 'escrow transactions',
         }
     }
 }
 
 ACCEPT_PACKAGE = {
-    'tags': [
-        'packages'
-    ],
+    'tags': ['packages'],
     'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Fingerprint',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Signature',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'paket_id',
-            'in': 'formData',
-            'description': 'PKT id',
-            'required': True,
-            'type': 'string',
-        },
-        {
-            'name': 'payment_transaction',
-            'in': 'formData',
-            'description': 'Payment transaction of a previously launched package, required only if confirming receipt',
-            'required': False,
-            'type': 'string',
+            'name': 'paket_id', 'description': 'PKT id (the escrow pubkey)',
+            'in': 'formData', 'required': True, 'type': 'string',
         }
     ],
     'responses': {
         '200': {
-            'description': 'Package accept requested'
-        }
-    }
-}
-
-RELAY_PACKAGE = {
-    'tags': [
-        'packages'
-    ],
-    'parameters': [
-        {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Fingerprint',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Signature',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'paket_id',
-            'in': 'formData',
-            'description': 'PKT id',
-            'required': True,
-            'type': 'string',
-        },
-        {
-            'name': 'courier_pubkey',
-            'in': 'formData',
-            'description': 'Courier pubkey',
-            'required': True,
-            'type': 'string'
-        },
-        {
-            'name': 'payment_buls',
-            'in': 'formData',
-            'description': 'BULs promised as payment',
-            'required': True,
-            'type': 'integer'
-        }
-    ],
-    'responses': {
-        '200': {
-            'description': 'Package launched',
-            'content': {
-                'schema': {
-                    'type': 'string',
-                    'example': 'PKT-12345'
-                },
-                'example': {
-                    'PKT-id': 1001
-                }
-            }
-        }
-    }
-}
-
-REFUND_PACKAGE = {
-    'tags': [
-        'packages'
-    ],
-    'parameters': [
-        {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Fingerprint',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Signature',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'paket_id',
-            'in': 'formData',
-            'description': 'PKT id',
-            'required': True,
-            'type': 'string',
-        },
-        {
-            'name': 'refund_transaction',
-            'in': 'formData',
-            'description': 'Refund transaction of a previously launched package',
-            'required': True,
-            'type': 'string',
-        }
-    ],
-    'responses': {
-        '200': {
-            'description': 'Package launched',
-            'content': {
-                'schema': {
-                    'type': 'string',
-                    'example': 'PKT-12345'
-                },
-                'example': {
-                    'PKT-id': 1001
-                }
-            }
+            'description': 'package custodianship changed'
         }
     }
 }
 
 MY_PACKAGES = {
-    'tags': [
-        'packages'
-    ],
+    'tags': ['packages'],
     'parameters': [
-        {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Fingerprint',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Signature',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'show_inactive',
-            'in': 'query',
-            'description': 'include inactive packages in response',
-            'required': False,
-            'type': 'boolean',
-        },
-        {
-            'name': 'from_date',
-            'in': 'query',
-            'description': 'show only packages from this date forward',
-            'required': False,
-            'type': 'string'
-        }
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
     ],
     'responses': {
         '200': {
@@ -610,16 +265,11 @@ MY_PACKAGES = {
 }
 
 PACKAGE = {
-    'tags': [
-        'packages'
-    ],
+    'tags': ['packages'],
     'parameters': [
         {
-            'name': 'paket_id',
-            'in': 'query',
-            'description': 'PKT id',
-            'required': True,
-            'type': 'string',
+            'name': 'paket_id', 'description': 'PKT id (the escrow pubkey)',
+            'in': 'query', 'required': True, 'type': 'string',
         }
     ],
     'definitions': {
@@ -695,177 +345,31 @@ PACKAGE = {
     }
 }
 
-REGISTER_USER = {
-    'tags': [
-        'users'
-    ],
+FUND_FROM_ISSUER = {
+    'tags': ['debug'],
     'parameters': [
         {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
+            'name': 'funded_pubkey', 'description': 'pubkey of account to be funded',
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'Fingerprint',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Signature',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'paket_user',
-            'in': 'formData',
-            'description': 'User unique callsign',
-            'required': True,
-            'type': 'string'
-        },
-        {
-            'name': 'full_name',
-            'in': 'formData',
-            'description': 'Full name of user',
-            'required': True,
-            'type': 'string'
-        },
-        {
-            'name': 'phone_number',
-            'in': 'formData',
-            'description': 'User phone number',
-            'required': True,
-            'type': 'string'
-        }
+            'name': 'funded_buls', 'description': 'amount of BULs to fund the account',
+            'in': 'formData', 'required': False, 'type': 'integer'},
     ],
     'responses': {
-        '201': {
-            'description': 'user details registered.'
-        }
-    }
-}
-
-RECOVER_USER = {
-    'tags': [
-        'users'
-    ],
-    'parameters': [
-        {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Fingerprint',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-        {
-            'name': 'Signature',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        }
-    ],
-    'responses': {
-        '200': {
-            'description': 'user details retrieved.'
-        }
-    }
-}
-
-FUND = {
-    'tags': [
-        'debug'
-    ],
-    'parameters': [
-        {
-            'name': 'Pubkey',
-            'required': True,
-            'in': 'header',
-            'schema': {
-                'type': 'string',
-                'format': 'string'
-            }
-        },
-    ],
-    'responses': {
-        '200': {
-            'description': 'funding successful',
-            'schema': {
-                'properties': {
-                    'packages': {
-                        'type': 'array',
-                        'items': {
-                            '$ref': '#/definitions/Package-info'
-                        }
-                    }
-                }
-            }
-        }
+        '200': {'description': 'funding successful'}
     }
 }
 
 USERS = {
-    'tags': [
-        'debug'
-    ],
+    'tags': ['debug'],
     'responses': {
-        '200': {
-            'description': 'a list of users',
-            'schema': {
-                'properties': {
-                    'available_buls': {
-                        'type': 'integer',
-                        'format': 'int32',
-                        'minimum': 0,
-                        'description': 'funds available for usage in buls'
-                    }
-                }
-            }
-        }
+        '200': {'description': 'a list of users'}
     }
 }
 
 PACKAGES = {
-    'tags': [
-        'debug'
-    ],
+    'tags': ['debug'],
     'responses': {
-        '200': {
-            'description': 'list of packages',
-            'schema': {
-                'properties': {
-                    'packages': {
-                        'type': 'array',
-                        'items': {
-                            '$ref': '#/definitions/Package-info'
-                        }
-                    }
-                }
-            }
-        }
+        '200': {'description': 'a list of packages'}
     }
 }
