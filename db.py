@@ -13,7 +13,7 @@ def enrich_package(package):
     return dict(
         package,
         blockchain_url="https://testnet.stellarchain.io/address/{}".format(package['launcher_pubkey']),
-        paket_url="https://paket.global/paket/{}".format(package['paket_id']),
+        paket_url="https://paket.global/paket/{}".format(package['escrow_pubkey']),
         deadline=random.randint(1523530844, 1555066871),
         my_role=random.choice(['launcher', 'courier', 'recipient']),
         status=random.choice(['waiting pickup', 'in transit', 'delivered']),
@@ -70,7 +70,7 @@ def init_db():
         LOGGER.debug('users table created')
         sql.execute('''
             CREATE TABLE packages(
-                paket_id VARCHAR(42) UNIQUE,
+                escrow_pubkey VARCHAR(42) UNIQUE,
                 launcher_pubkey VARCHAR(42),
                 recipient_pubkey VARCHAR(42),
                 custodian_pubkey VARCHAR(42),
@@ -151,37 +151,47 @@ def get_users():
 
 
 def create_package(
-        paket_id, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
         set_options_transaction, refund_transaction, merge_transaction, payment_transaction):
     """Create a new package row."""
     with sql_connection() as sql:
         sql.execute("""
             INSERT INTO packages (
-                paket_id, launcher_pubkey, recipient_pubkey, custodian_pubkey, deadline, payment, collateral,
+                escrow_pubkey, launcher_pubkey, recipient_pubkey, custodian_pubkey, deadline, payment, collateral,
                 set_options_transaction, refund_transaction, merge_transaction, payment_transaction
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
-                paket_id, launcher_pubkey, recipient_pubkey, launcher_pubkey, deadline, payment, collateral,
+                escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_pubkey, deadline, payment, collateral,
                 set_options_transaction, refund_transaction, merge_transaction, payment_transaction))
 
 
-def get_package(paket_id):
+def get_package(escrow_pubkey):
     """Get package details."""
     with sql_connection() as sql:
-        sql.execute("SELECT * FROM packages WHERE paket_id = ?", (paket_id,))
+        sql.execute("SELECT * FROM packages WHERE escrow_pubkey = ?", (escrow_pubkey,))
         try:
             return enrich_package(sql.fetchone())
         except TypeError:
-            raise UnknownPaket("paket {} is not valid".format(paket_id))
+            raise UnknownPaket("paket {} is not valid".format(escrow_pubkey))
 
 
-def get_packages():
+def get_packages(user_pubkey=None):
     """Get a list of packages."""
     with sql_connection() as sql:
-        sql.execute('SELECT paket_id, launcher_pubkey, custodian_pubkey, recipient_pubkey FROM packages')
+        if user_pubkey:
+            sql.execute("""
+                SELECT * FROM packages
+                WHERE launcher_pubkey = ?
+                OR courier_pubkey = ?
+                OR recipient_pubkey = ?
+                OR custodian_pubkey = ?
+            """, (user_pubkey, user_pubkey, user_pubkey, user_pubkey))
+        else:
+            sql.execute('SELECT * FROM packages')
         return [enrich_package(row) for row in sql.fetchall()]
 
 
-def update_custodian(paket_id, custodian_pubkey):
+def update_custodian(escrow_pubkey, custodian_pubkey):
     """Update a package's custodian."""
     with sql_connection() as sql:
-        sql.execute("UPDATE packages SET custodian_pubkey = ? WHERE paket_id = ?", (custodian_pubkey, paket_id))
+        sql.execute(
+            "UPDATE packages SET custodian_pubkey = ? WHERE escrow_pubkey = ?", (custodian_pubkey, escrow_pubkey))
