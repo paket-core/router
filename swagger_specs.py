@@ -146,7 +146,7 @@ PREPARE_CREATE_ACCOUNT = {
         },
         {
             'name': 'starting_balance', 'description': 'amount of XLM to transfer from creating account',
-            'in': 'query', 'required': True, 'type': 'integer'
+            'in': 'query', 'required': False, 'type': 'integer'
         }
     ],
     'responses': {
