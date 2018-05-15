@@ -36,7 +36,7 @@ def submit_transaction_handler(transaction):
     return {'status': 200, 'response': paket.submit_transaction_envelope(transaction)}
 
 
-@BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['GET'])
+@BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.BUL_ACCOUNT)
 @webserver.validation.call(['queried_pubkey'])
 def bul_account_handler(queried_pubkey):
@@ -52,7 +52,7 @@ def bul_account_handler(queried_pubkey):
 @BLUEPRINT.route("/v{}/prepare_create_account".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PREPARE_CREATE_ACCOUNT)
 @webserver.validation.call(['from_pubkey', 'new_pubkey'])
-def prepare_create_account_handler(from_pubkey, new_pubkey, starting_balance=1):
+def prepare_create_account_handler(from_pubkey, new_pubkey, starting_balance=5):
     """
     Prepare a create account transaction.
     ---
@@ -181,7 +181,7 @@ def fund_handler(funded_pubkey, funded_buls=1000):
     return {'status': 200, 'response': paket.fund_from_issuer(funded_pubkey, funded_buls)}
 
 
-@BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['GET'])
+@BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PACKAGES)
 @webserver.validation.call
 def packages_handler():
