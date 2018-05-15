@@ -94,7 +94,7 @@ class TestAPI(unittest.TestCase):
             pubkey, paket.BUL_TOKEN_CODE, paket.ISSUER))
         return keypair, pubkey
 
-    def test_trust(self):
+    def inner_test_trust(self):
         """Extend trust."""
         keypair, pubkey = self.inner_test_create()
         seed = keypair.seed().decode()
@@ -107,5 +107,29 @@ class TestAPI(unittest.TestCase):
             transaction=builder.gen_te().xdr().decode())
         response = self.call('bul_account', 200, 'could not get bul account after trust', queried_pubkey=pubkey)
         self.assertEqual(response['BUL balance'], 0)
-        print(keypair)
+        return keypair, pubkey, seed
+
+    def test_send(self):
+        """Send BULs between accounts."""
+        keypair, pubkey, seed = self.inner_test_trust()
+        source_pubkey = self.funded_account.address().decode()
+        source_start_balance = self.call(
+            'bul_account', 200, 'can not get source account balance', queried_pubkey=source_pubkey)['BUL balance']
+        target_start_balance = self.call(
+            'bul_account', 200, 'can not get target account balance', queried_pubkey=pubkey)['BUL balance']
+        amount = 10
+        unsigned = self.call(
+            'prepare_send_buls', 200, 'can not prepare send',
+            from_pubkey=source_pubkey, to_pubkey=pubkey, amount_buls=amount)['transaction']
+        builder = paket.stellar_base.builder.Builder(horizon=paket.HORIZON, secret=self.funded_account.seed())
+        builder.import_from_xdr(unsigned)
+        builder.sign()
+        self.call(
+            'submit_transaction', 200, 'submit send transaction failed', transaction=builder.gen_te().xdr().decode())
+        source_end_balance = self.call(
+            'bul_account', 200, 'can not get source account balance', queried_pubkey=source_pubkey)['BUL balance']
+        target_end_balance = self.call(
+            'bul_account', 200, 'can not get target account balance', queried_pubkey=pubkey)['BUL balance']
+        self.assertEqual(source_start_balance - source_end_balance, amount, 'source balance does not add up after send')
+        self.assertEqual(target_end_balance - target_start_balance, amount, 'target balance does not add up after send')
         return keypair, pubkey, seed
