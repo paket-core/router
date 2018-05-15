@@ -181,19 +181,6 @@ def fund_handler(funded_pubkey, funded_buls=1000):
     return {'status': 200, 'response': paket.fund_from_issuer(funded_pubkey, funded_buls)}
 
 
-@BLUEPRINT.route("/v{}/debug/users".format(VERSION), methods=['GET'])
-@flasgger.swag_from(swagger_specs.USERS)
-@webserver.validation.call
-def users_handler():
-    """
-    Get a list of users and their details - for debug only.
-    ---
-    :return:
-    """
-    return {'status': 200, 'users': {
-        pubkey: dict(user, bul_account=paket.get_bul_account(pubkey)) for pubkey, user in db.get_users().items()}}
-
-
 @BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['GET'])
 @flasgger.swag_from(swagger_specs.PACKAGES)
 @webserver.validation.call
@@ -204,32 +191,6 @@ def packages_handler():
     :return:
     """
     return {'status': 200, 'packages': db.get_packages()}
-
-
-# Sandbox setup.
-
-
-def create_db_user(paket_user, pubkey):
-    """Create a new user in the DB."""
-    LOGGER.debug("Creating user %s", paket_user)
-    try:
-        db.create_user(pubkey, paket_user)
-        db.update_user_details(pubkey, paket_user, '123-456')
-        webserver.validation.update_nonce(pubkey, 1, paket_user)
-    except db.DuplicateUser:
-        LOGGER.debug("User %s already exists", paket_user)
-
-
-def init_sandbox():
-    """Initialize database with debug values and fund users. For debug only."""
-    webserver.validation.init_nonce_db()
-    db.init_db()
-    for paket_user, pubkey in [
-            (key.split('PAKET_USER_', 1)[1], value)
-            for key, value in os.environ.items()
-            if key.startswith('PAKET_USER_')
-    ]:
-        create_db_user(paket_user, pubkey)
 
 
 if __name__ == '__main__':
