@@ -1,7 +1,6 @@
 """Use PaKeT smart contract."""
 import logging
 import os
-import time
 
 import requests
 import stellar_base.address
@@ -122,9 +121,9 @@ def prepare_send_buls(from_pubkey, to_pubkey, amount):
     return builder.gen_te().xdr().decode()
 
 
-def prepare_escrow_transactions(
-        escrow_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey, payment, collateral, deadline):
-    """Prepare timelocked refund transaction."""
+def prepare_escrow(
+        launcher_pubkey, escrow_pubkey, courier_pubkey, recipient_pubkey, payment, collateral, deadline):
+    """Prepare escrow transactions."""
     # Refund transaction, in case of failed delivery, timelocked.
     builder = gen_builder(escrow_pubkey, sequence_delta=1)
     builder.append_payment_op(launcher_pubkey, payment + collateral, BUL_TOKEN_CODE, ISSUER)
@@ -168,7 +167,7 @@ def prepare_escrow_transactions(
     set_options_envelope = builder.gen_te()
 
     package_details = dict(
-        paket_id=escrow_pubkey, launcher_pubkey=launcher_pubkey, recipient_pubkey=recipient_pubkey,
+        escrow_pubkey=escrow_pubkey, launcher_pubkey=launcher_pubkey, recipient_pubkey=recipient_pubkey,
         payment=payment, collateral=collateral, deadline=deadline,
         set_options_transaction=set_options_envelope.xdr().decode(),
         refund_transaction=refund_envelope.xdr().decode(),
@@ -178,43 +177,7 @@ def prepare_escrow_transactions(
     return package_details
 
 
-def confirm_receipt(recipient_pubkey, payment_envelope):
-    """Confirm the receipt of a package by signing and submitting the payment transaction."""
-    recipient_seed = db.get_user(recipient_pubkey)['seed']
-    builder = stellar_base.builder.Builder(horizon=HORIZON, secret=recipient_seed)
-    builder.import_from_xdr(payment_envelope)
-    builder.sign()
-    return submit(builder)
-
-
-def accept_package(user_pubkey, paket_id, payment_envelope=None):
-    """Accept a package - confirm delivery if recipient."""
-    db.update_custodian(paket_id, user_pubkey)
-    paket = db.get_package(paket_id)
-    if paket['recipient_pubkey'] == user_pubkey:
-        return confirm_receipt(user_pubkey, payment_envelope)
-    return paket
-
-
-def relay_payment(*_, **__):
-    """Relay payment to another courier."""
-    raise NotImplementedError('Relay payment not yet implemented.')
-
-
-def refund(paket_id, refund_envelope):
-    """Claim a refund if deadline has passed."""
-    now = time.time()
-    builder = stellar_base.builder.Builder(horizon=HORIZON, address=paket_id)
-    builder.import_from_xdr(refund_envelope)
-    add_memo(builder, "refund")
-    for time_bound in builder.time_bounds:
-        if time_bound.minTime > 0 and time_bound.minTime > now:
-            raise StellarTransactionFailed(
-                "transaction can't be sent before {} and it's {}".format(time_bound.minTime, now))
-        if 0 < time_bound.maxTime < now:
-            raise StellarTransactionFailed(
-                "transaction can't be sent after {} and it's {}".format(time_bound.maxTime, now))
-    return submit(builder)
+# Debug methods.
 
 
 def new_account(pubkey):
