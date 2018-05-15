@@ -125,7 +125,7 @@ BUL_ACCOUNT = {
     'parameters': [
         {
             'name': 'queried_pubkey', 'description': 'pubkey of the account',
-            'in': 'query', 'required': True, 'type': 'string'
+            'in': 'formData', 'required': True, 'type': 'string'
         }
     ],
     'responses': {
@@ -138,15 +138,15 @@ PREPARE_CREATE_ACCOUNT = {
     'parameters': [
         {
             'name': 'from_pubkey', 'description': 'creating pubkey (must have a funded account)',
-            'in': 'query', 'required': True, 'type': 'string'
+            'in': 'formData', 'required': True, 'type': 'string'
         },
         {
             'name': 'new_pubkey', 'description': 'pubkey of account to be created',
-            'in': 'query', 'required': True, 'type': 'string'
+            'in': 'formData', 'required': True, 'type': 'string'
         },
         {
             'name': 'starting_balance', 'description': 'amount of XLM to transfer from creating account',
-            'in': 'query', 'required': False, 'type': 'integer'
+            'in': 'formData', 'required': False, 'type': 'integer'
         }
     ],
     'responses': {
@@ -159,7 +159,7 @@ PREPARE_TRUST = {
     'parameters': [
         {
             'name': 'from_pubkey', 'description': 'pubkey that wants to add trust in our token',
-            'in': 'query', 'required': True, 'type': 'string'
+            'in': 'formData', 'required': True, 'type': 'string'
         }
     ],
     'responses': {
@@ -172,15 +172,15 @@ PREPARE_SEND_BULS = {
     'parameters': [
         {
             'name': 'from_pubkey', 'description': 'target pubkey for transfer',
-            'in': 'query', 'required': True, 'type': 'string'
+            'in': 'formData', 'required': True, 'type': 'string'
         },
         {
             'name': 'to_pubkey', 'description': 'target pubkey for transfer',
-            'in': 'query', 'required': True, 'type': 'string'
+            'in': 'formData', 'required': True, 'type': 'string'
         },
         {
             'name': 'amount_buls', 'description': 'amount to transfer',
-            'in': 'query', 'required': True, 'type': 'integer'
+            'in': 'formData', 'required': True, 'type': 'integer'
         }
     ],
     'responses': {
@@ -269,7 +269,7 @@ PACKAGE = {
     'parameters': [
         {
             'name': 'paket_id', 'description': 'PKT id (the escrow pubkey)',
-            'in': 'query', 'required': True, 'type': 'string',
+            'in': 'formData', 'required': True, 'type': 'string',
         }
     ],
     'definitions': {
@@ -357,13 +357,6 @@ FUND_FROM_ISSUER = {
     ],
     'responses': {
         '200': {'description': 'funding successful'}
-    }
-}
-
-USERS = {
-    'tags': ['debug'],
-    'responses': {
-        '200': {'description': 'a list of users'}
     }
 }
 
