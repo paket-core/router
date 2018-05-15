@@ -54,92 +54,52 @@ Our calls are split into the following security levels:
 
 Walkthrough
 ===========
-The following steps demonstrate the main functionality of the API. They all require you to have a Stellar compatible ed25519 keypair and a matching funded Stellar account.  The Stellar account creator is your friend: https://www.stellar.org/laboratory/#account-creator
+The following steps demonstrate the main functionality of the API. This requires you to have a Stellar compatible ed25519 keypair with a matching funded Stellar account.  The Stellar account creator is your friend: https://www.stellar.org/laboratory/#account-creator
 
-* Check your account by calling /bul_account - you should get a 409 error saying that the account does not trust BULs.
-* Extend trust in BULs from your account by calling /prepare_trust, signing the returned XDR with your private key and submitting it to /submit_transaction.
-* Check your account by calling /bul_account - you should get a BUL balance of 0.
-* If you are 
-
-
-
----------------
-* First, create and fund a matching stellar account.
-* Use the 
-* register_user: if you are in debug mode make sure to use the value 'debug' as the Pubkey header. In such a case,
-a keypair will be generated and held on your behalf by the system.
-Your call should return with status code 201 and a JSON with the new user's details.
-On the debug environment this will include the generated secret seed of the keypair.
-* recover_user: use the pubkey from the previous step.
-Your call should return with a status of 200 and all the details of the user
-(including the secret seed on the debug environment, as above).
-
-Fund Wallet
------------
-Verify a zero balance, and than fund the account.
-* get_bul_account: use the same pubkey as before.
-Your call should return a status of 200 and include the newly created user's balance in BULs (should be 0),
-a list of the signers on the account (should be only the user's pubkey),
-a list of thresholds (should all be 0) and a sequence number (should be a large integer).
-* send_buls: In a production environment, you should use the keypair of a BUL holding account you control for the
-headers. On the debug environment, you should use the value 'ISSUER', which has access to an unlimited supply of BULs,
-for the Pubkey header. Use the pubkey from before as value for the to_pubkey
-field, and send yourself 222 BULs. Your call should return with a status of
-201, and include the transaction details. Of these, copy the value of
-['transaction']['hash'] and use the form on the following page to fetch and
-examine it:
-https://www.stellar.org/laboratory/#explorer?resource=transactions&endpoint=single&network=test
-(specifically, if you click the envelope_xdr that you will receive it will open
-in the XDR viewer where you can view the payment operation, and if you click
-the result_xdr you can check that the payment operation has succeeded).
-* get_bul_account: use this call again, with the new user's pubkey,
-to ensure that your balance reflects the latest transaction.
-Your call should return a status of 200 with the same details as the previous call,
-excepting that the balance should now be 222.
-
-Create (Launch) a Package
--------------------------
-* launch_package: use the new user's pubkey in the header.
-Use the recipient's pubkey for the recipient_pubkey field and the courier's
-pubkey for the courier_pubkey field (in the debug environment you can use the
-strings 'RECIPIENT' and 'COURIER' for the built-in pre-funded accounts). Set
-the deadline for the delivery in [Unix
-time](https://en.wikipedia.org/wiki/Unix_time), with 22 BULs as payment_buls
-and 50 BULs as collateral_buls. The call will return an escrow_address, which
-also serves as the package's ID, a timelocked refund_transaction that can only
-be submitted once the deadline expires, and a payment_transaction which has to
-be signed by the recipient to be valid.
-* package: get the package's details. The custodian should now be the launcher.
-Note that in debug mode the 'events' array is filled with random mock data.
-* get_bul_account: use the escrow_address. Balance should be 0, thresholds
-should be 1, 2, and 3, and the signers array should contain exaxtly four
-values: the escrow_address pubkey with a weight of 0, the recipient pubkey with
-a weight of 1, the payment_transaction hash with a weight of 1, and the
-refund_transaction hash with a weight of 2.
-* get_bul_account: check and make note of the balances of launcher, courier,
-and recipient.
-* send_buls: as the launcher, deposit 22 BULs into the escrow_address as
-promised payment.
-* get_bul_account: use the launcher's pubkey. Should now be 22 BULs poorer.
-* send_buls: as the courier, deposit 50 BULs into the escrow_address as
-committed collateral.
-* get_bul_account: use the courier's pubkey. Should now be 50 BULs poorer.
-* accept_package: accept the package as the courier, with the escrow_address as
-paket_id.
-* package: get the package's details. The custodian should now be the courier.
-* accept_package: accept the package as the recipient, with the escrow_address
-as paket_id and the payment_transaction from launch_package as
-payment_transaction.
-* package: get the package's details. The custodian should now be the recipient.
-* get_bul_account: use the courier's pubkey. Should now be 72 BULs richer than
-last time (22 awarded payment + 50 returned collateral).
-
-Undocumented for Now
-====================
-debug functions
-price
-prepare_send_buls
-submit_transaction
+- Check your account by calling /bul_account - you should get a 409 error saying that the account does not trust BULs.
+- Extend trust in BULs from your account by calling /prepare_trust, signing the returned XDR with your private key and submitting it to /submit_transaction.
+- Check your account by calling /bul_account - you should now get a BUL balance of 0.
+- Transfer some BULs into your accounts. In debug mode, you can call /fund_from_issuer.
+- Check your account by calling /bul_account - make sure your balance reflects the transfer.
+- Create three new accounts, a courier account, a recipient account, and an
+escrow account. Repeat the following steps to create each account
+    - Generate a keypair.
+    - Call /prepare_create_account from your original (funded) account with the
+    new pubkey given as argument, sign the returned transaction, and submit it
+    to /submit_transaction.
+    - Optionally, check the new account by calling /bul_account - you should get a 409 error saying that the account does not trust BULs.
+    - Call /prepare_trust from the new account, sign the returned transaction, and submit it to /submit_transaction.
+    - Optionally, call /bul_account and verify your BUL balance is now 0.
+- Transfer some BULs to the courier account, either by calling
+/fund_from_issuer or by calling /prepare_send_buls from your original account,
+signing it, and submitting it to /submit_transaction.
+- From your original account, which will be the launcher account, call
+/prepare_escrow_transactions. Make sure that the payment is not larger than
+your BUL balance, and that the collateral is not larger than the BUL balance of
+the courier.
+- As the escrow account, submit the set options transaction to
+/submit_transaction.
+- Call /get_bul_account on the escrow account and verify that the signers are
+properly set.
+- Make note of the BUL balances of the launcher and the courier by calling
+/get_bul_account on both.
+- Transfer the payment from the launcher to the escrow by calling
+/prepare_send_buls, signing the transaction, and submitting it to
+/submit_transaction from your launcher account.
+- Transfer the collateral from the courier to the escrow by calling
+/prepare_send_buls, signing the transaction, and submitting it to
+/submit_transaction from the courier account.
+- Make note of the BUL balances of the launcher and the courier by calling
+/get_bul_account on both.
+- Either approve the package receipt by signing the payment transaction and
+submitting it to /submit_transaction as the recipient, or wait for the deadline
+to pass and submit the refund_transaction to /submit_transaction as the
+launcher.
+- Optionally, submit the merge account transaction to /submit_transaction for
+the launcher to reclaim any unspent XLM that were spent creating the escrow
+account.
+- Make note of the BUL balances of the launcher and the courier (and,
+optionally, the launcher's XLM balance) by calling /get_bul_account on both.
 
 The API
 =======
