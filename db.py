@@ -14,7 +14,6 @@ def enrich_package(package):
         package,
         blockchain_url="https://testnet.stellarchain.io/address/{}".format(package['launcher_pubkey']),
         paket_url="https://paket.global/paket/{}".format(package['escrow_pubkey']),
-        deadline=random.randint(1523530844, 1555066871),
         my_role=random.choice(['launcher', 'courier', 'recipient']),
         status=random.choice(['waiting pickup', 'in transit', 'delivered']),
         events=[dict(
