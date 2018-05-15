@@ -28,8 +28,8 @@ def get_keypair(pubkey=None, seed=None):
             keypair = stellar_base.keypair.Keypair.random()
         else:
             keypair = stellar_base.keypair.Keypair.from_seed(seed)
-            keypair.__class__ = type('DisplayUnlockedKeypair', (stellar_base.keypair.Keypair,), {
-                '__repr__': lambda self: "KeyPair {} ({})".format(self.address(), self.seed())})
+        keypair.__class__ = type('DisplayUnlockedKeypair', (stellar_base.keypair.Keypair,), {
+            '__repr__': lambda self: "KeyPair {} ({})".format(self.address(), self.seed())})
     else:
         keypair = stellar_base.keypair.Keypair.from_address(pubkey)
         keypair.__class__ = type('DisplayKeypair', (stellar_base.keypair.Keypair,), {
@@ -97,7 +97,7 @@ def submit_transaction_envelope(envelope):
     return submit(builder)
 
 
-def prepare_create_account(from_pubkey, new_pubkey, starting_balance=1):
+def prepare_create_account(from_pubkey, new_pubkey, starting_balance=5):
     """Prepare account creation transaction."""
     builder = gen_builder(from_pubkey)
     builder.append_create_account_op(destination=new_pubkey, starting_balance=starting_balance)
