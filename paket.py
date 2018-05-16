@@ -42,7 +42,7 @@ def get_bul_account(pubkey, accept_untrusted=False):
     try:
         details = stellar_base.address.Address(pubkey, horizon=HORIZON)
         details.get()
-    except stellar_base.utils.AccountNotExistError:
+    except stellar_base.address.AccountNotExistError:
         raise AssertionError("no account found for {}".format(pubkey))
     account = {'sequence': details.sequence, 'signers': details.signers, 'thresholds': details.thresholds}
     for balance in details.balances:
@@ -142,9 +142,6 @@ def prepare_escrow(
     builder.append_account_merge_op(launcher_pubkey)
     merge_envelope = builder.gen_te()
 
-    LOGGER.warning(refund_envelope.hash_meta())
-    LOGGER.warning(type(refund_envelope.hash_meta()))
-    LOGGER.warning(len(refund_envelope.hash_meta()))
     # Set transactions and recipient as only signers.
     builder = gen_builder(escrow_pubkey)
     builder.append_set_options_op(

@@ -147,15 +147,10 @@ class TestAPI(unittest.TestCase):
         payment, collateral = 5, 10
         deadline = int(time.time())
 
-        launcher_pubkey, launcher_seed = self.funded_pubkey, self.funded_seed
-        courier_pubkey, courier_seed = self.funded_pubkey, self.funded_seed
-        recipient_pubkey, recipient_seed = self.funded_pubkey, self.funded_seed
-        escrow_pubkey, escrow_seed = self.funded_pubkey, self.funded_seed
-
-        #launcher_pubkey, launcher_seed = self.test_send(payment)
-        #courier_pubkey, courier_seed = self.test_send(collateral)
-        #recipient_pubkey, recipient_seed = self.inner_test_trust()
-        #escrow_pubkey, escrow_seed = self.inner_test_trust()
+        launcher_pubkey, launcher_seed = self.test_send(payment)
+        courier_pubkey, courier_seed = self.test_send(collateral)
+        recipient_pubkey, recipient_seed = self.inner_test_trust()
+        escrow_pubkey, escrow_seed = self.inner_test_trust()
 
         LOGGER.info(
             "launching escrow: %s, launcher: %s, courier: %s, recipient: %s",
