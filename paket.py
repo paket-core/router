@@ -122,7 +122,7 @@ def prepare_send_buls(from_pubkey, to_pubkey, amount):
 
 
 def prepare_escrow(
-        launcher_pubkey, escrow_pubkey, courier_pubkey, recipient_pubkey, payment, collateral, deadline):
+        escrow_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey, payment, collateral, deadline):
     """Prepare escrow transactions."""
     # Refund transaction, in case of failed delivery, timelocked.
     builder = gen_builder(escrow_pubkey, sequence_delta=1)
@@ -140,9 +140,11 @@ def prepare_escrow(
     # Merge transaction, to drain the remaining XLM from the account, timelocked.
     builder = gen_builder(escrow_pubkey, sequence_delta=2)
     builder.append_account_merge_op(launcher_pubkey)
-    builder.add_time_bounds(type('TimeBound', (), {'minTime': deadline, 'maxTime': 0})())
     merge_envelope = builder.gen_te()
 
+    LOGGER.warning(refund_envelope.hash_meta())
+    LOGGER.warning(type(refund_envelope.hash_meta()))
+    LOGGER.warning(len(refund_envelope.hash_meta()))
     # Set transactions and recipient as only signers.
     builder = gen_builder(escrow_pubkey)
     builder.append_set_options_op(

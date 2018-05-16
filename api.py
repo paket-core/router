@@ -98,17 +98,18 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
 @BLUEPRINT.route("/v{}/prepare_escrow".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PREPARE_ESCROW)
 @webserver.validation.call(
-    ['recipient_pubkey', 'courier_pubkey', 'deadline_timestamp', 'payment_buls', 'collateral_buls'], require_auth=True)
+    ['launcher_pubkey', 'recipient_pubkey', 'courier_pubkey', 'deadline_timestamp', 'payment_buls', 'collateral_buls'],
+    require_auth=True)
 def prepare_escrow_handler(
-        user_pubkey, escrow_pubkey, courier_pubkey, recipient_pubkey,
+        user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
         payment_buls, collateral_buls, deadline_timestamp
     ):
     """
     Launch a package.
     Use this call to create a new package for delivery.
     ---
-    :param user_pubkey:
-    :param escrow_pubkey:
+    :param user_pubkey: the escrow pubkey
+    :param launcher_pubkey:
     :param courier_pubkey:
     :param recipient_pubkey:
     :param payment_buls:
@@ -117,26 +118,26 @@ def prepare_escrow_handler(
     :return:
     """
     return dict(status=201, **paket.prepare_escrow(
-        user_pubkey, escrow_pubkey, courier_pubkey, recipient_pubkey,
+        user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
         payment_buls, collateral_buls, deadline_timestamp
     ))
 
 
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ACCEPT_PACKAGE)
-@webserver.validation.call(['paket_id'], require_auth=True)
-def accept_package_handler(user_pubkey, paket_id):
+@webserver.validation.call(['escrow_pubkey'], require_auth=True)
+def accept_package_handler(user_pubkey, escrow_pubkey):
     """
     Accept a package.
     If the package requires collateral, commit it.
     If user is the package's recipient, release all funds from the escrow.
     ---
     :param user_pubkey:
-    :param paket_id:
+    :param escrow_pubkey:
     :param payment_transaction:
     :return:
     """
-    db.update_custodian(paket_id, user_pubkey)
+    db.update_custodian(escrow_pubkey, user_pubkey)
     return {'status': 200}
 
 
@@ -155,15 +156,15 @@ def my_packages_handler(user_pubkey):
 
 @BLUEPRINT.route("/v{}/package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PACKAGE)
-@webserver.validation.call(['paket_id'])
-def package_handler(paket_id):
+@webserver.validation.call(['escrow_pubkey'])
+def package_handler(escrow_pubkey):
     """
     Get a full info about a single package.
     ---
-    :param paket_id:
+    :param escrow_pubkey:
     :return:
     """
-    return {'status': 200, 'package': db.get_package(paket_id)}
+    return {'status': 200, 'package': db.get_package(escrow_pubkey)}
 
 
 # Debug routes.

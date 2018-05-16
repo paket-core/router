@@ -197,7 +197,7 @@ PREPARE_ESCROW = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'escrow_pubkey', 'description': 'escrow pubkey',
+            'name': 'launcher_pubkey', 'description': 'escrow pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'courier_pubkey', 'description': 'courier pubkey',
@@ -229,7 +229,7 @@ ACCEPT_PACKAGE = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'paket_id', 'description': 'PKT id (the escrow pubkey)',
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
             'in': 'formData', 'required': True, 'type': 'string',
         }
     ],
@@ -268,7 +268,7 @@ PACKAGE = {
     'tags': ['packages'],
     'parameters': [
         {
-            'name': 'paket_id', 'description': 'PKT id (the escrow pubkey)',
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
             'in': 'formData', 'required': True, 'type': 'string',
         }
     ],
@@ -282,7 +282,7 @@ PACKAGE = {
                 'timestamp': {
                     'type': 'integer'
                 },
-                'paket_user': {
+                'pubkey': {
                     'type': 'string'
                 },
                 'GPS': {
