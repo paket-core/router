@@ -67,14 +67,14 @@ def prepare_create_account_handler(from_pubkey, new_pubkey, starting_balance=5):
 @BLUEPRINT.route("/v{}/prepare_trust".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PREPARE_TRUST)
 @webserver.validation.call(['from_pubkey'])
-def prepare_trust_handler(from_pubkey):
+def prepare_trust_handler(from_pubkey, limit=None):
     """
     Prepare an add trust transaction.
     ---
     :param from_pubkey:
     :return:
     """
-    return {'status': 200, 'transaction': paket.prepare_trust(from_pubkey)}
+    return {'status': 200, 'transaction': paket.prepare_trust(from_pubkey, limit)}
 
 
 @BLUEPRINT.route("/v{}/prepare_send_buls".format(VERSION), methods=['POST'])

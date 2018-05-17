@@ -160,6 +160,10 @@ PREPARE_TRUST = {
         {
             'name': 'from_pubkey', 'description': 'pubkey that wants to add trust in our token',
             'in': 'formData', 'required': True, 'type': 'string'
+        },
+        {
+            'name': 'limit', 'description': 'limit of trust (default is max, set 0 to remove trustline)',
+            'in': 'formData', 'required': False, 'type': 'integer'
         }
     ],
     'responses': {
