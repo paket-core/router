@@ -40,18 +40,54 @@ if ! which python3; then
     exit 1
 fi
 
-missing_packages="$(comm -23 <(sed 's|^../||' requirements.txt | sort) <(pip freeze | grep -v '0.0.0' | sort))"
-if [ "$missing_packages" ]; then
-    echo "The following packages are missing: $missing_packages"
-    return 1 2>/dev/null
-    exit 1
-fi
+installed_packages="$(pip freeze)"
+while read package; do
+    # Make sure local packages exist and are up to date.
+    if [ ${package:0:3} = '../' ]; then
+        set -e
+        if ! [ -d "$package" ]; then
+            q=''; read -n 1 -p "Missing local package $package - try to fetch from github? [y|N] " q < /dev/tty
+            if [ y = "$q" ]; then
+                if ! [ "$VIRTUAL_ENV" ]; then
+                    echo "refusing to install outside of virtual env"
+                    return 2 2>/dev/null
+                    exit 2
+                fi
+                pushd ..
+                git clone "https://github.com/paket-core/${package:3}"
+                popd
+            else
+                echo "Can't continue without $package"
+                return 1 2>/dev/null
+                exit 1
+            fi
+        fi
+        pip install "$package"
+        set +e
+    else
+        if ! (echo "$installed_packages" | grep "^$package$" > /dev/null); then
+            q=''; read -n 1 -p "Missing package $package - try to install from pip? [y|N] " q < /dev/tty
+            if [ y = "$q" ]; then
+                if ! [ "$VIRTUAL_ENV" ]; then
+                    echo "refusing to install outside of virtual env"
+                    return 2 2>/dev/null
+                    exit 2
+                fi
+                pip install "$package"
+            else
+                echo "Can't continue without $package"
+                return 1 2>/dev/null
+                exit 1
+            fi
+        fi
+    fi
+done < requirements.txt
 
 # Make sure horizon server is reachable.
-if ! curl -m 2 "$PAKET_HORIZON_SERVER" | tail -5; then
+if ! curl -m 2 "$PAKET_HORIZON_SERVER" > /dev/null; then
     echo "Can't connect to horizon server $PAKET_HORIZON_SERVER"
-    read -n 1 -p 'Continue anyway? [y|N] ' c
-    if ! [ y = "$c" ]; then
+    read -n 1 -p 'Continue anyway? [y|N] ' q
+    if ! [ y = "$q" ]; then
         return 1 2>/dev/null
         exit 1
     fi

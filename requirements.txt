@@ -1,5 +1,5 @@
 ../logger
+../py-stellar-base
 Flask-Limiter==1.0.1
 Flask==1.0.1
 flasgger==0.8.3
-stellar-base==0.1.8
