@@ -1,6 +1,12 @@
 #!/bin/bash
 # Deploy a PaKeT server.
 
+if ! [ "$VIRTUAL_ENV" ]; then
+    echo "refusing to install outside of virtual env"
+    return 2 2>/dev/null
+    exit 4
+fi
+
 # Parse options
 usage() { echo 'Usage: ./deploy.sh [d|create-db] [t|test] [s|shell] [r|run-server]'; }
 if ! [ "$1" ]; then
@@ -34,25 +40,21 @@ set -o allexport
 set +o allexport
 
 # Requires python3 and python packages (as specified in requirements.txt).
-if ! which python3; then
+if ! which python3 > /dev/null; then
     echo 'python3 not found'
     return 1 2>/dev/null
     exit 1
 fi
 
 installed_packages="$(pip freeze)"
+local_packages=()
 while read package; do
     # Make sure local packages exist and are up to date.
     if [ ${package:0:3} = '../' ]; then
         set -e
         if ! [ -d "$package" ]; then
-            q=''; read -n 1 -p "Missing local package $package - try to fetch from github? [y|N] " q < /dev/tty
+            q='n'; read -n 1 -p "Missing local package $package - try to fetch from github? [y|N] " q < /dev/tty; echo
             if [ y = "$q" ]; then
-                if ! [ "$VIRTUAL_ENV" ]; then
-                    echo "refusing to install outside of virtual env"
-                    return 2 2>/dev/null
-                    exit 2
-                fi
                 pushd ..
                 git clone "git@github.com:paket-core/${package:3}.git"
                 popd
@@ -63,16 +65,12 @@ while read package; do
             fi
         fi
         pip install "$package"
+        local_packages+=("$package")
         set +e
     else
         if ! (echo "$installed_packages" | grep "^$package$" > /dev/null); then
-            q=''; read -n 1 -p "Missing package $package - try to install from pip? [y|N] " q < /dev/tty
+            q='n'; read -n 1 -p "Missing package $package - try to install from pip? [y|N] " q < /dev/tty; echo
             if [ y = "$q" ]; then
-                if ! [ "$VIRTUAL_ENV" ]; then
-                    echo "refusing to install outside of virtual env"
-                    return 2 2>/dev/null
-                    exit 2
-                fi
                 pip install "$package"
             else
                 echo "Can't continue without $package"
@@ -83,13 +81,13 @@ while read package; do
     fi
 done < requirements.txt
 
-# Make sure horizon server is reachable.
+ Make sure horizon server is reachable.
 if ! curl -m 2 "$PAKET_HORIZON_SERVER" > /dev/null; then
     echo "Can't connect to horizon server $PAKET_HORIZON_SERVER"
-    read -n 1 -p 'Continue anyway? [y|N] ' q
+    q='n'; read -n 1 -p 'Continue anyway? [y|N] ' q; echo
     if ! [ y = "$q" ]; then
         return 1 2>/dev/null
-        exit 1
+        exit 2
     fi
     echo
 fi
@@ -100,10 +98,19 @@ if [ "$create_db" ]; then
 fi
 
 if [ "$_test" ]; then
+    for package in "${local_packages[@]}"; do
+        pushd "$package" > /dev/null
+        echo
+        pwd
+        echo ---
+        which pycodestyle > /dev/null && echo pycodestyle had $(pycodestyle --max-line-length=120 **/*.py 2>&1 | wc -l) issues
+        which pylint > /dev/null && pylint **/*.py 2>&1 | tail -2 | head -1
+        python setup.py test 2>&1 | tail -3 | head -1
+        popd > /dev/null
+    done
+    which pycodestyle > /dev/null && echo pycodestyle had $(pycodestyle --max-line-length=120 *.py 2>&1 | wc -l) issues
+    which pylint > /dev/null && pylint *.py | tail -2 | head -1
     python -m unittest test
-    which pycodestyle && pycodestyle --max-line-length=120 *.py logger webserver
-    which pylint && pylint *.py logger webserver
-
 fi
 
 [ "$shell" ] && python -ic 'import logger; logger.setup(); import api; import db; import paket; p = paket'
