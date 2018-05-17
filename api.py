@@ -15,6 +15,7 @@ PORT = os.environ.get('PAKET_API_PORT', 8000)
 LOGGER = logger.logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
 
+
 # Wallet routes.
 
 
@@ -23,14 +24,16 @@ BLUEPRINT = flask.Blueprint('api', __name__)
 @webserver.validation.call(['transaction'])
 def submit_transaction_handler(transaction):
     """
-    Submit a signed transaction.
-
-    Use this call to submit a signed transaction.
+    Submit a signed transaction. This call is used to submit signed
+    transactions. Signed transactions can be obtained by signing unsigned
+    transactions returned by other calls. You can use the
+    [laboratory](https://www.stellar.org/laboratory/#txsigner?network=test) to
+    sign the transaction with your private key.
     ---
     :param transaction:
     :return:
     """
-    return {'status': 200, 'transaction': paket.submit_transaction_envelope(transaction)}
+    return {'status': 200, 'response': paket.submit_transaction_envelope(transaction)}
 
 
 @BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['POST'])
@@ -38,8 +41,7 @@ def submit_transaction_handler(transaction):
 @webserver.validation.call(['queried_pubkey'])
 def bul_account_handler(queried_pubkey):
     """
-    Get the details of your BUL account
-    Use this call to get the balance and details of your account.
+    Get the details of a Stellar BUL account.
     ---
     :param queried_pubkey:
     :return:
@@ -47,21 +49,32 @@ def bul_account_handler(queried_pubkey):
     return dict(status=200, **paket.get_bul_account(queried_pubkey))
 
 
-@BLUEPRINT.route("/v{}/send_buls".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.SEND_BULS)
-@webserver.validation.call(['to_pubkey', 'amount_buls'], require_auth=True)
-def send_buls_handler(user_pubkey, to_pubkey, amount_buls):
+@BLUEPRINT.route("/v{}/prepare_create_account".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.PREPARE_CREATE_ACCOUNT)
+@webserver.validation.call(['from_pubkey', 'new_pubkey'])
+def prepare_create_account_handler(from_pubkey, new_pubkey, starting_balance=5):
     """
-    Transfer BULs to another pubkey.
-    Use this call to send part of your balance to another user.
-    The to_pubkey can be either a user id, or a wallet pubkey.
+    Prepare a create account transaction.
     ---
-    :param user_pubkey:
-    :param to_pubkey:
-    :param amount_buls:
+    :param from_pubkey:
+    :param new_pubkey:
+    :param starting_balance:
     :return:
     """
-    return {'status': 201, 'transaction': paket.send_buls(user_pubkey, to_pubkey, amount_buls)}
+    return {'status': 200, 'transaction': paket.prepare_create_account(from_pubkey, new_pubkey, starting_balance)}
+
+
+@BLUEPRINT.route("/v{}/prepare_trust".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.PREPARE_TRUST)
+@webserver.validation.call(['from_pubkey'])
+def prepare_trust_handler(from_pubkey, limit=None):
+    """
+    Prepare an add trust transaction.
+    ---
+    :param from_pubkey:
+    :return:
+    """
+    return {'status': 200, 'transaction': paket.prepare_trust(from_pubkey, limit)}
 
 
 @BLUEPRINT.route("/v{}/prepare_send_buls".format(VERSION), methods=['POST'])
@@ -69,16 +82,7 @@ def send_buls_handler(user_pubkey, to_pubkey, amount_buls):
 @webserver.validation.call(['from_pubkey', 'to_pubkey', 'amount_buls'])
 def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     """
-    Transfer BULs to another pubkey.
-    Use this call to prepare a transaction that sends part of your
-    balance to another user. This function will return an unsigned
-    transaction.  You can use the
-    [laboratory](https://www.stellar.org/laboratory/#txsigner?network=test)
-    to sign the transaction with your private key.  You can use the
-    /recover_user call to find out your seed.  Than, you can either
-    submit the signed transaction in the laboratory, or use the
-    /submit_transaction call to send the signed transaction for
-    submission.
+    Prepare a BUL transfer transaction.
     ---
     :param from_pubkey:
     :param to_pubkey:
@@ -88,194 +92,94 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     return {'status': 200, 'transaction': paket.prepare_send_buls(from_pubkey, to_pubkey, amount_buls)}
 
 
-@BLUEPRINT.route("/v{}/price".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.PRICE)
-def price_handler():
-    """
-    Get buy and sell prices.
-    ---
-    :return:
-    """
-    return flask.jsonify({'status': 200, 'buy_price': 1, 'sell_price': 1})
-
-
 # Package routes.
 
 
-@BLUEPRINT.route("/v{}/launch_package".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.LAUNCH_PACKAGE)
+@BLUEPRINT.route("/v{}/prepare_escrow".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.PREPARE_ESCROW)
 @webserver.validation.call(
-    ['recipient_pubkey', 'courier_pubkey', 'deadline_timestamp', 'payment_buls', 'collateral_buls'], require_auth=True)
-def launch_package_handler(
-        user_pubkey, recipient_pubkey, courier_pubkey, deadline_timestamp, payment_buls, collateral_buls):
+    ['launcher_pubkey', 'recipient_pubkey', 'courier_pubkey', 'deadline_timestamp', 'payment_buls', 'collateral_buls'],
+    require_auth=True)
+def prepare_escrow_handler(
+        user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
+        payment_buls, collateral_buls, deadline_timestamp
+    ):
     """
     Launch a package.
     Use this call to create a new package for delivery.
     ---
-    :param user_pubkey:
-    :param recipient_pubkey:
+    :param user_pubkey: the escrow pubkey
+    :param launcher_pubkey:
     :param courier_pubkey:
-    :param deadline_timestamp:
+    :param recipient_pubkey:
     :param payment_buls:
     :param collateral_buls:
+    :param deadline_timestamp:
     :return:
     """
-    return {
-        'status': 201, **paket.launch_paket(
-            user_pubkey, recipient_pubkey, courier_pubkey, deadline_timestamp, payment_buls, collateral_buls)}
+    return dict(status=201, **paket.prepare_escrow(
+        user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
+        payment_buls, collateral_buls, deadline_timestamp
+    ))
 
 
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ACCEPT_PACKAGE)
-@webserver.validation.call(['paket_id'], require_auth=True)
-def accept_package_handler(user_pubkey, paket_id, payment_transaction=None):
+@webserver.validation.call(['escrow_pubkey'], require_auth=True)
+def accept_package_handler(user_pubkey, escrow_pubkey):
     """
     Accept a package.
     If the package requires collateral, commit it.
     If user is the package's recipient, release all funds from the escrow.
     ---
     :param user_pubkey:
-    :param paket_id:
+    :param escrow_pubkey:
     :param payment_transaction:
     :return:
     """
-    paket.accept_package(user_pubkey, paket_id, payment_transaction)
+    db.update_custodian(escrow_pubkey, user_pubkey)
     return {'status': 200}
 
 
-@BLUEPRINT.route("/v{}/relay_package".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.RELAY_PACKAGE)
-@webserver.validation.call(['paket_id', 'courier_pubkey', 'payment_buls'], require_auth=True)
-def relay_package_handler(user_pubkey, paket_id, courier_pubkey, payment_buls):
-    """
-    Relay a package to another courier, offering payment.
-    ---
-    :param user_pubkey:
-    :param paket_id:
-    :param courier_pubkey:
-    :param payment_buls:
-    :return:
-    """
-    return {'status': 200, 'transaction': paket.relay_payment(user_pubkey, paket_id, courier_pubkey, payment_buls)}
-
-
-@BLUEPRINT.route("/v{}/refund_package".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.REFUND_PACKAGE)
-@webserver.validation.call(['paket_id', 'refund_transaction'], require_auth=True)
-# pylint: disable=unused-argument
-# user_pubkey is used in decorator.
-def refund_package_handler(user_pubkey, paket_id, refund_transaction):
-    """
-    Relay a package to another courier, offering payment.
-    ---
-    :param user_pubkey:
-    :param paket_id:
-    :param refund_transaction:
-    :return:
-    """
-    # pylint: enable=unused-argument
-    return {'status': 200, 'transaction': paket.refund(paket_id, refund_transaction)}
-
-
-# pylint: disable=unused-argument
-# This function does not yet implement the filters.
 @BLUEPRINT.route("/v{}/my_packages".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.MY_PACKAGES)
 @webserver.validation.call(require_auth=True)
-def my_packages_handler(user_pubkey, show_inactive=False, from_date=None, role_in_delivery=None):
+def my_packages_handler(user_pubkey):
     """
-    Get list of packages
-    Use this call to get a list of packages.  You can filter the list by
-    showing only active packages, or packages originating after a
-    certain date.  You can also filter to show only packages where the
-    user has a specific role, such as "launcher" or "receiver".
+    Get list of packages concerning the user.
     ---
     :param user_pubkey:
-    :param show_inactive:
-    :param from_date:
-    :param role_in_delivery:
     :return:
     """
-    return {'status': 200, 'packages': db.get_packages()}
-# pylint: enable=unused-argument
+    return {'status': 200, 'packages': db.get_packages(user_pubkey)}
 
 
 @BLUEPRINT.route("/v{}/package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PACKAGE)
-@webserver.validation.call(['paket_id'])
-def package_handler(paket_id):
+@webserver.validation.call(['escrow_pubkey'])
+def package_handler(escrow_pubkey):
     """
     Get a full info about a single package.
     ---
-    :param paket_id:
+    :param escrow_pubkey:
     :return:
     """
-    return {'status': 200, 'package': db.get_package(paket_id)}
-
-
-# User routes.
-
-
-@BLUEPRINT.route("/v{}/register_user".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.REGISTER_USER)
-@webserver.validation.call(['full_name', 'phone_number', 'paket_user'], require_auth=True)
-# Note that pubkey is different from user_pubkey in that it does not yet exist in the system.
-def register_user_handler(user_pubkey, full_name, phone_number, paket_user):
-    """
-    Register a new user.
-    ---
-    :param user_pubkey:
-    :param full_name:
-    :param phone_number:
-    :param paket_user:
-    :return:
-    """
-    try:
-        paket.stellar_base.keypair.Keypair.from_address(str(user_pubkey))
-        db.create_user(user_pubkey, paket_user)
-
-    # For debug purposes, we generate a pubkey if no valid key is found.
-    except paket.stellar_base.utils.DecodeError:
-        if not webserver.validation.DEBUG:
-            raise webserver.validation.InvalidField("invalid pubkey {}".format(user_pubkey))
-        keypair = paket.get_keypair()
-        user_pubkey, seed = keypair.address().decode(), keypair.seed().decode()
-        db.create_user(user_pubkey, paket_user, seed)
-        paket.new_account(user_pubkey)
-        paket.trust(keypair)
-
-    return {'status': 201, 'user_details': db.update_user_details(user_pubkey, full_name, phone_number)}
-
-
-@BLUEPRINT.route("/v{}/recover_user".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.RECOVER_USER)
-@webserver.validation.call(require_auth=True)
-def recover_user_handler(user_pubkey):
-    """
-    Recover user details.
-
-    TODO about the seed
-    ---
-    :param user_pubkey:
-    :return:
-    """
-    return {'status': 200, 'user_details': db.get_user(user_pubkey)}
+    return {'status': 200, 'package': db.get_package(escrow_pubkey)}
 
 
 # Debug routes.
 
 
-@BLUEPRINT.route("/v{}/debug/users".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.USERS)
-@webserver.validation.call
-def users_handler():
+@BLUEPRINT.route("/v{}/debug/fund".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.FUND_FROM_ISSUER)
+@webserver.validation.call(['funded_pubkey'])
+def fund_handler(funded_pubkey, funded_buls=1000):
     """
-    Get a list of users and their details - for debug only.
+    Give an account BULs - for debug only.
     ---
     :return:
     """
-    return {'status': 200, 'users': {
-        pubkey: dict(user, bul_account=paket.get_bul_account(pubkey)) for pubkey, user in db.get_users().items()}}
+    return {'status': 200, 'response': paket.fund_from_issuer(funded_pubkey, funded_buls)}
 
 
 @BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])
@@ -295,76 +199,11 @@ def packages_handler():
 @webserver.validation.call
 def view_log_handler(lines_num=10):
     """
-    Get last lines of log.
+    Get last lines of log - for debug only.
     Specify lines_num to get the x last lines.
     """
     with open(os.path.join(logger.LOG_DIR_NAME, logger.LOG_FILE_NAME)) as logfile:
         return {'status': 200, 'log': logfile.readlines()[:-1 - lines_num:-1]}
-
-
-# Sandbox setup.
-
-
-def create_db_user(paket_user, pubkey, seed):
-    """Create a new user in the DB."""
-    LOGGER.debug("Creating user %s", paket_user)
-    try:
-        db.create_user(pubkey, paket_user, seed)
-        db.update_user_details(pubkey, paket_user, '123-456')
-        webserver.validation.update_nonce(pubkey, 1, paket_user)
-    except db.DuplicateUser:
-        LOGGER.debug("User %s already exists", paket_user)
-
-
-def create_stellar_account(pubkey, keypair):
-    """Create a stellar account."""
-    LOGGER.debug("Creating account %s", pubkey)
-    try:
-        paket.new_account(pubkey)
-    except paket.StellarTransactionFailed:
-        LOGGER.warning("address %s already exists", pubkey)
-    paket.trust(keypair)
-
-
-def fund_stellar_account(pubkey):
-    """Fund a stellar account."""
-    if pubkey == paket.ISSUER.address().decode():
-        return
-    try:
-        balance = paket.get_bul_account(pubkey)['balance']
-    except paket.stellar_base.utils.AccountNotExistError:
-        LOGGER.error("address %s does not exist", pubkey)
-        return
-    if balance < 100:
-        LOGGER.warning("address %s has only %s BUL", pubkey, balance)
-        paket.send_buls(paket.ISSUER.address().decode(), pubkey, 1000 - balance)
-
-
-def init_sandbox(create_db=None, create_stellar=None, fund_stellar=None):
-    """Initialize database with debug values and fund users. For debug only."""
-    if create_db is None and bool(os.environ.get('PAKET_CREATE_DB')):
-        create_db = True
-    if create_stellar is None and bool(os.environ.get('PAKET_CREATE_STELLAR')):
-        create_stellar = True
-    if fund_stellar is None and bool(os.environ.get('PAKET_FUND_STELLAR')):
-        fund_stellar = True
-
-    if create_db:
-        webserver.validation.init_nonce_db()
-        db.init_db()
-    for paket_user, seed in [
-            (key.split('PAKET_USER_', 1)[1], value)
-            for key, value in os.environ.items()
-            if key.startswith('PAKET_USER_')
-    ]:
-        keypair = paket.get_keypair(seed)
-        pubkey, seed = keypair.address().decode(), keypair.seed().decode()
-        if create_db:
-            create_db_user(paket_user, pubkey, seed)
-        if create_stellar:
-            create_stellar_account(pubkey, keypair)
-        if fund_stellar:
-            fund_stellar_account(pubkey)
 
 
 if __name__ == '__main__':

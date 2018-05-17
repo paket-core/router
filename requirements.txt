@@ -1,5 +1,5 @@
-coloredlogs==9.3.1
-flasgger==0.8.3
-Flask==1.0.1
+../logger
+../py-stellar-base
 Flask-Limiter==1.0.1
-stellar-base==0.1.8.1
+Flask==1.0.1
+flasgger==0.8.3

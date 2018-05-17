@@ -1,58 +1,24 @@
 """Test the PaKeT API."""
 import json
 import os
+import time
 import unittest
 
+# pylint: disable=import-error
+import logger
+# pylint: enable=import-error
 import webserver.validation
 
 import api
 import db
-import logger
 import paket
 
-USE_HORIZON = bool(os.environ.get('PAKET_TEST_USE_HORIZON'))
 db.DB_NAME = 'test.db'
 webserver.validation.NONCES_DB_NAME = 'nonce_test.db'
 LOGGER = logger.logging.getLogger('pkt.api.test')
 logger.setup()
 APP = webserver.setup(api.BLUEPRINT)
-
-
-if not USE_HORIZON:
-    class MockPaket:
-        """Mock paket package."""
-
-        def __init__(self):
-            self.balances = {}
-
-        def __getattr__(self, name):
-            """Inherit all paket attributes that are not overwritten."""
-            return getattr(paket, name)
-
-        def new_account(self, pubkey):
-            """Create a new account."""
-            if pubkey in self.balances:
-                raise paket.StellarTransactionFailed('account exists')
-            self.balances[pubkey] = False
-
-        def trust(self, keypair):
-            """Trust an account."""
-            if keypair.address().decode() not in self.balances:
-                raise paket.StellarTransactionFailed('account does not exists')
-            self.balances[keypair.address().decode()] = 0.0
-
-        def get_bul_account(self, pubkey):
-            """Get account details of pubkey."""
-            return {'balance': self.balances[pubkey]}
-
-        def send_buls(self, from_pubkey, to_pubkey, amount):
-            """Get account details of pubkey."""
-            if from_pubkey != paket.ISSUER.address().decode():
-                if self.balances[from_pubkey] < amount:
-                    raise paket.StellarTransactionFailed('insufficient funds')
-                self.balances[from_pubkey] -= amount
-            self.balances[to_pubkey] += amount
-    api.paket = MockPaket()
+APP.testing = True
 
 
 class TestAPI(unittest.TestCase):
@@ -60,103 +26,150 @@ class TestAPI(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.sample_keypair = paket.get_keypair()
-        self.sample_pubkey = self.sample_keypair.address().decode()
-        self.sample_seed = self.sample_keypair.seed().decode()
+        self.app = APP.test_client()
         self.host = 'http://localhost'
+        self.funded_seed = 'SDJGBJZMQ7Z4W3KMSMO2HYEV56DJPOZ7XRR7LJ5X2KW6VKBSLELR7MRQ'
+        self.funded_account = paket.get_keypair(seed=self.funded_seed)
+        self.funded_pubkey = self.funded_account.address().decode()
+        LOGGER.info('init done')
 
     def setUp(self):
+        LOGGER.info('setting up')
         try:
             os.unlink(db.DB_NAME)
+        except FileNotFoundError:
+            pass
+        try:
             os.unlink(webserver.validation.NONCES_DB_NAME)
         except FileNotFoundError:
             pass
-        api.init_sandbox(True, False, False)
-        APP.testing = True
-        self.app = APP.test_client()
-        with APP.app_context():
-            db.init_db()
 
     def tearDown(self):
-        os.unlink(db.DB_NAME)
-        os.unlink(webserver.validation.NONCES_DB_NAME)
+        LOGGER.info('tearing down')
+        self.setUp()
 
-    def call(self, path, expected_code=None, fail_message=None, pubkey=None, seed=None, **kwargs):
+    def call(self, path, expected_code=None, fail_message=None, seed=None, **kwargs):
         """Post data to API server."""
-        if seed is None:
-            seed = self.sample_seed
-        if pubkey:
+        LOGGER.info("calling %s", path)
+        if seed:
             fingerprint = webserver.validation.generate_fingerprint(
                 "{}/v{}/{}".format(self.host, api.VERSION, path), kwargs)
             signature = webserver.validation.sign_fingerprint(fingerprint, seed)
-            LOGGER.info(fingerprint)
-            headers = {'Pubkey': pubkey, 'Fingerprint': fingerprint, 'Signature': signature}
+            headers = {
+                'Pubkey': paket.get_keypair(seed=seed).address().decode(),
+                'Fingerprint': fingerprint, 'Signature': signature}
         else:
             headers = None
         response = self.app.post("/v{}/{}".format(api.VERSION, path), headers=headers, data=kwargs)
-        response = dict(status_code=response.status_code, **json.loads(response.data.decode()))
+        response = dict(real_status_code=response.status_code, **json.loads(response.data.decode()))
         if expected_code:
-            self.assertEqual(response['status_code'], expected_code, "{} ({})".format(
+            self.assertEqual(response['real_status_code'], expected_code, "{} ({})".format(
                 fail_message, response.get('error')))
         return response
 
+    def submit(self, transaction, seed=None, description='unknown'):
+        """Submit a transaction, optionally adding seed's signature."""
+        LOGGER.info("trying to submit %s transaction", description)
+        if seed:
+            builder = paket.stellar_base.builder.Builder(horizon=paket.HORIZON, secret=seed)
+            builder.import_from_xdr(transaction)
+            builder.sign()
+            transaction = builder.gen_te().xdr().decode()
+        return self.call(
+            'submit_transaction', 200, "failed submitting {} transaction".format(description), transaction=transaction)
+
     def test_fresh_db(self):
         """Make sure packages table exists and is empty."""
+        LOGGER.info('testing fresh db')
+        db.init_db()
         self.assertEqual(db.get_packages(), [], 'packages found in fresh db')
-        self.assertEqual(len(db.get_users().keys()), 4, 'too many users found in fresh db')
 
-    def test_register(self):
-        """Register a new user and recover it."""
-        phone_number = str(os.urandom(8))
-        try:
-            api.paket.new_account(self.sample_pubkey)
-            api.paket.trust(self.sample_keypair)
-        except paket.StellarTransactionFailed:
-            pass
-        self.call(
-            'register_user', 201, 'user creation failed', pubkey=self.sample_pubkey,
-            full_name='First Last', phone_number=phone_number, paket_user='stam')
+    def inner_test_no_exist(self):
+        """Check a non existing account."""
+        keypair = paket.get_keypair()
+        LOGGER.info("testing %s does not exist", keypair)
+        pubkey = keypair.address().decode()
+        response = self.call('bul_account', 409, 'could not verify account does not exist', queried_pubkey=pubkey)
+        self.assertEqual(response['error'], "no account found for {}".format(pubkey))
+        return keypair, pubkey
+
+    def inner_test_create(self):
+        """Create a new account."""
+        keypair, pubkey = self.inner_test_no_exist()
+        LOGGER.info("testing creation of %s", keypair)
+        unsigned = self.call(
+            'prepare_create_account', 200, 'could not get create account transaction',
+            from_pubkey=self.funded_pubkey, new_pubkey=pubkey)['transaction']
+        self.submit(unsigned, self.funded_seed, 'create account')
+        response = self.call('bul_account', 409, 'could not verify account does not trust', queried_pubkey=pubkey)
+        self.assertEqual(response['error'], "account {} does not trust {} from {}".format(
+            pubkey, paket.BUL_TOKEN_CODE, paket.ISSUER))
+        return keypair, pubkey
+
+    def inner_test_trust(self):
+        """Extend trust."""
+        keypair, pubkey = self.inner_test_create()
+        LOGGER.info("testing trust for %s", keypair)
+        seed = keypair.seed().decode()
+        unsigned = self.call('prepare_trust', 200, 'could not get trust transaction', from_pubkey=pubkey)['transaction']
+        self.submit(unsigned, seed, 'add trust')
+        response = self.call('bul_account', 200, 'could not get bul account after trust', queried_pubkey=pubkey)
+        self.assertEqual(response['BUL balance'], 0)
+        return pubkey, seed
+
+    def send(self, from_seed, to_pubkey, amount_buls):
+        """Send BULs between accounts."""
+        from_pubkey = paket.get_keypair(seed=from_seed).address().decode()
+        description = "sending {} from {} to {}".format(amount_buls, from_pubkey, to_pubkey)
+        LOGGER.info(description)
+        unsigned = self.call(
+            'prepare_send_buls', 200, "can not prepare send from {} to {}".format(from_pubkey, to_pubkey),
+            from_pubkey=from_pubkey, to_pubkey=to_pubkey, amount_buls=amount_buls)['transaction']
+        self.submit(unsigned, from_seed, description)
+
+    def test_send(self, amount_buls=10):
+        """Send BULs between accounts."""
+        pubkey, seed = self.inner_test_trust()
+        source_start_balance = self.call(
+            'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['BUL balance']
+        target_start_balance = self.call(
+            'bul_account', 200, 'can not get target account balance', queried_pubkey=pubkey)['BUL balance']
+        LOGGER.info("testing send from issuer to %s", pubkey)
+        self.send(self.funded_seed, pubkey, amount_buls)
+        source_end_balance = self.call(
+            'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['BUL balance']
+        target_end_balance = self.call(
+            'bul_account', 200, 'can not get target account balance', queried_pubkey=pubkey)['BUL balance']
+        self.assertEqual(source_start_balance - source_end_balance, amount_buls, 'source balance does not add up')
+        self.assertEqual(target_end_balance - target_start_balance, amount_buls, 'target balance does not add up')
+        return pubkey, seed
+
+    def test_package(self):
+        """Launch a package with payment and collateral, accept by courier and then by recipient."""
+        db.init_db()
+        payment, collateral = 5, 10
+        deadline = int(time.time())
+
+        launcher_pubkey, launcher_seed = self.test_send(payment)
+        courier_pubkey, courier_seed = self.test_send(collateral)
+        recipient_pubkey, recipient_seed = self.inner_test_trust()
+        escrow_pubkey, escrow_seed = self.inner_test_trust()
+
         LOGGER.info(
-            "new user account: %s",
-            self.call('bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey)['balance'])
-        self.assertEqual(
-            self.call(
-                'recover_user', 200, 'can not recover user', self.sample_pubkey
-            )['user_details']['phone_number'],
-            phone_number, 'user phone_number does not match')
-
-    def test_send_buls(self):
-        """Send BULs and check balance."""
-        self.test_register()
-        start_balance = self.call(
-            'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey)['balance']
-        amount = 123
+            "launching escrow: %s, launcher: %s, courier: %s, recipient: %s",
+            escrow_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey)
+        escrow_transactions = self.call(
+            'prepare_escrow', 201, 'can not prepare escrow transactions', escrow_seed,
+            launcher_pubkey=launcher_pubkey, courier_pubkey=courier_pubkey, recipient_pubkey=recipient_pubkey,
+            payment_buls=payment, collateral_buls=collateral, deadline_timestamp=deadline)
+        self.submit(escrow_transactions['set_options_transaction'], escrow_seed, 'set escrow options')
+        LOGGER.info(self.call(
+            'bul_account', 200, 'can not get escrow account balance', queried_pubkey=escrow_pubkey))
+        self.send(launcher_seed, escrow_pubkey, payment)
+        self.send(courier_seed, escrow_pubkey, collateral)
         self.call(
-            'send_buls', 201, 'can not send buls', paket.ISSUER.address().decode(), paket.ISSUER.seed().decode(),
-            to_pubkey=self.sample_pubkey, amount_buls=amount)
-        end_balance = self.call(
-            'bul_account', 200, 'can not get balance', queried_pubkey=self.sample_pubkey)['balance']
-        self.assertEqual(end_balance - start_balance, amount, 'balance does not add up after send')
-
-    def test_two_stage_send_buls(self):
-        """Send BULs and check balance without holding private keys in the server."""
-        if not USE_HORIZON:
-            return LOGGER.error('not running two stage test with mock paket')
-        source = db.get_user(db.get_pubkey_from_paket_user('ISSUER'))
-        target = db.get_user(db.get_pubkey_from_paket_user('RECIPIENT'))
-        start_balance = self.call(
-            'bul_account', 200, 'can not get balance', queried_pubkey=target['pubkey'])['balance']
-        amount = 123
-        unsigned_tx = self.call(
-            'prepare_send_buls', 200, 'can not prepare send', from_pubkey=source['pubkey'],
-            to_pubkey=target['pubkey'], amount_buls=amount)['transaction']
-        builder = paket.stellar_base.builder.Builder(horizon=paket.HORIZON, secret=source['seed'])
-        builder.import_from_xdr(unsigned_tx)
-        builder.sign()
-        signed_tx = builder.gen_te().xdr().decode()
+            'accept_package', 200, 'courier could not accept package', courier_seed, escrow_pubkey=escrow_pubkey)
+        self.submit(escrow_transactions['payment_transaction'], recipient_seed, 'payment')
         self.call(
-            'submit_transaction', 200, 'submit transaction failed',
-            source['pubkey'], transaction=signed_tx)
-        end_balance = self.call(
-            'bul_account', 200, 'can not get balance', queried_pubkey=target['pubkey'])['balance']
-        return self.assertEqual(end_balance - start_balance, amount, 'balance does not add up after send')
+            'accept_package', 200, 'recipient could not accept package', recipient_seed, escrow_pubkey=escrow_pubkey)
+        self.submit(escrow_transactions['merge_transaction'], None, 'merge')
