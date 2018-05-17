@@ -39,6 +39,7 @@ def get_keypair(pubkey=None, seed=None):
 
 def get_bul_account(pubkey, accept_untrusted=False):
     """Get account details."""
+    LOGGER.debug("getting details of %s", pubkey)
     try:
         details = stellar_base.address.Address(pubkey, horizon=HORIZON)
         details.get()
@@ -57,7 +58,7 @@ def get_bul_account(pubkey, accept_untrusted=False):
 
 def add_memo(builder, memo):
     """Add a memo with limited length."""
-    return LOGGER.error("Not using memos ATM because of bug.")
+    return LOGGER.error("Not using memos ATM because of bug (%s).", memo)
     # pylint: disable=unreachable
     max_byte_length = 28
     utf8 = memo.encode('utf8')
@@ -105,11 +106,11 @@ def prepare_create_account(from_pubkey, new_pubkey, starting_balance=5):
     return builder.gen_te().xdr().decode()
 
 
-def prepare_trust(from_pubkey):
+def prepare_trust(from_pubkey, limit=None):
     """Prepare trust transaction from account."""
     builder = gen_builder(from_pubkey)
-    builder.append_trust_op(ISSUER, BUL_TOKEN_CODE)
-    add_memo(builder, "trust BUL {}".format(ISSUER))
+    builder.append_trust_op(ISSUER, BUL_TOKEN_CODE, limit)
+    add_memo(builder, "trust {} BUL {}".format(str(limit), ISSUER))
     return builder.gen_te().xdr().decode()
 
 
@@ -182,7 +183,7 @@ def prepare_escrow(
 
 def new_account(pubkey):
     """Create a new account and fund it with lumens. Debug only."""
-    LOGGER.info("creating and funding account %s", pubkey)
+    LOGGER.warning("creating and funding account %s", pubkey)
     request = requests.get("https://friendbot.stellar.org/?addr={}".format(pubkey))
     if request.status_code != 200:
         LOGGER.error("Request to friendbot failed: %s", request.json())
@@ -191,6 +192,7 @@ def new_account(pubkey):
 
 def fund_from_issuer(pubkey, amount):
     """Fund an account directly from issuer. Debug only."""
+    LOGGER.warning("funding %s from issuer", pubkey)
     builder = stellar_base.builder.Builder(horizon=HORIZON, secret=ISSUER_SEED)
     builder.append_payment_op(pubkey, amount, BUL_TOKEN_CODE, ISSUER)
     add_memo(builder, 'fund')
