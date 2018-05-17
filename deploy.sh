@@ -54,7 +54,7 @@ while read package; do
                     exit 2
                 fi
                 pushd ..
-                git clone "https://github.com/paket-core/${package:3}"
+                git clone "git@github.com:paket-core/${package:3}.git"
                 popd
             else
                 echo "Can't continue without $package"

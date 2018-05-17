@@ -1,3 +1,0 @@
-[submodule "webserver"]
-	path = webserver
-	url = git@github.com:paket-core/webserver.git
