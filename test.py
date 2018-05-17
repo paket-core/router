@@ -67,14 +67,16 @@ class TestAPI(unittest.TestCase):
                 fail_message, response.get('error')))
         return response
 
-    def submit(self, transaction, seed=None, error='error submitting transaction'):
+    def submit(self, transaction, seed=None, description='unknown'):
         """Submit a transaction, optionally adding seed's signature."""
+        LOGGER.info("trying to submit %s transaction", description)
         if seed:
             builder = paket.stellar_base.builder.Builder(horizon=paket.HORIZON, secret=seed)
             builder.import_from_xdr(transaction)
             builder.sign()
             transaction = builder.gen_te().xdr().decode()
-        return self.call('submit_transaction', 200, error, transaction=transaction)
+        return self.call(
+            'submit_transaction', 200, "failed submitting {} transaction".format(description), transaction=transaction)
 
     def test_fresh_db(self):
         """Make sure packages table exists and is empty."""
@@ -98,7 +100,7 @@ class TestAPI(unittest.TestCase):
         unsigned = self.call(
             'prepare_create_account', 200, 'could not get create account transaction',
             from_pubkey=self.funded_pubkey, new_pubkey=pubkey)['transaction']
-        self.submit(unsigned, self.funded_seed, 'failed submitting create transaction')
+        self.submit(unsigned, self.funded_seed, 'create account')
         response = self.call('bul_account', 409, 'could not verify account does not trust', queried_pubkey=pubkey)
         self.assertEqual(response['error'], "account {} does not trust {} from {}".format(
             pubkey, paket.BUL_TOKEN_CODE, paket.ISSUER))
@@ -110,7 +112,7 @@ class TestAPI(unittest.TestCase):
         LOGGER.info("testing trust for %s", keypair)
         seed = keypair.seed().decode()
         unsigned = self.call('prepare_trust', 200, 'could not get trust transaction', from_pubkey=pubkey)['transaction']
-        self.submit(unsigned, seed, 'failed submitting trust transaction')
+        self.submit(unsigned, seed, 'add trust')
         response = self.call('bul_account', 200, 'could not get bul account after trust', queried_pubkey=pubkey)
         self.assertEqual(response['BUL balance'], 0)
         return pubkey, seed
@@ -118,11 +120,12 @@ class TestAPI(unittest.TestCase):
     def send(self, from_seed, to_pubkey, amount_buls):
         """Send BULs between accounts."""
         from_pubkey = paket.get_keypair(seed=from_seed).address().decode()
-        LOGGER.info("sending %s from %s to %s", amount_buls, from_pubkey, to_pubkey)
+        description = "sending {} from {} to {}".format(amount_buls, from_pubkey, to_pubkey)
+        LOGGER.info(description)
         unsigned = self.call(
             'prepare_send_buls', 200, "can not prepare send from {} to {}".format(from_pubkey, to_pubkey),
             from_pubkey=from_pubkey, to_pubkey=to_pubkey, amount_buls=amount_buls)['transaction']
-        self.submit(unsigned, from_seed, 'failed submitting send transaction')
+        self.submit(unsigned, from_seed, description)
 
     def test_send(self, amount_buls=10):
         """Send BULs between accounts."""
@@ -159,14 +162,14 @@ class TestAPI(unittest.TestCase):
             'prepare_escrow', 201, 'can not prepare escrow transactions', escrow_seed,
             launcher_pubkey=launcher_pubkey, courier_pubkey=courier_pubkey, recipient_pubkey=recipient_pubkey,
             payment_buls=payment, collateral_buls=collateral, deadline_timestamp=deadline)
-        self.submit(escrow_transactions['set_options_transaction'], escrow_seed, 'failed submitting set opts')
+        self.submit(escrow_transactions['set_options_transaction'], escrow_seed, 'set escrow options')
         LOGGER.info(self.call(
             'bul_account', 200, 'can not get escrow account balance', queried_pubkey=escrow_pubkey))
         self.send(launcher_seed, escrow_pubkey, payment)
         self.send(courier_seed, escrow_pubkey, collateral)
         self.call(
             'accept_package', 200, 'courier could not accept package', courier_seed, escrow_pubkey=escrow_pubkey)
-        self.submit(escrow_transactions['payment_transaction'], recipient_seed, 'failed submitting payment')
+        self.submit(escrow_transactions['payment_transaction'], recipient_seed, 'payment')
         self.call(
             'accept_package', 200, 'recipient could not accept package', recipient_seed, escrow_pubkey=escrow_pubkey)
-        self.submit(escrow_transactions['merge_transaction'], None, 'failed submitting payment')
+        self.submit(escrow_transactions['merge_transaction'], None, 'merge')

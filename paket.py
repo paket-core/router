@@ -139,6 +139,7 @@ def prepare_escrow(
 
     # Merge transaction, to drain the remaining XLM from the account, timelocked.
     builder = gen_builder(escrow_pubkey, sequence_delta=2)
+    builder.append_trust_op(ISSUER, BUL_TOKEN_CODE, 0)
     builder.append_account_merge_op(launcher_pubkey)
     merge_envelope = builder.gen_te()
 
@@ -155,7 +156,7 @@ def prepare_escrow(
     builder.append_set_options_op(
         signer_address=merge_envelope.hash_meta(),
         signer_type='preAuthTx',
-        signer_weight=2)
+        signer_weight=3)
     builder.append_set_options_op(
         signer_address=recipient_pubkey,
         signer_type='ed25519PublicKey',
