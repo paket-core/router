@@ -51,8 +51,8 @@ local_packages=()
 while read package; do
     # Make sure local packages exist and are up to date.
     if [ ${package:0:3} = '../' ]; then
-        set -e
         if ! [ -d "$package" ]; then
+            set -e
             q='n'; read -n 1 -p "Missing local package $package - try to fetch from github? [y|N] " q < /dev/tty; echo
             if [ y = "$q" ]; then
                 pushd ..
@@ -63,10 +63,17 @@ while read package; do
                 return 1 2>/dev/null
                 exit 1
             fi
+            pip install "$package"
+            local_packages+=("$package")
+            set +e
+        else
+            q='n'; read -n 1 -p "Update local package $package? [y|N] " q < /dev/tty; echo
+            if [ y = "$q" ]; then
+                pushd "$package" > /dev/null
+                git pull
+                popd
+            fi
         fi
-        pip install "$package"
-        local_packages+=("$package")
-        set +e
     else
         if ! (echo "$installed_packages" | grep "^$package$" > /dev/null); then
             q='n'; read -n 1 -p "Missing package $package - try to install from pip? [y|N] " q < /dev/tty; echo
