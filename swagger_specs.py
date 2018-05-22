@@ -118,25 +118,42 @@ To play around with the system you will need at least three accounts: a launcher
 - As the escrow account, sign and submit the set_options_transaction.
 - Call /bul_account on the escrow account and verify that the signers are
 properly set.
-- Make note of the BUL balances of the launcher and the courier by calling
-/bul_account on both.
+- Make note of the BUL balances of the launcher by calling /bul_account.
 - Transfer the payment from the launcher to the escrow by calling
 /prepare_send_buls, signing the transaction, and submitting it to
 /submit_transaction from your launcher account.
+- Make note of the BUL balances of the launcher by calling /bul_account. It
+  should be the same as before minus the payment.
+
+### Accept the Package by Courier
+
+- Make note of the BUL balances of the courier by calling /bul_account.
 - Transfer the collateral from the courier to the escrow by calling
 /prepare_send_buls, signing the transaction, and submitting it to
 /submit_transaction from the courier account.
-- Make note of the BUL balances of the launcher and the courier by calling
+- Make note of the BUL balances of the courier by calling /bul_account. It
+  should be the same as before minus the collateral.
+- As the courier, call /accept_package with the escrow_pubkey as argument.
+
+### Settle the Delivery
+
+- Either approve the delivery:
+    - As the recipient, sign and submit the payment transaction.
+    - Make note of the BUL balances of the courier by calling /bul_account. It
+    should be the same as before, plus both payment and collateral.
+- Or wait for deadline to pass and ask for a refund + insurance.
+    - Submit the payment transaction.
+    - Make note of the BUL balances of the launcher by calling /bul_account. It
+    should be the same as before, plus both payment and collateral.
+
+### Merge the Escrow Account
+
+- Make note of the XLM balances of the launcher and the escrow by calling
 /bul_account on both.
-- Either approve the package receipt by signing the payment transaction and
-submitting it to /submit_transaction as the recipient, or wait for the deadline
-to pass and submit the refund_transaction to /submit_transaction as the
-launcher.
-- Optionally, submit the merge account transaction to /submit_transaction for
-the launcher to reclaim any unspent XLM that were spent creating the escrow
-account.
-- Make note of the BUL balances of the launcher and the courier (and,
-optionally, the launcher's XLM balance) by calling /bul_account on both.
+- Submit the merge account transaction to /submit_transaction for the launcher
+  to reclaim any unspent XLM that were spent creating the escrow account.
+- Make note of the XLM balances of the launcher. It should be the same as
+  before plus the escrow's XLM balance.
 
 The API
 =======
