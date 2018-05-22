@@ -70,8 +70,9 @@ while read package; do
             q='n'; read -n 1 -p "Update local package $package? [y|N] " q < /dev/tty; echo
             if [ y = "$q" ]; then
                 pushd "$package" > /dev/null
-                git pull
+                git_result="$(git pull | tail -1)"
                 popd
+                [ "$git_result" = 'Already up to date.' ] || pip install "$package"
             fi
         fi
     else
