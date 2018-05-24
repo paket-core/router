@@ -47,4 +47,4 @@ pip install -r requirements.txt
   * `t|test` - to run tests.
   * `r|run-server` - to run the server.
 
-7. Access the swagger Web interface from a browser at: http://localhost:5000
+7. Access the swagger Web interface from a browser at: http://localhost:8000
