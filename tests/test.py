@@ -143,7 +143,9 @@ class TestAccount(BaseOperations):
 
     def test_trust(self):
         """Extend trust."""
-        keypair, pubkey = self.test_create_account()
+        keypair = paket.get_keypair()
+        pubkey = keypair.address().decode()
+        self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
         response = self.call('bul_account', 409, 'could not verify account does not trust', queried_pubkey=pubkey)
         self.assertEqual(response['error'], "account {} does not trust {} from {}".format(
             pubkey, paket.BUL_TOKEN_CODE, paket.ISSUER))
