@@ -72,7 +72,7 @@ class BaseOperations(unittest.TestCase):
         response = self.submit(unsigned, seed, 'create account')
         return response
 
-    def prepare_new_account(self, amount_buls=None):
+    def create_and_setup_new_account(self, amount_buls=None):
         """Create account. Add trust and send initial ammount of BULs (if specified)"""
         keypair = paket.get_keypair()
         pubkey = keypair.address().decode()
@@ -157,7 +157,7 @@ class TestAccount(BaseOperations):
 
     def test_send(self, amount_buls=10):
         """Send BULs between accounts."""
-        pubkey, seed = self.prepare_new_account()
+        pubkey, seed = self.create_and_setup_new_account()
         source_start_balance = self.call(
             'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['BUL balance']
         target_start_balance = self.call(
@@ -175,6 +175,7 @@ class TestAccount(BaseOperations):
 
 class TestPackage(BaseOperations):
     """Package tests"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -201,10 +202,10 @@ class TestPackage(BaseOperations):
         deadline = int(time.time())
 
         LOGGER.info('preparing accounts')
-        launcher_pubkey, launcher_seed = self.prepare_new_account(payment)
-        courier_pubkey, courier_seed = self.prepare_new_account(collateral)
-        recipient_pubkey, recipient_seed = self.prepare_new_account()
-        escrow_pubkey, escrow_seed = self.prepare_new_account()
+        launcher_pubkey, launcher_seed = self.create_and_setup_new_account(payment)
+        courier_pubkey, courier_seed = self.create_and_setup_new_account(collateral)
+        recipient_pubkey, recipient_seed = self.create_and_setup_new_account()
+        escrow_pubkey, escrow_seed = self.create_and_setup_new_account()
 
         LOGGER.info(
             "launching escrow: %s, launcher: %s, courier: %s, recipient: %s",
