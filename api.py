@@ -72,6 +72,7 @@ def prepare_trust_handler(from_pubkey, limit=None):
     Prepare an add trust transaction.
     ---
     :param from_pubkey:
+    :param limit:
     :return:
     """
     return {'status': 200, 'transaction': paket.prepare_trust(from_pubkey, limit)}
@@ -134,7 +135,6 @@ def accept_package_handler(user_pubkey, escrow_pubkey):
     ---
     :param user_pubkey:
     :param escrow_pubkey:
-    :param payment_transaction:
     :return:
     """
     db.update_custodian(escrow_pubkey, user_pubkey)
