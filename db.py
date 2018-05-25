@@ -108,7 +108,7 @@ def get_packages(user_pubkey=None):
             sql.execute("""
                 SELECT * FROM packages
                 WHERE launcher_pubkey = ?
-                OR courier_pubkey = ?
+                OR launcher_pubkey = ?
                 OR recipient_pubkey = ?
                 OR custodian_pubkey = ?
             """, (user_pubkey, user_pubkey, user_pubkey, user_pubkey))
