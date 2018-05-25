@@ -58,7 +58,6 @@ def get_bul_account(pubkey, accept_untrusted=False):
 
 def add_memo(builder, memo):
     """Add a memo with limited length."""
-    return LOGGER.error("Not using memos ATM because of bug (%s).", memo)
     # pylint: disable=unreachable
     max_byte_length = 28
     utf8 = memo.encode('utf8')
