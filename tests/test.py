@@ -33,6 +33,14 @@ class BaseOperations(unittest.TestCase):
         self.funded_pubkey = self.funded_account.address().decode()
         LOGGER.info('init done')
 
+    def sign_transaction(self, transaction, seed):
+        """Sign transaction with provided seed"""
+        builder = paket.stellar_base.builder.Builder(horizon=paket.HORIZON, secret=seed)
+        builder.import_from_xdr(transaction)
+        builder.sign()
+        signed_transaction = builder.gen_te().xdr().decode()
+        return signed_transaction
+
     def call(self, path, expected_code=None, fail_message=None, seed=None, **kwargs):
         """Post data to API server."""
         LOGGER.info("calling %s", path)
@@ -56,10 +64,7 @@ class BaseOperations(unittest.TestCase):
         """Submit a transaction, optionally adding seed's signature."""
         LOGGER.info("trying to submit %s transaction", description)
         if seed:
-            builder = paket.stellar_base.builder.Builder(horizon=paket.HORIZON, secret=seed)
-            builder.import_from_xdr(transaction)
-            builder.sign()
-            transaction = builder.gen_te().xdr().decode()
+            transaction = self.sign_transaction(transaction, seed)
         return self.call(
             'submit_transaction', 200, "failed submitting {} transaction".format(description), transaction=transaction)
 
@@ -225,3 +230,91 @@ class TestPackage(BaseOperations):
         self.call(
             'accept_package', 200, 'recipient could not accept package', recipient_seed, escrow_pubkey=escrow_pubkey)
         self.submit(escrow_transactions['merge_transaction'], None, 'merge')
+
+
+class TestAPI(BaseOperations):
+    """API tests"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def test_submit_unsigned_transaction(self):
+        """Test server behavior on submitting unsigned transactions"""
+        keypair = paket.get_keypair()
+        pubkey = keypair.address().decode()
+        new_account_pubkey, new_account_seed = self.create_and_setup_new_account()
+        LOGGER.info('preparing unsigned transactions')
+        unsigned_create_account = self.call(
+            'prepare_create_account', 200, 'could not get create account transaction',
+            from_pubkey=self.funded_pubkey, new_pubkey=pubkey)['transaction']
+        unsigned_trust = self.call('prepare_trust', 200, 'could not get trust transaction',
+                                   from_pubkey=self.funded_pubkey)['transaction']
+        unsigned_send_buls = self.call(
+            'prepare_send_buls', 200,
+            "can not prepare send from {} to {}".format(self.funded_pubkey, new_account_pubkey),
+            from_pubkey=self.funded_pubkey, to_pubkey=new_account_pubkey, amount_buls=5)['transaction']
+
+        for unsigned in (unsigned_create_account, unsigned_trust, unsigned_send_buls):
+            with self.subTest(unsigned=unsigned):
+                self.call(path='submit_transaction', expected_code=500,
+                          fail_message='unexpected server response for submitting unsigned transaction',
+                          seed=self.funded_seed, transaction=unsigned)
+
+    def test_submit_signed_transaction(self):
+        """Test server behavior on submitting signed transactions"""
+        keypair = paket.get_keypair()
+        new_pubkey = keypair.address().decode()
+        new_seed = keypair.seed().decode()
+
+        # checking create_account transaction
+        unsigned_create_account = self.call(
+            'prepare_create_account', 200, 'could not get create account transaction',
+            from_pubkey=self.funded_pubkey, new_pubkey=new_pubkey)['transaction']
+        signed_create_account = self.sign_transaction(unsigned_create_account, self.funded_seed)
+        LOGGER.info('Submitting signed create_account transaction')
+        self.call(path='submit_transaction', expected_code=200,
+                  fail_message='unexpected server response for submitting signed create_account transaction',
+                  seed=self.funded_seed, transaction=signed_create_account)
+
+        # checking trust transaction
+        unsigned_trust = self.call('prepare_trust', 200,
+                                   'could not get trust transaction', from_pubkey=new_pubkey)['transaction']
+        signed_trust = self.sign_transaction(unsigned_trust, new_seed)
+        LOGGER.info('Submitting signed trust transaction')
+        self.call(path='submit_transaction', expected_code=200,
+                  fail_message='unexpected server response for submitting signed trust transaction',
+                  seed=new_seed, transaction=signed_trust)
+
+        # checking send_buls transaction
+        unsigned_send_buls = self.call(
+            'prepare_send_buls', 200, "can not prepare send from {} to {}".format(self.funded_pubkey, new_pubkey),
+            from_pubkey=self.funded_pubkey, to_pubkey=new_pubkey, amount_buls=5)['transaction']
+        signed_send_buls = self.sign_transaction(unsigned_send_buls, self.funded_seed)
+        LOGGER.info('Submitting signed send_buls transaction')
+        self.call(path='submit_transaction', expected_code=200,
+                  fail_message='unexpected server response for submitting signed send_buls transaction',
+                  seed=self.funded_seed, transaction=signed_send_buls)
+
+    def test_submit_invalid_transaction(self):
+        """Test server behavior on submitting invalid transactions"""
+        keypair = paket.get_keypair()
+        new_pubkey = keypair.address().decode()
+        new_seed = keypair.seed().decode()
+
+        # preparing invalid transactions
+        unsigned_create_account = self.call(
+            'prepare_create_account', 200, 'could not get create account transaction',
+            from_pubkey=self.funded_pubkey, new_pubkey=new_pubkey)['transaction']
+        signed_create_account = self.sign_transaction(unsigned_create_account, self.funded_seed)
+        signed_create_account = signed_create_account.replace('c', 'd', 1).replace('S', 't', 1).replace('a', 'r', 1)
+
+        data_set = [
+            signed_create_account,
+            'AAAAQAAAsd4ss5+452+AfFfFAAAAAAA==',
+            144
+        ]
+        for invalid_transaction in data_set:
+            with self.subTest(transaction=invalid_transaction):
+                self.call(path='submit_transaction', expected_code=500,
+                          fail_message='unexpected result while submiting invalid transaction',
+                          transaction=invalid_transaction)
