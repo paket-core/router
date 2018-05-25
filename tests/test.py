@@ -1,6 +1,7 @@
 """Test the PaKeT API."""
 import json
 import os
+import os.path
 import time
 import unittest
 
@@ -108,9 +109,6 @@ class BaseOperations(unittest.TestCase):
 class TestAccount(BaseOperations):
     """Account tests"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def test_no_exist(self):
         """Check no existing accounts"""
         keypair = paket.get_keypair()
@@ -157,22 +155,22 @@ class TestAccount(BaseOperations):
         LOGGER.info("testing trust for %s", keypair)
         self.trust(pubkey, keypair.seed().decode())
         response = self.call('bul_account', 200, 'could not get bul account after trust', queried_pubkey=pubkey)
-        self.assertEqual(response['BUL balance'], 0)
+        self.assertEqual(response['bul_balance'], 0)
         return pubkey, keypair.seed().decode()
 
     def test_send(self, amount_buls=10):
         """Send BULs between accounts."""
         pubkey, seed = self.create_and_setup_new_account()
         source_start_balance = self.call(
-            'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['BUL balance']
+            'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['bul_balance']
         target_start_balance = self.call(
-            'bul_account', 200, 'can not get target account balance', queried_pubkey=pubkey)['BUL balance']
+            'bul_account', 200, 'can not get target account balance', queried_pubkey=pubkey)['bul_balance']
         LOGGER.info("testing send from issuer to %s", pubkey)
         self.send(self.funded_seed, pubkey, amount_buls)
         source_end_balance = self.call(
-            'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['BUL balance']
+            'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['bul_balance']
         target_end_balance = self.call(
-            'bul_account', 200, 'can not get target account balance', queried_pubkey=pubkey)['BUL balance']
+            'bul_account', 200, 'can not get target account balance', queried_pubkey=pubkey)['bul_balance']
         self.assertEqual(source_start_balance - source_end_balance, amount_buls, 'source balance does not add up')
         self.assertEqual(target_end_balance - target_start_balance, amount_buls, 'target balance does not add up')
         return pubkey, seed
@@ -181,12 +179,8 @@ class TestAccount(BaseOperations):
 class TestPackage(BaseOperations):
     """Package tests"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def setUp(self):
-        """Prepare the test fixture"""
-        LOGGER.info('setting up')
+    def cleanup(self):
+        """Remove db files."""
         try:
             os.unlink(db.DB_NAME)
         except FileNotFoundError:
@@ -195,54 +189,69 @@ class TestPackage(BaseOperations):
             os.unlink(webserver.validation.NONCES_DB_NAME)
         except FileNotFoundError:
             pass
+        self.assertFalse(os.path.isfile(db.DB_NAME) or os.path.isfile(webserver.validation.NONCES_DB_NAME))
+
+    def setUp(self):
+        """Prepare the test fixture"""
+        LOGGER.info('setting up')
+        self.cleanup()
+        db.init_db()
 
     def tearDown(self):
         LOGGER.info('tearing down')
-        self.setUp()
+        self.cleanup()
 
     def test_package(self):
         """Launch a package with payment and collateral, accept by courier and then by recipient."""
-        db.init_db()
         payment, collateral = 5, 10
         deadline = int(time.time())
 
         LOGGER.info('preparing accounts')
-        launcher_pubkey, launcher_seed = self.create_and_setup_new_account(payment)
-        courier_pubkey, courier_seed = self.create_and_setup_new_account(collateral)
-        recipient_pubkey, recipient_seed = self.create_and_setup_new_account()
-        escrow_pubkey, escrow_seed = self.create_and_setup_new_account()
+        launcher = self.create_and_setup_new_account(payment)
+        courier = self.create_and_setup_new_account(collateral)
+        recipient = self.create_and_setup_new_account()
+        escrow = self.create_and_setup_new_account()
 
         LOGGER.info(
             "launching escrow: %s, launcher: %s, courier: %s, recipient: %s",
-            escrow_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey)
+            escrow[0], launcher[0], courier[0], recipient[0])
         escrow_transactions = self.call(
-            'prepare_escrow', 201, 'can not prepare escrow transactions', escrow_seed,
-            launcher_pubkey=launcher_pubkey, courier_pubkey=courier_pubkey, recipient_pubkey=recipient_pubkey,
+            'prepare_escrow', 201, 'can not prepare escrow transactions', escrow[1],
+            launcher_pubkey=launcher[0], courier_pubkey=courier[0], recipient_pubkey=recipient[0],
             payment_buls=payment, collateral_buls=collateral, deadline_timestamp=deadline)
-        self.submit(escrow_transactions['set_options_transaction'], escrow_seed, 'set escrow options')
-        LOGGER.info(self.call(
-            'bul_account', 200, 'can not get escrow account balance', queried_pubkey=escrow_pubkey))
-        self.send(launcher_seed, escrow_pubkey, payment)
-        self.send(courier_seed, escrow_pubkey, collateral)
+        self.submit(escrow_transactions['set_options_transaction'], escrow[1], 'set escrow options')
+        self.send(launcher[1], escrow[0], payment)
+        self.send(courier[1], escrow[0], collateral)
         self.call(
-            'accept_package', 200, 'courier could not accept package', courier_seed, escrow_pubkey=escrow_pubkey)
-        self.submit(escrow_transactions['payment_transaction'], recipient_seed, 'payment')
+            'accept_package', 200, 'courier could not accept package', courier[1], escrow_pubkey=escrow[0])
+
+        courier_bul_balance = self.call(
+            'bul_account', 200, 'can not get escrow account balance', queried_pubkey=courier[0])['bul_balance']
+        self.submit(escrow_transactions['payment_transaction'], recipient[1], 'payment')
         self.call(
-            'accept_package', 200, 'recipient could not accept package', recipient_seed, escrow_pubkey=escrow_pubkey)
+            'accept_package', 200, 'recipient could not accept package', recipient[1], escrow_pubkey=escrow[0])
+        self.assertEqual(self.call(
+            'bul_account', 200, 'can not get escrow account balance', queried_pubkey=courier[0]
+        )['bul_balance'], courier_bul_balance + payment + collateral)
+
+        launcher_xlm_balance = self.call(
+            'bul_account', 200, 'can not get escrow account balance', queried_pubkey=launcher[0])['xlm_balance']
+        escrow_xlm_balance = self.call(
+            'bul_account', 200, 'can not get escrow account balance', queried_pubkey=escrow[0])['xlm_balance']
         self.submit(escrow_transactions['merge_transaction'], None, 'merge')
+        self.assertLessEqual(self.call(
+            'bul_account', 200, 'can not get escrow account balance', queried_pubkey=launcher[0]
+        )['xlm_balance'] - launcher_xlm_balance - escrow_xlm_balance, 0.0001, 'xlm not merged back')
 
 
 class TestAPI(BaseOperations):
     """API tests. It focused on testing API endpoints by posting valid and invalid data"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def test_submit_unsigned_transaction(self):
         """Test server behavior on submitting unsigned transactions"""
         keypair = paket.get_keypair()
         pubkey = keypair.address().decode()
-        new_account_pubkey, new_account_seed = self.create_and_setup_new_account()
+        new_account_pubkey, _ = self.create_and_setup_new_account()
         LOGGER.info('preparing unsigned transactions')
         unsigned_create_account = self.call(
             'prepare_create_account', 200, 'could not get create account transaction',
@@ -369,17 +378,13 @@ class TestAPI(BaseOperations):
 
     def test_valid_prepare_account(self):
         """Test prepare_account endpoint with valid public keys"""
-        valid_new_pubkeys = []
-        for _ in range(3):
-            keypair = paket.get_keypair()
-            new_pubkey = keypair.address().decode()
-            valid_new_pubkeys.append(new_pubkey)
-        for new_pubkey in valid_new_pubkeys:
+        # Yarik, why are we doing this three times?
+        for new_pubkey in [paket.get_keypair().address().decode() for _ in range(3)]:
             self.call('prepare_create_account', 200, 'could not get create account transaction',
                       from_pubkey=self.funded_pubkey, new_pubkey=new_pubkey)
 
     def test_unauthorized_my_packages(self):
         """Test my_packages endpoint without authorization headers in reqest"""
-        self.call(path='my_packages', expected_code=401,
+        self.call(path='my_packages', expected_code=400,
                   fail_message='does not get unauthorized status code on unauthorized request',
                   user_pubkey=self.funded_pubkey)
