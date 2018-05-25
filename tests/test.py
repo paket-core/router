@@ -233,7 +233,7 @@ class TestPackage(BaseOperations):
 
 
 class TestAPI(BaseOperations):
-    """API tests"""
+    """API tests. It focused on testing API endpoints by posting valid and invalid data"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -310,7 +310,7 @@ class TestAPI(BaseOperations):
 
         data_set = [
             signed_create_account,
-            'AAAAQAAAsd4ss5+452+AfFfFAAAAAAA==',
+            'TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ=',
             144
         ]
         for invalid_transaction in data_set:
@@ -318,3 +318,32 @@ class TestAPI(BaseOperations):
                 self.call(path='submit_transaction', expected_code=500,
                           fail_message='unexpected result while submiting invalid transaction',
                           transaction=invalid_transaction)
+
+    def test_bul_account(self):
+        """Test server behavior on querying information about valid account"""
+        accounts = [self.funded_pubkey]
+        # additionally create 3 new accounts
+        for _ in range(3):
+            keypair = paket.get_keypair()
+            pubkey = keypair.address().decode()
+            self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
+            accounts.append(pubkey)
+
+        for account in accounts:
+            with self.subTest(account=account):
+                self.call('bul_account', 200, 'could not verify account exist', queried_pubkey=account)
+
+    def test_invalid_bul_account(self):
+        """Test server behavior on querying information about invalid account"""
+        keypair = paket.get_keypair()
+        pubkey = keypair.address().decode()
+
+        data_set = [
+            pubkey,  # just generated pubkey
+            'GBTWWXACDQOSRQ3645B2LA345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ',  # invalid pubkey
+            'Lorem ipsum dolor sit amet',  # random text
+            144  # random number
+        ]
+        for pubkey in data_set:
+            with self.subTest(pubkey=pubkey):
+                self.call('bul_account', 200, 'could not verify account exist', queried_pubkey=pubkey)
