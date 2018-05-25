@@ -299,7 +299,6 @@ class TestAPI(BaseOperations):
         """Test server behavior on submitting invalid transactions"""
         keypair = paket.get_keypair()
         new_pubkey = keypair.address().decode()
-        new_seed = keypair.seed().decode()
 
         # preparing invalid transactions
         unsigned_create_account = self.call(
@@ -347,3 +346,32 @@ class TestAPI(BaseOperations):
         for pubkey in data_set:
             with self.subTest(pubkey=pubkey):
                 self.call('bul_account', 200, 'could not verify account exist', queried_pubkey=pubkey)
+
+    def test_invalid_prepare_create_account(self):
+        """Test prepare_account endpoint with invalid public keys"""
+        keypair = paket.get_keypair()
+        pubkey = keypair.address().decode()
+        invalid_from_pubkeys = [
+            pubkey,  # just generated pubkey
+            'GBTWWXACDQOSRQ3645B2LA345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ',  # invalid pubkey
+            'Lorem ipsum dolor sit amet',  # random text
+            144  # random number
+        ]
+        invalid_new_pubkeys = invalid_from_pubkeys.copy()
+        pubkey_pairs = [(from_pubkey, new_pubkey) for from_pubkey in invalid_from_pubkeys
+                        for new_pubkey in invalid_new_pubkeys]
+
+        for from_pubkey, new_pubkey in pubkey_pairs:
+            self.call('prepare_create_account', 500, 'unexpected server response for prepare_create_account',
+                      from_pubkey=from_pubkey, new_pubkey=new_pubkey)
+
+    def test_valid_prepare_account(self):
+        """Test prepare_account endpoint with valid public keys"""
+        valid_new_pubkeys = []
+        for _ in range(3):
+            keypair = paket.get_keypair()
+            new_pubkey = keypair.address().decode()
+            valid_new_pubkeys.append(new_pubkey)
+        for new_pubkey in valid_new_pubkeys:
+            self.call('prepare_create_account', 200, 'could not get create account transaction',
+                      from_pubkey=self.funded_pubkey, new_pubkey=new_pubkey)
