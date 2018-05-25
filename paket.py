@@ -51,7 +51,7 @@ def get_bul_account(pubkey, accept_untrusted=False):
             account['xlm_balance'] = float(balance['balance'])
         if balance.get('asset_code') == BUL_TOKEN_CODE and balance.get('asset_issuer') == ISSUER:
             account['bul_balance'] = float(balance['balance'])
-    if 'BUL balance' not in account and not accept_untrusted:
+    if 'bul_balance' not in account and not accept_untrusted:
         raise AssertionError("account {} does not trust {} from {}".format(pubkey, BUL_TOKEN_CODE, ISSUER))
     return account
 
