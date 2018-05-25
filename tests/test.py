@@ -325,7 +325,9 @@ class TestAPI(BaseOperations):
         for _ in range(3):
             keypair = paket.get_keypair()
             pubkey = keypair.address().decode()
+            seed = keypair.seed().decode()
             self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
+            self.trust(pubkey, seed)
             accounts.append(pubkey)
 
         for account in accounts:
@@ -345,7 +347,7 @@ class TestAPI(BaseOperations):
         ]
         for pubkey in data_set:
             with self.subTest(pubkey=pubkey):
-                self.call('bul_account', 200, 'could not verify account exist', queried_pubkey=pubkey)
+                self.call('bul_account', 409, 'could not verify account exist', queried_pubkey=pubkey)
 
     def test_invalid_prepare_create_account(self):
         """Test prepare_account endpoint with invalid public keys"""
@@ -375,3 +377,9 @@ class TestAPI(BaseOperations):
         for new_pubkey in valid_new_pubkeys:
             self.call('prepare_create_account', 200, 'could not get create account transaction',
                       from_pubkey=self.funded_pubkey, new_pubkey=new_pubkey)
+
+    def test_unauthorized_my_packages(self):
+        """Test my_packages endpoint without authorization headers in reqest"""
+        self.call(path='my_packages', expected_code=401,
+                  fail_message='does not get unauthorized status code on unauthorized request',
+                  user_pubkey=self.funded_pubkey)
