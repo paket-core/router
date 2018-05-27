@@ -78,21 +78,22 @@ class BaseOperations(unittest.TestCase):
         response = self.submit(unsigned, seed, 'create account')
         return response
 
-    def create_and_setup_new_account(self, amount_buls=None):
+    def create_and_setup_new_account(self, amount_buls=None, trust_limit=None):
         """Create account. Add trust and send initial ammount of BULs (if specified)"""
         keypair = paket.get_keypair()
         pubkey = keypair.address().decode()
         seed = keypair.seed().decode()
         self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
-        self.trust(pubkey, seed)
+        self.trust(pubkey, seed, trust_limit)
         if amount_buls is not None:
             self.send(from_seed=self.funded_seed, to_pubkey=pubkey, amount_buls=amount_buls)
         return pubkey, seed
 
-    def trust(self, pubkey, seed=None):
+    def trust(self, pubkey, seed, limit=None):
         """Submit trust transaction for specified account"""
-        LOGGER.info('adding trust for %s', pubkey)
-        unsigned = self.call('prepare_trust', 200, 'could not get trust transaction', from_pubkey=pubkey)['transaction']
+        LOGGER.info('adding trust for %s (%s)', pubkey, limit)
+        unsigned = self.call(
+            'prepare_trust', 200, 'could not get trust transaction', from_pubkey=pubkey, limit=limit)['transaction']
         return self.submit(unsigned, seed, 'add trust')
 
     def send(self, from_seed, to_pubkey, amount_buls):
@@ -210,7 +211,7 @@ class TestPackage(BaseOperations):
         launcher = self.create_and_setup_new_account(payment)
         courier = self.create_and_setup_new_account(collateral)
         recipient = self.create_and_setup_new_account()
-        escrow = self.create_and_setup_new_account()
+        escrow = self.create_and_setup_new_account(trust_limit=payment + collateral)
 
         LOGGER.info(
             "launching escrow: %s, launcher: %s, courier: %s, recipient: %s",
