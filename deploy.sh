@@ -55,9 +55,9 @@ while read package; do
             set -e
             q='n'; read -n 1 -p "Missing local package $package - try to fetch from github? [y|N] " q < /dev/tty; echo
             if [ y = "$q" ]; then
-                pushd ..
+                pushd .. > /dev/null
                 git clone "git@github.com:paket-core/${package:3}.git"
-                popd
+                popd > /dev/null
             else
                 echo "Can't continue without $package"
                 return 1 2>/dev/null
@@ -71,7 +71,7 @@ while read package; do
             if [ y = "$q" ]; then
                 pushd "$package" > /dev/null
                 git_result="$(git pull | tail -1)"
-                popd
+                popd > /dev/null
                 [ "$git_result" = 'Already up to date.' ] || pip install "$package"
             fi
         fi
