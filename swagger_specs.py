@@ -59,7 +59,8 @@ The following steps demonstrate the main functionality of the API.
 
 ### Setup
 
-To play around with the system you will need at least three accounts: a launcher account, a courier account, and a recipient account.
+To play around with the system you will need at least three accounts: a
+launcher account, a courier account, and a recipient account.
 
 - To create an account you need a Stellar compatible ed25519 keypair with a
   matching funded Stellar account. While on testnet, the Stellar account

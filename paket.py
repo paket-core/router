@@ -17,6 +17,7 @@ HORIZON = os.environ['PAKET_HORIZON_SERVER']
 
 LOGGER = logging.getLogger('pkt.paket')
 
+
 class StellarTransactionFailed(Exception):
     """A stellar transaction failed."""
 

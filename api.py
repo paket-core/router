@@ -4,11 +4,12 @@ import os
 import flasgger
 import flask
 
-import db
 import logger
+import webserver.validation
+
+import db
 import paket
 import swagger_specs
-import webserver.validation
 
 VERSION = swagger_specs.VERSION
 PORT = os.environ.get('PAKET_API_PORT', 8000)
@@ -103,8 +104,7 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     require_auth=True)
 def prepare_escrow_handler(
         user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp
-    ):
+        payment_buls, collateral_buls, deadline_timestamp):
     """
     Launch a package.
     Use this call to create a new package for delivery.
