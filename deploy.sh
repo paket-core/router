@@ -51,6 +51,7 @@ local_packages=()
 while read package; do
     # Make sure local packages exist and are up to date.
     if [ ${package:0:3} = '../' ]; then
+        local_packages+=("$package")
         if ! [ -d "$package" ]; then
             set -e
             q='n'; read -n 1 -p "Missing local package $package - try to fetch from github? [y|N] " q < /dev/tty; echo
@@ -64,7 +65,6 @@ while read package; do
                 exit 1
             fi
             pip install "$package"
-            local_packages+=("$package")
             set +e
         else
             q='n'; read -n 1 -p "Update local package $package? [y|N] " q < /dev/tty; echo
@@ -113,12 +113,15 @@ if [ "$_test" ]; then
         echo ---
         which pycodestyle > /dev/null && echo pycodestyle had $(pycodestyle --max-line-length=120 **/*.py 2>&1 | wc -l) issues
         which pylint > /dev/null && pylint **/*.py 2>&1 | tail -2 | head -1
-        python setup.py test 2>&1 | tail -3 | head -1
+        python setup.py test # 2>&1 | tail -3 | head -1
         popd > /dev/null
     done
-    which pycodestyle > /dev/null && echo pycodestyle had $(pycodestyle --max-line-length=120 *.py 2>&1 | wc -l) issues
-    which pylint > /dev/null && pylint *.py | tail -2 | head -1
-    python -m unittest test
+    echo
+    pwd
+    echo ---
+    which pycodestyle > /dev/null && echo pycodestyle had $(pycodestyle --max-line-length=120 *.py **/*.py 2>&1 | wc -l) issues
+    which pylint > /dev/null && pylint *.py **/*.py | tail -2 | head -1
+    python -m unittest
 fi
 
 [ "$shell" ] && python -ic 'import logger; logger.setup(); import api; import db; import paket; p = paket'
