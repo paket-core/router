@@ -60,7 +60,7 @@ def send_countly_event(key, count, begin_session=1, end_session=1, sum=None, dur
 def stroops_to_units(amount, str_representation=True):
     """Convert amount in presented in stroops to units
     :param int amount:
-    :param str str_representation: If given return string representation of result value
+    :param bool str_representation: If given return string representation of result value
     """
     units = decimal.Decimal(amount) / decimal.Decimal(SCALE_FACTOR)
     if str_representation:
