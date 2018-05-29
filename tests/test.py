@@ -5,20 +5,18 @@ import os.path
 import time
 import unittest
 
-# pylint: disable=import-error
-import logger
-# pylint: enable=import-error
+import util.logger
 import webserver.validation
 
-import api
+import routes
 import db
 import paket
 
 db.DB_NAME = 'test.db'
 webserver.validation.NONCES_DB_NAME = 'nonce_test.db'
-LOGGER = logger.logging.getLogger('pkt.api.test')
-logger.setup()
-APP = webserver.setup(api.BLUEPRINT)
+LOGGER = util.logger.logging.getLogger('pkt.api.test')
+util.logger.setup()
+APP = webserver.setup(routes.BLUEPRINT)
 APP.testing = True
 
 
@@ -47,14 +45,14 @@ class BaseOperations(unittest.TestCase):
         LOGGER.info("calling %s", path)
         if seed:
             fingerprint = webserver.validation.generate_fingerprint(
-                "{}/v{}/{}".format(self.host, api.VERSION, path), kwargs)
+                "{}/v{}/{}".format(self.host, routes.VERSION, path), kwargs)
             signature = webserver.validation.sign_fingerprint(fingerprint, seed)
             headers = {
                 'Pubkey': paket.get_keypair(seed=seed).address().decode(),
                 'Fingerprint': fingerprint, 'Signature': signature}
         else:
             headers = None
-        response = self.app.post("/v{}/{}".format(api.VERSION, path), headers=headers, data=kwargs)
+        response = self.app.post("/v{}/{}".format(routes.VERSION, path), headers=headers, data=kwargs)
         response = dict(real_status_code=response.status_code, **json.loads(response.data.decode()))
         if expected_code:
             self.assertEqual(response['real_status_code'], expected_code, "{} ({})".format(
