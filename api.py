@@ -4,7 +4,7 @@ import os
 import flasgger
 import flask
 
-import logger
+import util.logger
 import webserver.validation
 
 import db
@@ -13,7 +13,7 @@ import swagger_specs
 
 VERSION = swagger_specs.VERSION
 PORT = os.environ.get('PAKET_API_PORT', 8000)
-LOGGER = logger.logging.getLogger('pkt.api')
+LOGGER = util.logger.logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
 
 
@@ -202,7 +202,7 @@ def view_log_handler(lines_num=10):
     Get last lines of log - for debug only.
     Specify lines_num to get the x last lines.
     """
-    with open(os.path.join(logger.LOG_DIR_NAME, logger.LOG_FILE_NAME)) as logfile:
+    with open(os.path.join(util.logger.LOG_DIR_NAME, util.logger.LOG_FILE_NAME)) as logfile:
         return {'status': 200, 'log': logfile.readlines()[:-1 - lines_num:-1]}
 
 
