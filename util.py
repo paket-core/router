@@ -1,6 +1,9 @@
+import decimal
 import json
 
 import requests
+
+SCALE_FACTOR = 10000000
 
 
 def send_countly_event(key, count, begin_session=1, end_session=1, sum=None, dur=None, segmentation=None,
@@ -51,6 +54,14 @@ def send_countly_event(key, count, begin_session=1, end_session=1, sum=None, dur
         print(resp.text)
     except Exception as e:
         print("Error: " + str(e))
+
+
+def stroops_to_units(amount):
+    """Convert amount in presented in stroops to units
+    :param int amount:
+    """
+    units = decimal.Decimal(amount) / decimal.Decimal(SCALE_FACTOR)
+    return '{:f}'.format(units)
 
 
 if __name__ == '__main__':
