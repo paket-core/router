@@ -1,8 +1,8 @@
 """PaKeT database interface."""
-import contextlib
 import logging
 import random
-import sqlite3
+
+import util.db
 
 LOGGER = logging.getLogger('pkt.db')
 DB_NAME = 'paket.db'
@@ -36,25 +36,9 @@ class UnknownPaket(Exception):
     """Unknown paket ID."""
 
 
-@contextlib.contextmanager
-def sql_connection(db_name=None):
-    """Context manager for querying the database."""
-    try:
-        connection = sqlite3.connect(db_name or DB_NAME)
-        connection.row_factory = sqlite3.Row
-        yield connection.cursor()
-        connection.commit()
-    except sqlite3.Error as db_exception:
-        raise db_exception
-    finally:
-        if 'connection' in locals():
-            # noinspection PyUnboundLocalVariable
-            connection.close()
-
-
 def init_db():
     """Initialize the database."""
-    with sql_connection() as sql:
+    with util.db.sql_connection(DB_NAME) as sql:
         # Not using IF EXISTS here in case we want different handling.
         sql.execute('SELECT name FROM sqlite_master WHERE type = "table" AND name = "packages"')
         if len(sql.fetchall()) == 1:
@@ -81,7 +65,7 @@ def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
         set_options_transaction, refund_transaction, merge_transaction, payment_transaction):
     """Create a new package row."""
-    with sql_connection() as sql:
+    with util.db.sql_connection(DB_NAME) as sql:
         sql.execute("""
             INSERT INTO packages (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, custodian_pubkey, deadline, payment, collateral,
@@ -93,7 +77,7 @@ def create_package(
 
 def get_package(escrow_pubkey):
     """Get package details."""
-    with sql_connection() as sql:
+    with util.db.sql_connection(DB_NAME) as sql:
         sql.execute("SELECT * FROM packages WHERE escrow_pubkey = ?", (escrow_pubkey,))
         try:
             return enrich_package(sql.fetchone())
@@ -103,7 +87,7 @@ def get_package(escrow_pubkey):
 
 def get_packages(user_pubkey=None):
     """Get a list of packages."""
-    with sql_connection() as sql:
+    with util.db.sql_connection(DB_NAME) as sql:
         if user_pubkey:
             sql.execute("""
                 SELECT * FROM packages
@@ -119,6 +103,6 @@ def get_packages(user_pubkey=None):
 
 def update_custodian(escrow_pubkey, custodian_pubkey):
     """Update a package's custodian."""
-    with sql_connection() as sql:
+    with util.db.sql_connection(DB_NAME) as sql:
         sql.execute(
             "UPDATE packages SET custodian_pubkey = ? WHERE escrow_pubkey = ?", (custodian_pubkey, escrow_pubkey))
