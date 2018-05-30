@@ -173,7 +173,7 @@ def package_handler(escrow_pubkey):
 @BLUEPRINT.route("/v{}/debug/fund".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.FUND_FROM_ISSUER)
 @webserver.validation.call(['funded_pubkey'])
-def fund_handler(funded_pubkey, funded_buls=1000):
+def fund_handler(funded_pubkey, funded_buls=1000000000):
     """
     Give an account BULs - for debug only.
     ---
