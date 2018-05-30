@@ -133,14 +133,14 @@ def prepare_escrow(
     payment = util.stroops_to_units(payment)
     collateral = util.stroops_to_units(collateral)
     builder = gen_builder(escrow_pubkey, sequence_delta=1)
-    builder.append_payment_op(launcher_pubkey, payment + collateral, BUL_TOKEN_CODE, ISSUER)
+    builder.append_payment_op(launcher_pubkey, util.add_units(payment, collateral), BUL_TOKEN_CODE, ISSUER)
     builder.add_time_bounds(type('TimeBound', (), {'minTime': deadline, 'maxTime': 0})())
     add_memo(builder, 'refund')
     refund_envelope = builder.gen_te()
 
     # Payment transaction, in case of successful delivery, requires recipient signature.
     builder = gen_builder(escrow_pubkey, sequence_delta=1)
-    builder.append_payment_op(courier_pubkey, payment + collateral, BUL_TOKEN_CODE, ISSUER)
+    builder.append_payment_op(courier_pubkey, util.add_units(payment, collateral), BUL_TOKEN_CODE, ISSUER)
     add_memo(builder, 'payment')
     payment_envelope = builder.gen_te()
 

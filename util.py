@@ -68,5 +68,13 @@ def stroops_to_units(amount, str_representation=True):
     return float(units)
 
 
+def add_units(first, second, str_representation=True):
+    """Add two units"""
+    result = decimal.Decimal(first) + decimal.Decimal(second)
+    if str_representation:
+        return '{:.7f}'.format(result)
+    return float(result)
+
+
 if __name__ == '__main__':
     send_countly_event('main test', 1)
