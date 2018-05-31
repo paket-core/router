@@ -39,13 +39,15 @@ set -o allexport
 . paket.env
 set +o allexport
 
-# Requires python3 and python packages (as specified in requirements.txt).
+# Requires python3.
 if ! which python3 > /dev/null; then
     echo 'python3 not found'
     return 1 2>/dev/null
     exit 1
 fi
 
+# Requires python packages (as specified in requirements.txt).
+set -e
 installed_packages="$(pip freeze)"
 local_packages=()
 while read package; do
@@ -64,32 +66,20 @@ while read package; do
                 return 1 2>/dev/null
                 exit 1
             fi
-            pip install "$package"
-            set +e
         else
             q='n'; read -n 1 -p "Update local package $package? [y|N] " q < /dev/tty; echo
             if [ y = "$q" ]; then
                 pushd "$package" > /dev/null
-                git_result="$(git pull | tail -1)"
+                git pull
                 popd > /dev/null
-                [ "$git_result" = 'Already up to date.' ] || pip install "$package"
-            fi
-        fi
-    else
-        if ! (echo "$installed_packages" | grep "^$package$" > /dev/null); then
-            q='n'; read -n 1 -p "Missing package $package - try to install from pip? [y|N] " q < /dev/tty; echo
-            if [ y = "$q" ]; then
-                pip install "$package"
-            else
-                echo "Can't continue without $package"
-                return 1 2>/dev/null
-                exit 1
             fi
         fi
     fi
 done < requirements.txt
+pip install -r requirements.txt
+set +e
 
- Make sure horizon server is reachable.
+# Make sure horizon server is reachable.
 if ! curl -m 2 "$PAKET_HORIZON_SERVER" > /dev/null; then
     echo "Can't connect to horizon server $PAKET_HORIZON_SERVER"
     q='n'; read -n 1 -p 'Continue anyway? [y|N] ' q; echo
