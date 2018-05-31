@@ -4,15 +4,16 @@ import os
 import flasgger
 import flask
 
+import util.logger
+import webserver.validation
+
 import db
-import logger
 import paket
 import swagger_specs
-import webserver.validation
 
 VERSION = swagger_specs.VERSION
 PORT = os.environ.get('PAKET_API_PORT', 8000)
-LOGGER = logger.logging.getLogger('pkt.api')
+LOGGER = util.logger.logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
 
 
@@ -103,8 +104,7 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     require_auth=True)
 def prepare_escrow_handler(
         user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp
-    ):
+        payment_buls, collateral_buls, deadline_timestamp):
     """
     Launch a package.
     Use this call to create a new package for delivery.
@@ -202,7 +202,7 @@ def view_log_handler(lines_num=10):
     Get last lines of log - for debug only.
     Specify lines_num to get the x last lines.
     """
-    with open(os.path.join(logger.LOG_DIR_NAME, logger.LOG_FILE_NAME)) as logfile:
+    with open(os.path.join(util.logger.LOG_DIR_NAME, util.logger.LOG_FILE_NAME)) as logfile:
         return {'status': 200, 'log': logfile.readlines()[:-1 - lines_num:-1]}
 
 

@@ -39,57 +39,47 @@ set -o allexport
 . paket.env
 set +o allexport
 
-# Requires python3 and python packages (as specified in requirements.txt).
+# Requires python3.
 if ! which python3 > /dev/null; then
     echo 'python3 not found'
     return 1 2>/dev/null
     exit 1
 fi
 
+# Requires python packages (as specified in requirements.txt).
+set -e
 installed_packages="$(pip freeze)"
 local_packages=()
 while read package; do
     # Make sure local packages exist and are up to date.
     if [ ${package:0:3} = '../' ]; then
+        local_packages+=("$package")
         if ! [ -d "$package" ]; then
             set -e
             q='n'; read -n 1 -p "Missing local package $package - try to fetch from github? [y|N] " q < /dev/tty; echo
             if [ y = "$q" ]; then
-                pushd ..
+                pushd .. > /dev/null
                 git clone "git@github.com:paket-core/${package:3}.git"
-                popd
+                popd > /dev/null
             else
                 echo "Can't continue without $package"
                 return 1 2>/dev/null
                 exit 1
             fi
-            pip install "$package"
-            local_packages+=("$package")
-            set +e
         else
             q='n'; read -n 1 -p "Update local package $package? [y|N] " q < /dev/tty; echo
             if [ y = "$q" ]; then
                 pushd "$package" > /dev/null
-                git_result="$(git pull | tail -1)"
-                popd
-                [ "$git_result" = 'Already up to date.' ] || pip install "$package"
-            fi
-        fi
-    else
-        if ! (echo "$installed_packages" | grep "^$package$" > /dev/null); then
-            q='n'; read -n 1 -p "Missing package $package - try to install from pip? [y|N] " q < /dev/tty; echo
-            if [ y = "$q" ]; then
-                pip install "$package"
-            else
-                echo "Can't continue without $package"
-                return 1 2>/dev/null
-                exit 1
+                git pull
+                popd > /dev/null
             fi
         fi
     fi
 done < requirements.txt
+pip install -r requirements.txt
+set +e
 
- Make sure horizon server is reachable.
+# Make sure horizon server is reachable.
 if ! curl -m 2 "$PAKET_HORIZON_SERVER" > /dev/null; then
     echo "Can't connect to horizon server $PAKET_HORIZON_SERVER"
     q='n'; read -n 1 -p 'Continue anyway? [y|N] ' q; echo
@@ -116,14 +106,17 @@ if [ "$_test" ]; then
         python setup.py test 2>&1 | tail -3 | head -1
         popd > /dev/null
     done
-    which pycodestyle > /dev/null && echo pycodestyle had $(pycodestyle --max-line-length=120 *.py 2>&1 | wc -l) issues
-    which pylint > /dev/null && pylint *.py | tail -2 | head -1
-    python -m unittest test
+    echo
+    pwd
+    echo ---
+    which pycodestyle > /dev/null && echo pycodestyle had $(pycodestyle --max-line-length=120 *.py **/*.py 2>&1 | wc -l) issues
+    which pylint > /dev/null && pylint *.py **/*.py | tail -2 | head -1
+    python -m unittest
 fi
 
-[ "$shell" ] && python -ic 'import logger; logger.setup(); import api; import db; import paket; p = paket'
+[ "$shell" ] && python -ic 'import util.logger; util.logger.setup(); import routes; import db; import paket; p = paket'
 
-[ "$run" ] && python ./api.py
+[ "$run" ] && python ./routes.py
 
 return 0 2>/dev/null
 exit 0

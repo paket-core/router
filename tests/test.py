@@ -5,20 +5,18 @@ import os.path
 import time
 import unittest
 
-# pylint: disable=import-error
-import logger
-# pylint: enable=import-error
+import util.logger
 import webserver.validation
 
-import api
+import routes
 import db
 import paket
 
 db.DB_NAME = 'test.db'
 webserver.validation.NONCES_DB_NAME = 'nonce_test.db'
-LOGGER = logger.logging.getLogger('pkt.api.test')
-logger.setup()
-APP = webserver.setup(api.BLUEPRINT)
+LOGGER = util.logger.logging.getLogger('pkt.api.test')
+util.logger.setup()
+APP = webserver.setup(routes.BLUEPRINT)
 APP.testing = True
 
 
@@ -61,14 +59,14 @@ class BaseOperations(unittest.TestCase):
         LOGGER.info("calling %s", path)
         if seed:
             fingerprint = webserver.validation.generate_fingerprint(
-                "{}/v{}/{}".format(self.host, api.VERSION, path), kwargs)
+                "{}/v{}/{}".format(self.host, routes.VERSION, path), kwargs)
             signature = webserver.validation.sign_fingerprint(fingerprint, seed)
             headers = {
                 'Pubkey': paket.get_keypair(seed=seed).address().decode(),
                 'Fingerprint': fingerprint, 'Signature': signature}
         else:
             headers = None
-        response = self.app.post("/v{}/{}".format(api.VERSION, path), headers=headers, data=kwargs)
+        response = self.app.post("/v{}/{}".format(routes.VERSION, path), headers=headers, data=kwargs)
         response = dict(real_status_code=response.status_code, **json.loads(response.data.decode()))
         if expected_code:
             self.assertEqual(response['real_status_code'], expected_code, "{} ({})".format(
@@ -92,21 +90,22 @@ class BaseOperations(unittest.TestCase):
         response = self.submit(unsigned, seed, 'create account')
         return response
 
-    def create_and_setup_new_account(self, amount_buls=None):
+    def create_and_setup_new_account(self, amount_buls=None, trust_limit=None):
         """Create account. Add trust and send initial ammount of BULs (if specified)"""
         keypair = paket.get_keypair()
         pubkey = keypair.address().decode()
         seed = keypair.seed().decode()
         self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
-        self.trust(pubkey, seed)
+        self.trust(pubkey, seed, trust_limit)
         if amount_buls is not None:
             self.send(from_seed=self.funded_seed, to_pubkey=pubkey, amount_buls=amount_buls)
         return pubkey, seed
 
-    def trust(self, pubkey, seed=None):
+    def trust(self, pubkey, seed, limit=None):
         """Submit trust transaction for specified account"""
-        LOGGER.info('adding trust for %s', pubkey)
-        unsigned = self.call('prepare_trust', 200, 'could not get trust transaction', from_pubkey=pubkey)['transaction']
+        LOGGER.info('adding trust for %s (%s)', pubkey, limit)
+        unsigned = self.call(
+            'prepare_trust', 200, 'could not get trust transaction', from_pubkey=pubkey, limit=limit)['transaction']
         return self.submit(unsigned, seed, 'add trust')
 
     def send(self, from_seed, to_pubkey, amount_buls):
@@ -237,7 +236,7 @@ class TestPackage(BaseOperations):
         launcher = self.create_and_setup_new_account(payment)
         courier = self.create_and_setup_new_account(collateral)
         recipient = self.create_and_setup_new_account()
-        escrow = self.create_and_setup_new_account()
+        escrow = self.create_and_setup_new_account(trust_limit=payment + collateral)
 
         LOGGER.info(
             "launching escrow: %s, launcher: %s, courier: %s, recipient: %s",
