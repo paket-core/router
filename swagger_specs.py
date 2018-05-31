@@ -367,9 +367,6 @@ PACKAGE = {
                 'deadline-timestamp': {
                     'type': 'integer'
                 },
-                'my-role': {
-                    'type': 'string'
-                },
                 'paket-url': {
                     'type': 'string'
                 },
