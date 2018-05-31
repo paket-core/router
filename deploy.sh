@@ -90,6 +90,11 @@ if ! curl -m 2 "$PAKET_HORIZON_SERVER" > /dev/null; then
     echo
 fi
 
+if [ "$create_db" ]; then
+    rm -i *.db
+    python -c "import db; db.init_db()"
+fi
+
 if [ "$_test" ]; then
     for package in "${local_packages[@]}"; do
         pushd "$package" > /dev/null
@@ -107,12 +112,6 @@ if [ "$_test" ]; then
     which pycodestyle > /dev/null && echo pycodestyle had $(pycodestyle --max-line-length=120 *.py **/*.py 2>&1 | wc -l) issues
     which pylint > /dev/null && pylint *.py **/*.py | tail -2 | head -1
     python -m unittest
-fi
-
-
-if [ "$create_db" ]; then
-    rm -i *.db
-    python -c "import db; db.init_db()"
 fi
 
 [ "$shell" ] && python -ic 'import util.logger; util.logger.setup(); import routes; import db; import paket; p = paket'
