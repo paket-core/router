@@ -61,7 +61,6 @@ def get_bul_account(pubkey, accept_untrusted=False):
 
 def add_memo(builder, memo):
     """Add a memo with limited length."""
-    # pylint: disable=unreachable
     max_byte_length = 28
     utf8 = memo.encode('utf8')
     if len(utf8) > max_byte_length:
@@ -72,7 +71,6 @@ def add_memo(builder, memo):
             memo = utf8[:cursor].decode()
     builder.add_text_memo(memo)
     return builder
-    # pylint: enable=unreachable
 
 
 def gen_builder(pubkey='', sequence_delta=None):
@@ -105,7 +103,6 @@ def prepare_create_account(from_pubkey, new_pubkey, starting_balance=50000000):
     starting_balance = util.stellar_units.stroops_to_units(starting_balance)
     builder = gen_builder(from_pubkey)
     builder.append_create_account_op(destination=new_pubkey, starting_balance=starting_balance)
-    add_memo(builder, 'create escrow')
     return builder.gen_te().xdr().decode()
 
 
@@ -114,7 +111,6 @@ def prepare_trust(from_pubkey, limit=None):
     limit = util.stellar_units.stroops_to_units(limit) if limit is not None else limit
     builder = gen_builder(from_pubkey)
     builder.append_trust_op(ISSUER, BUL_TOKEN_CODE, limit)
-    add_memo(builder, "trust {} BUL {}".format(str(limit), ISSUER))
     return builder.gen_te().xdr().decode()
 
 
@@ -123,7 +119,6 @@ def prepare_send_buls(from_pubkey, to_pubkey, amount):
     amount = util.stellar_units.stroops_to_units(amount)
     builder = gen_builder(from_pubkey)
     builder.append_payment_op(to_pubkey, amount, BUL_TOKEN_CODE, ISSUER)
-    add_memo(builder, "send {} BUL".format(amount))
     return builder.gen_te().xdr().decode()
 
 
@@ -151,6 +146,7 @@ def prepare_escrow(
     builder = gen_builder(escrow_pubkey, sequence_delta=2)
     builder.append_trust_op(ISSUER, BUL_TOKEN_CODE, 0)
     builder.append_account_merge_op(launcher_pubkey)
+    add_memo(builder, 'close account')
     merge_envelope = builder.gen_te()
 
     # Set transactions and recipient as only signers.
