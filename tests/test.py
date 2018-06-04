@@ -81,7 +81,7 @@ class BaseOperations(unittest.TestCase):
         return self.call(
             'submit_transaction', 200, "failed submitting {} transaction".format(description), transaction=transaction)
 
-    def create_account(self, from_pubkey, new_pubkey, starting_balance=50000000, seed=None):
+    def create_account(self, from_pubkey, new_pubkey, seed, starting_balance=50000000):
         """Create account with starting balance"""
         LOGGER.info('creating %s from %s', new_pubkey, from_pubkey)
         unsigned = self.call(
@@ -158,7 +158,7 @@ class TestAccount(BaseOperations):
         ]
         for pubkey in data_set:
             with self.subTest(pubkey=pubkey):
-                response = self.call('bul_account', 409,
+                response = self.call('bul_account', 400,
                                      'could not verify account does not exist', queried_pubkey=pubkey)
                 self.assertEqual(response['error'], "no account found for {}".format(pubkey))
 
@@ -187,7 +187,7 @@ class TestAccount(BaseOperations):
         keypair = paket.get_keypair()
         pubkey = keypair.address().decode()
         self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
-        response = self.call('bul_account', 409, 'could not verify account does not trust', queried_pubkey=pubkey)
+        response = self.call('bul_account', 400, 'could not verify account does not trust', queried_pubkey=pubkey)
         self.assertEqual(response['error'], "account {} does not trust {} from {}".format(
             pubkey, paket.BUL_TOKEN_CODE, paket.ISSUER))
         LOGGER.info("testing trust for %s", keypair)
@@ -209,7 +209,7 @@ class TestAccount(BaseOperations):
         source_end_balance = self.call(
             'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['bul_balance']
         target_end_balance = self.call(
-            'bul_account', 200, 'can not get target account balance', queried_pubkey=account[0  ])['bul_balance']
+            'bul_account', 200, 'can not get target account balance', queried_pubkey=account[0])['bul_balance']
         self.assertEqual(source_start_balance - source_end_balance, amount_stroops, 'source balance does not add up')
         self.assertEqual(target_end_balance - target_start_balance, amount_stroops, 'target balance does not add up')
 
@@ -399,7 +399,7 @@ class TestAPI(BaseOperations):
         for pubkey in data_set:
             with self.subTest(pubkey=pubkey):
                 LOGGER.info('querying information about invalid account: %s', pubkey)
-                self.call('bul_account', 409, 'could not verify account exist', queried_pubkey=pubkey)
+                self.call('bul_account', 400, 'could not verify account exist', queried_pubkey=pubkey)
 
     def test_invalid_prepare_create_account(self):
         """Test prepare_account endpoint on invalid public keys"""
@@ -483,8 +483,7 @@ class TestAPI(BaseOperations):
         account = self.create_and_setup_new_account()
         escrow_pubkey = 'SDJGJZM7Z4W3KMSM2HYEVJPOZ7XRR7LJ5XKW6VKBSR7MRQ'
         LOGGER.info('trying accept invalid package: %s for user: %s', escrow_pubkey, account[0])
-        self.call('accept_package', 500, 'user could not accept package',
-                  seed=account[1], escrow_pubkey=escrow_pubkey)
+        self.call('accept_package', 400, 'user could not accept package', seed=account[1], escrow_pubkey=escrow_pubkey)
 
     def test_my_packages(self):
         """Test my_packages endpoint on valid pubkey"""
@@ -519,9 +518,10 @@ class TestAPI(BaseOperations):
         """Test my_packages endpoint on invalid public key"""
         pubkey = 'SDJGJZM7Z4W3KMSM2HYEVJPOZ7XRR7LJ5XKW6VKBSR7MRQ'
         LOGGER.info('querying packages for invalid user: %s', pubkey)
-        self.call(path='my_packages', expected_code=500,
-                  fail_message='does not get server error status code on invalid request',
-                  seed=self.funded_seed, user_pubkey=pubkey)
+        self.call(
+            path='my_packages', expected_code=403,
+            fail_message='did not get server error status code on invalid request',
+            seed=self.funded_seed, user_pubkey=pubkey)
 
     def test_prepare_escrow(self):
         """Test prepare_escrow endpoint on valid public keys"""
