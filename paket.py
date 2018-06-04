@@ -8,6 +8,8 @@ import stellar_base.asset
 import stellar_base.builder
 import stellar_base.keypair
 
+import util.stellar_units
+
 import db
 
 BUL_TOKEN_CODE = 'BUL'
@@ -49,9 +51,9 @@ def get_bul_account(pubkey, accept_untrusted=False):
     account = {'sequence': details.sequence, 'signers': details.signers, 'thresholds': details.thresholds}
     for balance in details.balances:
         if balance.get('asset_type') == 'native':
-            account['xlm_balance'] = float(balance['balance'])
+            account['xlm_balance'] = util.stellar_units.units_to_stroops(balance['balance'], str_representation=False)
         if balance.get('asset_code') == BUL_TOKEN_CODE and balance.get('asset_issuer') == ISSUER:
-            account['bul_balance'] = float(balance['balance'])
+            account['bul_balance'] = util.stellar_units.units_to_stroops(balance['balance'], str_representation=False)
     if 'bul_balance' not in account and not accept_untrusted:
         raise AssertionError("account {} does not trust {} from {}".format(pubkey, BUL_TOKEN_CODE, ISSUER))
     return account
@@ -59,7 +61,6 @@ def get_bul_account(pubkey, accept_untrusted=False):
 
 def add_memo(builder, memo):
     """Add a memo with limited length."""
-    # pylint: disable=unreachable
     max_byte_length = 28
     utf8 = memo.encode('utf8')
     if len(utf8) > max_byte_length:
@@ -70,7 +71,6 @@ def add_memo(builder, memo):
             memo = utf8[:cursor].decode()
     builder.add_text_memo(memo)
     return builder
-    # pylint: enable=unreachable
 
 
 def gen_builder(pubkey='', sequence_delta=None):
@@ -98,27 +98,27 @@ def submit_transaction_envelope(envelope):
     return submit(builder)
 
 
-def prepare_create_account(from_pubkey, new_pubkey, starting_balance=5):
+def prepare_create_account(from_pubkey, new_pubkey, starting_balance=50000000):
     """Prepare account creation transaction."""
+    starting_balance = util.stellar_units.stroops_to_units(starting_balance)
     builder = gen_builder(from_pubkey)
     builder.append_create_account_op(destination=new_pubkey, starting_balance=starting_balance)
-    add_memo(builder, 'create escrow')
     return builder.gen_te().xdr().decode()
 
 
 def prepare_trust(from_pubkey, limit=None):
     """Prepare trust transaction from account."""
+    limit = util.stellar_units.stroops_to_units(limit) if limit is not None else limit
     builder = gen_builder(from_pubkey)
     builder.append_trust_op(ISSUER, BUL_TOKEN_CODE, limit)
-    add_memo(builder, "trust {} BUL {}".format(str(limit), ISSUER))
     return builder.gen_te().xdr().decode()
 
 
 def prepare_send_buls(from_pubkey, to_pubkey, amount):
     """Prepare BUL transfer."""
+    amount = util.stellar_units.stroops_to_units(amount)
     builder = gen_builder(from_pubkey)
     builder.append_payment_op(to_pubkey, amount, BUL_TOKEN_CODE, ISSUER)
-    add_memo(builder, "send {} BUL".format(amount))
     return builder.gen_te().xdr().decode()
 
 
@@ -126,15 +126,19 @@ def prepare_escrow(
         escrow_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey, payment, collateral, deadline):
     """Prepare escrow transactions."""
     # Refund transaction, in case of failed delivery, timelocked.
+    bul_payment = util.stellar_units.stroops_to_units(payment)
+    bul_collateral = util.stellar_units.stroops_to_units(collateral)
     builder = gen_builder(escrow_pubkey, sequence_delta=1)
-    builder.append_payment_op(launcher_pubkey, payment + collateral, BUL_TOKEN_CODE, ISSUER)
+    builder.append_payment_op(
+        launcher_pubkey, util.stellar_units.add_units(bul_payment, bul_collateral), BUL_TOKEN_CODE, ISSUER)
     builder.add_time_bounds(type('TimeBound', (), {'minTime': deadline, 'maxTime': 0})())
     add_memo(builder, 'refund')
     refund_envelope = builder.gen_te()
 
     # Payment transaction, in case of successful delivery, requires recipient signature.
     builder = gen_builder(escrow_pubkey, sequence_delta=1)
-    builder.append_payment_op(courier_pubkey, payment + collateral, BUL_TOKEN_CODE, ISSUER)
+    builder.append_payment_op(
+        courier_pubkey, util.stellar_units.add_units(bul_payment, bul_collateral), BUL_TOKEN_CODE, ISSUER)
     add_memo(builder, 'payment')
     payment_envelope = builder.gen_te()
 
@@ -142,6 +146,7 @@ def prepare_escrow(
     builder = gen_builder(escrow_pubkey, sequence_delta=2)
     builder.append_trust_op(ISSUER, BUL_TOKEN_CODE, 0)
     builder.append_account_merge_op(launcher_pubkey)
+    add_memo(builder, 'close account')
     merge_envelope = builder.gen_te()
 
     # Set transactions and recipient as only signers.
@@ -192,6 +197,7 @@ def new_account(pubkey):
 
 def fund_from_issuer(pubkey, amount):
     """Fund an account directly from issuer. Debug only."""
+    amount = util.stellar_units.stroops_to_units(amount)
     LOGGER.warning("funding %s from issuer", pubkey)
     builder = stellar_base.builder.Builder(horizon=HORIZON, secret=ISSUER_SEED)
     builder.append_payment_op(pubkey, amount, BUL_TOKEN_CODE, ISSUER)

@@ -31,7 +31,6 @@ pip install -r requirements.txt
   * `PAKET_USER_ISSUER` - to specify the issuer seed.
   * `PAKET_DEBUG` - to run the api server in debug mode, with debug calls and no signature checking.
   * `FLASK_DEBUG` - to run the web server in debug mode with auto reloading.
-  * `PAKET_USER_XXX` - to specify seeds for builtin prefunded users.
 
 5. Run the deploy script to start the server with the following commands:
   * `s|shell` - to run python interactive shell and import main modules.

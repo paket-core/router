@@ -105,3 +105,4 @@ def update_custodian(escrow_pubkey, custodian_pubkey):
     with util.db.sql_connection(DB_NAME) as sql:
         sql.execute(
             "UPDATE packages SET custodian_pubkey = ? WHERE escrow_pubkey = ?", (custodian_pubkey, escrow_pubkey))
+        assert sql.rowcount == 1, "update of package {} failed".format(escrow_pubkey)

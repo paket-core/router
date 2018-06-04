@@ -53,7 +53,7 @@ def bul_account_handler(queried_pubkey):
 @BLUEPRINT.route("/v{}/prepare_create_account".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PREPARE_CREATE_ACCOUNT)
 @webserver.validation.call(['from_pubkey', 'new_pubkey'])
-def prepare_create_account_handler(from_pubkey, new_pubkey, starting_balance=5):
+def prepare_create_account_handler(from_pubkey, new_pubkey, starting_balance=50000000):
     """
     Prepare a create account transaction.
     ---
@@ -173,7 +173,7 @@ def package_handler(escrow_pubkey):
 @BLUEPRINT.route("/v{}/debug/fund".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.FUND_FROM_ISSUER)
 @webserver.validation.call(['funded_pubkey'])
-def fund_handler(funded_pubkey, funded_buls=1000):
+def fund_handler(funded_pubkey, funded_buls=1000000000):
     """
     Give an account BULs - for debug only.
     ---
