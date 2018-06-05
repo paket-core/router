@@ -1,5 +1,4 @@
 """Use PaKeT smart contract."""
-import logging
 import os
 
 import requests
@@ -9,6 +8,7 @@ import stellar_base.builder
 import stellar_base.keypair
 
 import util.stellar_units
+import util.logger
 
 import db
 
@@ -17,7 +17,8 @@ ISSUER = os.environ['PAKET_USER_ISSUER']
 ISSUER_SEED = os.environ.get('PAKET_SEED_ISSUER')
 HORIZON = os.environ['PAKET_HORIZON_SERVER']
 
-LOGGER = logging.getLogger('pkt.paket')
+LOGGER = util.logger.logging.getLogger('pkt.paket')
+util.logger.setup()
 
 
 class StellarTransactionFailed(Exception):
@@ -51,9 +52,9 @@ def get_bul_account(pubkey, accept_untrusted=False):
     account = {'sequence': details.sequence, 'signers': details.signers, 'thresholds': details.thresholds}
     for balance in details.balances:
         if balance.get('asset_type') == 'native':
-            account['xlm_balance'] = util.stellar_units.units_to_stroops(balance['balance'], str_representation=False)
+            account['xlm_balance'] = util.stellar_units.units_to_stroops(balance['balance'])
         if balance.get('asset_code') == BUL_TOKEN_CODE and balance.get('asset_issuer') == ISSUER:
-            account['bul_balance'] = util.stellar_units.units_to_stroops(balance['balance'], str_representation=False)
+            account['bul_balance'] = util.stellar_units.units_to_stroops(balance['balance'])
     if 'bul_balance' not in account and not accept_untrusted:
         raise AssertionError("account {} does not trust {} from {}".format(pubkey, BUL_TOKEN_CODE, ISSUER))
     return account
@@ -100,7 +101,7 @@ def submit_transaction_envelope(envelope):
 
 def prepare_create_account(from_pubkey, new_pubkey, starting_balance=50000000):
     """Prepare account creation transaction."""
-    starting_balance = util.stellar_units.stroops_to_units(starting_balance)
+    starting_balance = util.stellar_units.stroops_to_units(int(starting_balance))
     builder = gen_builder(from_pubkey)
     builder.append_create_account_op(destination=new_pubkey, starting_balance=starting_balance)
     return builder.gen_te().xdr().decode()
@@ -108,7 +109,7 @@ def prepare_create_account(from_pubkey, new_pubkey, starting_balance=50000000):
 
 def prepare_trust(from_pubkey, limit=None):
     """Prepare trust transaction from account."""
-    limit = util.stellar_units.stroops_to_units(limit) if limit is not None else limit
+    limit = util.stellar_units.stroops_to_units(int(limit)) if limit is not None else limit
     builder = gen_builder(from_pubkey)
     builder.append_trust_op(ISSUER, BUL_TOKEN_CODE, limit)
     return builder.gen_te().xdr().decode()
@@ -116,7 +117,7 @@ def prepare_trust(from_pubkey, limit=None):
 
 def prepare_send_buls(from_pubkey, to_pubkey, amount):
     """Prepare BUL transfer."""
-    amount = util.stellar_units.stroops_to_units(amount)
+    amount = util.stellar_units.stroops_to_units(int(amount))
     builder = gen_builder(from_pubkey)
     builder.append_payment_op(to_pubkey, amount, BUL_TOKEN_CODE, ISSUER)
     return builder.gen_te().xdr().decode()
@@ -126,11 +127,11 @@ def prepare_escrow(
         escrow_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey, payment, collateral, deadline):
     """Prepare escrow transactions."""
     # Refund transaction, in case of failed delivery, timelocked.
-    bul_payment = util.stellar_units.stroops_to_units(payment)
-    bul_collateral = util.stellar_units.stroops_to_units(collateral)
+    # bul_payment = util.stellar_units.stroops_to_units(int(payment))
+    # bul_collateral = util.stellar_units.stroops_to_units(int(collateral))
     builder = gen_builder(escrow_pubkey, sequence_delta=1)
     builder.append_payment_op(
-        launcher_pubkey, util.stellar_units.add_units(bul_payment, bul_collateral), BUL_TOKEN_CODE, ISSUER)
+        launcher_pubkey, util.stellar_units.stroops_to_units(int(payment) + int(collateral)), BUL_TOKEN_CODE, ISSUER)
     builder.add_time_bounds(type('TimeBound', (), {'minTime': deadline, 'maxTime': 0})())
     add_memo(builder, 'refund')
     refund_envelope = builder.gen_te()
@@ -138,7 +139,7 @@ def prepare_escrow(
     # Payment transaction, in case of successful delivery, requires recipient signature.
     builder = gen_builder(escrow_pubkey, sequence_delta=1)
     builder.append_payment_op(
-        courier_pubkey, util.stellar_units.add_units(bul_payment, bul_collateral), BUL_TOKEN_CODE, ISSUER)
+        courier_pubkey, util.stellar_units.stroops_to_units(int(payment) + int(collateral)), BUL_TOKEN_CODE, ISSUER)
     add_memo(builder, 'payment')
     payment_envelope = builder.gen_te()
 
@@ -197,7 +198,7 @@ def new_account(pubkey):
 
 def fund_from_issuer(pubkey, amount):
     """Fund an account directly from issuer. Debug only."""
-    amount = util.stellar_units.stroops_to_units(amount)
+    amount = util.stellar_units.stroops_to_units(int(amount))
     LOGGER.warning("funding %s from issuer", pubkey)
     builder = stellar_base.builder.Builder(horizon=HORIZON, secret=ISSUER_SEED)
     builder.append_payment_op(pubkey, amount, BUL_TOKEN_CODE, ISSUER)
