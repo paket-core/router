@@ -149,18 +149,9 @@ class TestAccount(BaseOperations):
     def test_no_exist(self):
         """Check no existing accounts"""
         keypair = paket.get_keypair()
-        valid_pubkey = keypair.address().decode()
-        data_set = [
-            valid_pubkey,  # valid public key
-            'GBNDWBDLL5UOD36KN3BOOKIQPCNIN3QRUO7RMN37WNBSFCPIKWJ',  # invalid public key
-            'Lorem ipsum dolor sit amet',  # random text
-            144  # random number
-        ]
-        for pubkey in data_set:
-            with self.subTest(pubkey=pubkey):
-                response = self.call('bul_account', 400,
-                                     'could not verify account does not exist', queried_pubkey=pubkey)
-                self.assertEqual(response['error'], "no account found for {}".format(pubkey))
+        pubkey = keypair.address().decode()
+        response = self.call('bul_account', 400, 'could not verify account does not exist', queried_pubkey=pubkey)
+        self.assertEqual(response['error'], "no account found for {}".format(pubkey))
 
     def test_exist(self):
         """Check existing accounts"""
@@ -210,8 +201,10 @@ class TestAccount(BaseOperations):
             'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['bul_balance']
         target_end_balance = self.call(
             'bul_account', 200, 'can not get target account balance', queried_pubkey=account[0])['bul_balance']
-        self.assertEqual(source_start_balance - source_end_balance, amount_stroops, 'source balance does not add up')
-        self.assertEqual(target_end_balance - target_start_balance, amount_stroops, 'target balance does not add up')
+        self.assertEqual(int(source_start_balance or 0) - int(source_end_balance or 0), amount_stroops,
+                         'source balance does not add up')
+        self.assertEqual(int(target_end_balance or 0) - int(target_start_balance or 0), amount_stroops,
+                         'target balance does not add up')
 
 
 class TestPackage(BaseOperations):
@@ -256,19 +249,21 @@ class TestPackage(BaseOperations):
         self.submit(escrow_transactions['payment_transaction'], recipient[1], 'payment')
         self.call(
             'accept_package', 200, 'recipient could not accept package', recipient[1], escrow_pubkey=escrow[0])
-        courier_result_balance = courier_bul_balance + payment + collateral
+        courier_result_balance = int(courier_bul_balance or 0) + payment + collateral
         courier_actual_balance = self.call(
             'bul_account', 200, 'can not get escrow account balance', queried_pubkey=courier[0])['bul_balance']
-        self.assertEqual(courier_actual_balance, courier_result_balance)
+        self.assertEqual(int(courier_actual_balance), courier_result_balance)
 
         launcher_xlm_balance = self.call(
             'bul_account', 200, 'can not get escrow account balance', queried_pubkey=launcher[0])['xlm_balance']
         escrow_xlm_balance = self.call(
             'bul_account', 200, 'can not get escrow account balance', queried_pubkey=escrow[0])['xlm_balance']
         self.submit(escrow_transactions['merge_transaction'], None, 'merge')
-        self.assertLessEqual(self.call(
-            'bul_account', 200, 'can not get escrow account balance', queried_pubkey=launcher[0]
-        )['xlm_balance'] - launcher_xlm_balance - escrow_xlm_balance, 1000, 'xlm not merged back')
+        launcher_result_balance = self.call(
+            'bul_account', 200, 'can not get escrow account balance', queried_pubkey=launcher[0])['xlm_balance']
+        self.assertLessEqual(
+            int(launcher_result_balance or 0) - int(launcher_xlm_balance or 0) - int(escrow_xlm_balance or 0),
+            1000, 'xlm not merged back')
 
 
 class TestAPI(BaseOperations):
@@ -385,42 +380,6 @@ class TestAPI(BaseOperations):
                 LOGGER.info('querying information about account: %s', account)
                 self.call('bul_account', 200, 'could not verify account exist', queried_pubkey=account)
 
-    def test_invalid_bul_account(self):
-        """Test server behavior on querying information about invalid account"""
-        keypair = paket.get_keypair()
-        pubkey = keypair.address().decode()
-
-        data_set = [
-            pubkey,  # just generated pubkey
-            'GBTWWXACDQOSRQ3645B2LA345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ',  # invalid pubkey
-            'Lorem ipsum dolor sit amet',  # random text
-            144  # random number
-        ]
-        for pubkey in data_set:
-            with self.subTest(pubkey=pubkey):
-                LOGGER.info('querying information about invalid account: %s', pubkey)
-                self.call('bul_account', 400, 'could not verify account exist', queried_pubkey=pubkey)
-
-    def test_invalid_prepare_create_account(self):
-        """Test prepare_account endpoint on invalid public keys"""
-        keypair = paket.get_keypair()
-        pubkey = keypair.address().decode()
-        invalid_from_pubkeys = [
-            pubkey,  # just generated pubkey
-            'GBTWWXACDQOSRQ3645B2LA345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ',  # invalid pubkey
-            'Lorem ipsum dolor sit amet',  # random text
-            144  # random number
-        ]
-        invalid_new_pubkeys = invalid_from_pubkeys.copy()
-        pubkey_pairs = [(from_pubkey, new_pubkey) for from_pubkey in invalid_from_pubkeys
-                        for new_pubkey in invalid_new_pubkeys]
-
-        for from_pubkey, new_pubkey in pubkey_pairs:
-            LOGGER.info('querying prepare create invalid new account: %s from invalid account: %s',
-                        new_pubkey, from_pubkey)
-            self.call('prepare_create_account', 500, 'unexpected server response for prepare_create_account',
-                      from_pubkey=from_pubkey, new_pubkey=new_pubkey)
-
     def test_prepare_create_account(self):
         """Test prepare_account endpoint on valid public keys"""
         keypair = paket.get_keypair()
@@ -436,13 +395,6 @@ class TestAPI(BaseOperations):
         self.call('prepare_send_buls', 200, 'can not prepare send from {} to {}'.format(self.funded_pubkey, pubkey),
                   from_pubkey=self.funded_pubkey, to_pubkey=pubkey, amount_buls=5)
 
-    def test_invalid_prepare_send_buls(self):
-        """Test prepare_send_buls endpoint on invalid public key"""
-        pubkey = 'SGBJZMQ7ZMSMO2HYEV56DXRR7LJ5X2KW6VKR7MRQ'
-        LOGGER.info('querying prepare send buls for invalid user: %s', pubkey)
-        self.call('prepare_send_buls', 500, 'can not prepare send from {} to {}'.format(self.funded_pubkey, pubkey),
-                  from_pubkey=self.funded_pubkey, to_pubkey=pubkey, amount_buls=5)
-
     def test_prepare_trust(self):
         """Test prepare_trust endpoint on valid pubkey"""
         keypair = paket.get_keypair()
@@ -450,12 +402,6 @@ class TestAPI(BaseOperations):
         self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
         LOGGER.info('querying prepare trust for user: %s', pubkey)
         self.call('prepare_trust', 200, 'could not get trust transaction', from_pubkey=pubkey)
-
-    def test_invalid_prepare_trust(self):
-        """Test prepare_trust endpoint on invalid pubkey"""
-        pubkey = 'SDJGJZM7Z4W3KMSM2HYEVJPOZ7XRR7LJ5XKW6VKBSR7MRQ'
-        LOGGER.info('querying prepare trust for invalid user: %s', pubkey)
-        self.call('prepare_trust', 500, 'could not get trust transaction', from_pubkey=pubkey)
 
     def test_accept_package(self):
         """Test accept_package endpoint on valid public key"""
@@ -471,19 +417,6 @@ class TestAPI(BaseOperations):
             LOGGER.info('accepting package: %s for user %s', escrow_stuff['escrow'][0], member[1])
             self.call('accept_package', 200, 'member could not accept package',
                       member[1], escrow_pubkey=escrow_stuff['escrow'][0])
-
-    def test_unauth_accept_package(self):
-        """Test accept_package endpoint on unauthorized request"""
-        escrow_pubkey = 'SDJGJZM7Z4W3KMSM2HYEVJPOZ7XRR7LJ5XKW6VKBSR7MRQ'
-        LOGGER.info('trying accept package without authorization')
-        self.call('accept_package', 400, 'courier could not accept package', escrow_pubkey=escrow_pubkey)
-
-    def test_invalid_accept_package(self):
-        """Test accept_package endpoint on invalid public keys"""
-        account = self.create_and_setup_new_account()
-        escrow_pubkey = 'SDJGJZM7Z4W3KMSM2HYEVJPOZ7XRR7LJ5XKW6VKBSR7MRQ'
-        LOGGER.info('trying accept invalid package: %s for user: %s', escrow_pubkey, account[0])
-        self.call('accept_package', 400, 'user could not accept package', seed=account[1], escrow_pubkey=escrow_pubkey)
 
     def test_my_packages(self):
         """Test my_packages endpoint on valid pubkey"""
@@ -507,66 +440,12 @@ class TestAPI(BaseOperations):
         self.assertEqual(packages[0]['collateral'], collateral)
         self.assertEqual(packages[0]['payment'], payment)
 
-    def test_unauth_my_packages(self):
-        """Test my_packages endpoint on unauthorized request"""
-        LOGGER.info('querying packages without authorization')
-        self.call(path='my_packages', expected_code=400,
-                  fail_message='does not get unauthorized status code on unauthorized request',
-                  user_pubkey=self.funded_pubkey)
-
-    def test_invalid_my_packages(self):
-        """Test my_packages endpoint on invalid public key"""
-        pubkey = 'SDJGJZM7Z4W3KMSM2HYEVJPOZ7XRR7LJ5XKW6VKBSR7MRQ'
-        LOGGER.info('querying packages for invalid user: %s', pubkey)
-        self.call(
-            path='my_packages', expected_code=403,
-            fail_message='did not get server error status code on invalid request',
-            seed=self.funded_seed, user_pubkey=pubkey)
-
     def test_prepare_escrow(self):
         """Test prepare_escrow endpoint on valid public keys"""
         payment, collateral = 50000000, 100000000
         deadline = int(time.time())
         LOGGER.info('preparing new escrow')
         self.prepare_escrow(payment, collateral, deadline)
-
-    def test_unauth_prepare_escrow(self):
-        """Test prepare_escrow on unauthorized request"""
-        payment, collateral = 50000000, 100000000
-        deadline = int(time.time())
-
-        LOGGER.info('preparing accounts')
-        launcher = self.create_and_setup_new_account(payment)
-        courier = self.create_and_setup_new_account(collateral)
-        recipient = self.create_and_setup_new_account()
-        escrow = self.create_and_setup_new_account()
-
-        LOGGER.info(
-            'launching escrow: %s, launcher: %s, courier: %s, recipient: %s without authorization',
-            escrow[0], launcher[0], courier[0], recipient[0])
-        self.call(
-            'prepare_escrow', 400, 'does not get unauthorized status code on unauthorized request',
-            launcher_pubkey=launcher[0], courier_pubkey=courier[0], recipient_pubkey=recipient[0],
-            payment_buls=payment, collateral_buls=collateral, deadline_timestamp=deadline)
-
-    def test_invalid_prepare_escrow(self):
-        """Test prepare_escrow on invalid public keys"""
-        payment, collateral = 50000000, 100000000
-        deadline = int(time.time())
-
-        LOGGER.info('preparing accounts')
-        launcher = 'SDJBZMQ7Z43KMSMO2HYE56DJPO7XRR7L5X2KW6KBSLELR7MRQ'
-        courier = 'SDBJZMQ7Z4W3KMSMO2HYEV56DJPOZ7XRR7LJ5X2KW6VKBSLEL'
-        recipient = 'DJJZMQ7Z4W3KMSMO2HYEV56DJPOZ7XRR7LJ5X2K6KBSLELR7MR'
-        escrow = self.create_and_setup_new_account()
-
-        LOGGER.info(
-            'launching escrow: %s with invalid launcher: %s, courier: %s, recipient: %s',
-            escrow[0], launcher[0], courier[0], recipient[0])
-        self.call(
-            'prepare_escrow', 500, 'does not get internal server error status code on invalid request', escrow[1],
-            launcher_pubkey=launcher, courier_pubkey=courier, recipient_pubkey=recipient,
-            payment_buls=payment, collateral_buls=collateral, deadline_timestamp=deadline)
 
     def test_package(self):
         """Test package endpoint on valid public key"""
@@ -582,10 +461,3 @@ class TestAPI(BaseOperations):
         self.assertEqual(package['escrow_pubkey'], escrow_stuff['escrow'][0])
         self.assertEqual(package['collateral'], collateral)
         self.assertEqual(package['payment'], payment)
-
-    def test_invalid_package(self):
-        """Test package endpoint on invalid public key"""
-        pubkey = 'DJJZMQ7Z4W3KMSMO2HYEV56DJPOZ7XRR7LJ5X2K6KBSLELR7MR'
-        LOGGER.info('querying package with invalid pubkey: %s', pubkey)
-        self.call(path='package', expected_code=500,
-                  fail_message='does not get internal server error code on invalid request', escrow_pubkey=pubkey)
