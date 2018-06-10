@@ -514,15 +514,6 @@ class TestAPI(BaseOperations):
                   fail_message='does not get unauthorized status code on unauthorized request',
                   user_pubkey=self.funded_pubkey)
 
-    def test_invalid_my_packages(self):
-        """Test my_packages endpoint on invalid public key"""
-        pubkey = 'SDJGJZM7Z4W3KMSM2HYEVJPOZ7XRR7LJ5XKW6VKBSR7MRQ'
-        LOGGER.info('querying packages for invalid user: %s', pubkey)
-        self.call(
-            path='my_packages', expected_code=403,
-            fail_message='did not get server error status code on invalid request',
-            seed=self.funded_seed, user_pubkey=pubkey)
-
     def test_prepare_escrow(self):
         """Test prepare_escrow endpoint on valid public keys"""
         payment, collateral = 50000000, 100000000
