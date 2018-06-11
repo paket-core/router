@@ -441,6 +441,13 @@ class TestAPI(BaseOperations):
         self.assertEqual(packages[0]['collateral'], str(collateral))
         self.assertEqual(packages[0]['payment'], str(payment))
 
+    def test_unauth_my_packages(self):
+        """Test my_packages endpoint on unauthorized request"""
+        LOGGER.info('querying packages without authorization')
+        self.call(path='my_packages', expected_code=400,
+                  fail_message='does not get unauthorized status code on unauthorized request',
+                  user_pubkey=self.funded_pubkey)
+
     def test_prepare_escrow(self):
         """Test prepare_escrow endpoint on valid public keys"""
         payment, collateral = 50000000, 100000000
