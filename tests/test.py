@@ -46,7 +46,8 @@ class BaseOperations(unittest.TestCase):
         assert not os.path.isfile(db.DB_NAME)
         assert not os.path.isfile(webserver.validation.NONCES_DB_NAME)
 
-    def sign_transaction(self, transaction, seed):
+    @staticmethod
+    def sign_transaction(transaction, seed):
         """Sign transaction with provided seed"""
         builder = paket.stellar_base.builder.Builder(horizon=paket.HORIZON, secret=seed)
         builder.import_from_xdr(transaction)
@@ -222,14 +223,14 @@ class TestPackage(BaseOperations):
 
     def test_package(self):
         """Launch a package with payment and collateral, accept by courier and then by recipient."""
-        payment, collateral = 50000000, 100000000
+        amounts = 50000000, 100000000
         deadline = int(time.time())
 
         LOGGER.info('preparing accounts')
-        launcher = self.create_and_setup_new_account(payment)
-        courier = self.create_and_setup_new_account(collateral)
+        launcher = self.create_and_setup_new_account(amounts[0])
+        courier = self.create_and_setup_new_account(amounts[1])
         recipient = self.create_and_setup_new_account()
-        escrow = self.create_and_setup_new_account(trust_limit=payment + collateral)
+        escrow = self.create_and_setup_new_account(trust_limit=amounts[0] + amounts[1])
 
         LOGGER.info(
             "launching escrow: %s, launcher: %s, courier: %s, recipient: %s",
@@ -237,10 +238,10 @@ class TestPackage(BaseOperations):
         escrow_transactions = self.call(
             'prepare_escrow', 201, 'can not prepare escrow transactions', escrow[1],
             launcher_pubkey=launcher[0], courier_pubkey=courier[0], recipient_pubkey=recipient[0],
-            payment_buls=payment, collateral_buls=collateral, deadline_timestamp=deadline)
+            payment_buls=amounts[0], collateral_buls=amounts[1], deadline_timestamp=deadline)
         self.submit(escrow_transactions['set_options_transaction'], escrow[1], 'set escrow options')
-        self.send(launcher[1], escrow[0], payment)
-        self.send(courier[1], escrow[0], collateral)
+        self.send(launcher[1], escrow[0], amounts[0])
+        self.send(courier[1], escrow[0], amounts[1])
         self.call(
             'accept_package', 200, 'courier could not accept package', courier[1], escrow_pubkey=escrow[0])
 
@@ -249,7 +250,7 @@ class TestPackage(BaseOperations):
         self.submit(escrow_transactions['payment_transaction'], recipient[1], 'payment')
         self.call(
             'accept_package', 200, 'recipient could not accept package', recipient[1], escrow_pubkey=escrow[0])
-        courier_result_balance = int(courier_bul_balance or 0) + payment + collateral
+        courier_result_balance = int(courier_bul_balance or 0) + amounts[0] + amounts[1]
         courier_actual_balance = self.call(
             'bul_account', 200, 'can not get escrow account balance', queried_pubkey=courier[0])['bul_balance']
         self.assertEqual(int(courier_actual_balance), courier_result_balance)
@@ -282,7 +283,7 @@ class TestAPI(BaseOperations):
         LOGGER.info('tearing down')
         cls.cleanup()
 
-    def test_submit_unsigned_transaction(self):
+    def test_submit_unsigned(self):
         """Test server behavior on submitting unsigned transactions"""
         keypair = paket.get_keypair()
         pubkey = keypair.address().decode()
@@ -304,7 +305,7 @@ class TestAPI(BaseOperations):
                           fail_message='unexpected server response for submitting unsigned transaction',
                           seed=self.funded_seed, transaction=unsigned)
 
-    def test_submit_signed_transaction(self):
+    def test_submit_signed(self):
         """Test server behavior on submitting signed transactions"""
         keypair = paket.get_keypair()
         new_pubkey = keypair.address().decode()
@@ -393,7 +394,7 @@ class TestAPI(BaseOperations):
         pubkey, _ = self.create_and_setup_new_account()
         LOGGER.info('querying prepare send buls for user: %s', pubkey)
         self.call('prepare_send_buls', 200, 'can not prepare send from {} to {}'.format(self.funded_pubkey, pubkey),
-                  from_pubkey=self.funded_pubkey, to_pubkey=pubkey, amount_buls=5)
+                  from_pubkey=self.funded_pubkey, to_pubkey=pubkey, amount_buls=50000000)
 
     def test_prepare_trust(self):
         """Test prepare_trust endpoint on valid pubkey"""
@@ -437,8 +438,8 @@ class TestAPI(BaseOperations):
         self.assertTrue(len(packages) == 1)
         self.assertEqual(packages[0]['deadline'], deadline)
         self.assertEqual(packages[0]['escrow_pubkey'], escrow_stuff['escrow'][0])
-        self.assertEqual(packages[0]['collateral'], collateral)
-        self.assertEqual(packages[0]['payment'], payment)
+        self.assertEqual(packages[0]['collateral'], str(collateral))
+        self.assertEqual(packages[0]['payment'], str(payment))
 
     def test_prepare_escrow(self):
         """Test prepare_escrow endpoint on valid public keys"""
@@ -459,5 +460,5 @@ class TestAPI(BaseOperations):
                             escrow_pubkey=escrow_stuff['escrow'][0])['package']
         self.assertEqual(package['deadline'], deadline)
         self.assertEqual(package['escrow_pubkey'], escrow_stuff['escrow'][0])
-        self.assertEqual(package['collateral'], collateral)
-        self.assertEqual(package['payment'], payment)
+        self.assertEqual(package['collateral'], str(collateral))
+        self.assertEqual(package['payment'], str(payment))

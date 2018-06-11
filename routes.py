@@ -5,6 +5,7 @@ import flasgger
 import flask
 
 import util.logger
+import util.stellar_units
 import webserver.validation
 
 import db
@@ -47,7 +48,11 @@ def bul_account_handler(queried_pubkey):
     :param queried_pubkey:
     :return:
     """
-    return dict(status=200, **paket.get_bul_account(queried_pubkey))
+    account = paket.get_bul_account(queried_pubkey)
+    for balance_name in ('xlm_balance', 'bul_balance'):
+        if balance_name in account:
+            account[balance_name] = util.stellar_units.units_to_stroops(account[balance_name])
+    return dict(status=200, **account)
 
 
 @BLUEPRINT.route("/v{}/prepare_create_account".format(VERSION), methods=['POST'])
@@ -62,6 +67,7 @@ def prepare_create_account_handler(from_pubkey, new_pubkey, starting_balance=500
     :param starting_balance:
     :return:
     """
+    starting_balance = util.stellar_units.stroops_to_units(int(starting_balance))
     return {'status': 200, 'transaction': paket.prepare_create_account(from_pubkey, new_pubkey, starting_balance)}
 
 
@@ -76,6 +82,7 @@ def prepare_trust_handler(from_pubkey, limit=None):
     :param limit:
     :return:
     """
+    limit = util.stellar_units.stroops_to_units(int(limit)) if limit is not None else limit
     return {'status': 200, 'transaction': paket.prepare_trust(from_pubkey, limit)}
 
 
@@ -91,6 +98,7 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     :param amount_buls:
     :return:
     """
+    amount_buls = util.stellar_units.stroops_to_units(int(amount_buls))
     return {'status': 200, 'transaction': paket.prepare_send_buls(from_pubkey, to_pubkey, amount_buls)}
 
 
@@ -118,6 +126,8 @@ def prepare_escrow_handler(
     :param deadline_timestamp:
     :return:
     """
+    payment_buls = util.stellar_units.stroops_to_units(int(payment_buls), numeric_representation=True)
+    collateral_buls = util.stellar_units.stroops_to_units(int(collateral_buls), numeric_representation=True)
     return dict(status=201, **paket.prepare_escrow(
         user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
         payment_buls, collateral_buls, deadline_timestamp
@@ -151,7 +161,11 @@ def my_packages_handler(user_pubkey):
     :param user_pubkey:
     :return:
     """
-    return {'status': 200, 'packages': db.get_packages(user_pubkey)}
+    packages = db.get_packages(user_pubkey)
+    for package in packages:
+        package['payment'] = util.stellar_units.units_to_stroops(package['payment'])
+        package['collateral'] = util.stellar_units.units_to_stroops(package['collateral'])
+    return {'status': 200, 'packages': packages}
 
 
 @BLUEPRINT.route("/v{}/package".format(VERSION), methods=['POST'])
@@ -164,7 +178,10 @@ def package_handler(escrow_pubkey):
     :param escrow_pubkey:
     :return:
     """
-    return {'status': 200, 'package': db.get_package(escrow_pubkey)}
+    package = db.get_package(escrow_pubkey)
+    package['payment'] = util.stellar_units.units_to_stroops(package['payment'])
+    package['collateral'] = util.stellar_units.units_to_stroops(package['collateral'])
+    return {'status': 200, 'package': package}
 
 
 # Debug routes.
@@ -179,6 +196,7 @@ def fund_handler(funded_pubkey, funded_buls=1000000000):
     ---
     :return:
     """
+    funded_buls = util.stellar_units.stroops_to_units(int(funded_buls))
     return {'status': 200, 'response': paket.fund_from_issuer(funded_pubkey, funded_buls)}
 
 
