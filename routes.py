@@ -4,11 +4,11 @@ import os
 import flasgger
 import flask
 
+import paket_stellar
 import util.logger
 import webserver.validation
 
 import db
-import paket
 import swagger_specs
 
 VERSION = swagger_specs.VERSION
@@ -40,7 +40,7 @@ def submit_transaction_handler(transaction):
     :param transaction:
     :return:
     """
-    return {'status': 200, 'response': paket.submit_transaction_envelope(transaction)}
+    return {'status': 200, 'response': paket_stellar.submit_transaction_envelope(transaction)}
 
 
 @BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['POST'])
@@ -53,7 +53,7 @@ def bul_account_handler(queried_pubkey):
     :param queried_pubkey:
     :return:
     """
-    return dict(status=200, **paket.get_bul_account(queried_pubkey))
+    return dict(status=200, **paket_stellar.get_bul_account(queried_pubkey))
 
 
 @BLUEPRINT.route("/v{}/prepare_create_account".format(VERSION), methods=['POST'])
@@ -68,7 +68,8 @@ def prepare_create_account_handler(from_pubkey, new_pubkey, starting_balance=500
     :param starting_balance:
     :return:
     """
-    return {'status': 200, 'transaction': paket.prepare_create_account(from_pubkey, new_pubkey, starting_balance)}
+    return {'status': 200, 'transaction': paket_stellar.prepare_create_account(
+        from_pubkey, new_pubkey, starting_balance)}
 
 
 @BLUEPRINT.route("/v{}/prepare_trust".format(VERSION), methods=['POST'])
@@ -82,7 +83,7 @@ def prepare_trust_handler(from_pubkey, limit=None):
     :param limit:
     :return:
     """
-    return {'status': 200, 'transaction': paket.prepare_trust(from_pubkey, limit)}
+    return {'status': 200, 'transaction': paket_stellar.prepare_trust(from_pubkey, limit)}
 
 
 @BLUEPRINT.route("/v{}/prepare_send_buls".format(VERSION), methods=['POST'])
@@ -97,7 +98,7 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     :param amount_buls:
     :return:
     """
-    return {'status': 200, 'transaction': paket.prepare_send_buls(from_pubkey, to_pubkey, amount_buls)}
+    return {'status': 200, 'transaction': paket_stellar.prepare_send_buls(from_pubkey, to_pubkey, amount_buls)}
 
 
 # Package routes.
@@ -124,7 +125,7 @@ def prepare_escrow_handler(
     :param deadline_timestamp:
     :return:
     """
-    return dict(status=201, **paket.prepare_escrow(
+    return dict(status=201, **paket_stellar.prepare_escrow(
         user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
         payment_buls, collateral_buls, deadline_timestamp
     ))
@@ -185,7 +186,7 @@ def fund_handler(funded_pubkey, funded_buls=1000000000):
     ---
     :return:
     """
-    return {'status': 200, 'response': paket.fund_from_issuer(funded_pubkey, funded_buls)}
+    return {'status': 200, 'response': paket_stellar.fund_from_issuer(funded_pubkey, funded_buls)}
 
 
 @BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])
