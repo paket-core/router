@@ -1,3 +1,4 @@
-../util
+../paket-stellar
 ../py-stellar-base
 ../webserver
+../util

@@ -114,7 +114,7 @@ if [ "$_test" ]; then
     python -m unittest
 fi
 
-[ "$shell" ] && python -ic 'import util.logger; util.logger.setup(); import routes; import db; import paket; p = paket'
+[ "$shell" ] && python -ic 'import util.logger; util.logger.setup(); import routes; import db'
 
 [ "$run" ] && python ./routes.py
 
