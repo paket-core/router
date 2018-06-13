@@ -17,6 +17,12 @@ LOGGER = util.logger.logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
 
 
+# Input validators and fixers.
+webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_timestamp'] = webserver.validation.check_and_fix_natural
+webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_buls'] = webserver.validation.check_and_fix_natural
+webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.check_and_fix_natural
+
+
 # Wallet routes.
 
 
