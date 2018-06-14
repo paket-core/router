@@ -10,7 +10,7 @@ import webserver.validation
 
 import routes
 import db
-import paket
+import paket_stellar
 
 db.DB_NAME = 'test.db'
 webserver.validation.NONCES_DB_NAME = 'nonce_test.db'
@@ -28,7 +28,7 @@ class BaseOperations(unittest.TestCase):
         self.app = APP.test_client()
         self.host = 'http://localhost'
         self.funded_seed = 'SDJGBJZMQ7Z4W3KMSMO2HYEV56DJPOZ7XRR7LJ5X2KW6VKBSLELR7MRQ'
-        self.funded_account = paket.get_keypair(seed=self.funded_seed)
+        self.funded_account = paket_stellar.get_keypair(seed=self.funded_seed)
         self.funded_pubkey = self.funded_account.address().decode()
         LOGGER.info('init done')
 
@@ -49,7 +49,7 @@ class BaseOperations(unittest.TestCase):
     @staticmethod
     def sign_transaction(transaction, seed):
         """Sign transaction with provided seed"""
-        builder = paket.stellar_base.builder.Builder(horizon=paket.HORIZON, secret=seed)
+        builder = paket_stellar.stellar_base.builder.Builder(horizon=paket_stellar.HORIZON, secret=seed)
         builder.import_from_xdr(transaction)
         builder.sign()
         signed_transaction = builder.gen_te().xdr().decode()
@@ -63,7 +63,7 @@ class BaseOperations(unittest.TestCase):
                 "{}/v{}/{}".format(self.host, routes.VERSION, path), kwargs)
             signature = webserver.validation.sign_fingerprint(fingerprint, seed)
             headers = {
-                'Pubkey': paket.get_keypair(seed=seed).address().decode(),
+                'Pubkey': paket_stellar.get_keypair(seed=seed).address().decode(),
                 'Fingerprint': fingerprint, 'Signature': signature}
         else:
             headers = None
@@ -93,7 +93,7 @@ class BaseOperations(unittest.TestCase):
 
     def create_and_setup_new_account(self, amount_buls=None, trust_limit=None):
         """Create account. Add trust and send initial ammount of BULs (if specified)"""
-        keypair = paket.get_keypair()
+        keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         seed = keypair.seed().decode()
         self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
@@ -111,7 +111,7 @@ class BaseOperations(unittest.TestCase):
 
     def send(self, from_seed, to_pubkey, amount_buls):
         """Send BULs between accounts."""
-        from_pubkey = paket.get_keypair(seed=from_seed).address().decode()
+        from_pubkey = paket_stellar.get_keypair(seed=from_seed).address().decode()
         description = "sending {} from {} to {}".format(amount_buls, from_pubkey, to_pubkey)
         LOGGER.info(description)
         unsigned = self.call(
@@ -149,7 +149,7 @@ class TestAccount(BaseOperations):
 
     def test_no_exist(self):
         """Check no existing accounts"""
-        keypair = paket.get_keypair()
+        keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         response = self.call('bul_account', 400, 'could not verify account does not exist', queried_pubkey=pubkey)
         self.assertEqual(response['error'], "no account found for {}".format(pubkey))
@@ -167,7 +167,7 @@ class TestAccount(BaseOperations):
 
     def test_create_account(self):
         """Create new account"""
-        keypair = paket.get_keypair()
+        keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         LOGGER.info("testing creation of %s", keypair)
         response = self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
@@ -176,16 +176,16 @@ class TestAccount(BaseOperations):
 
     def test_trust(self):
         """Extend trust."""
-        keypair = paket.get_keypair()
+        keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
         response = self.call('bul_account', 400, 'could not verify account does not trust', queried_pubkey=pubkey)
         self.assertEqual(response['error'], "account {} does not trust {} from {}".format(
-            pubkey, paket.BUL_TOKEN_CODE, paket.ISSUER))
+            pubkey, paket_stellar.BUL_TOKEN_CODE, paket_stellar.ISSUER))
         LOGGER.info("testing trust for %s", keypair)
         self.trust(pubkey, keypair.seed().decode())
         response = self.call('bul_account', 200, 'could not get bul account after trust', queried_pubkey=pubkey)
-        self.assertEqual(response['bul_balance'], 0)
+        self.assertEqual(response['bul_balance'], '0')
         return pubkey, keypair.seed().decode()
 
     def test_send(self):
@@ -285,7 +285,7 @@ class TestAPI(BaseOperations):
 
     def test_submit_unsigned(self):
         """Test server behavior on submitting unsigned transactions"""
-        keypair = paket.get_keypair()
+        keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         new_account_pubkey, _ = self.create_and_setup_new_account()
         LOGGER.info('preparing unsigned transactions')
@@ -307,7 +307,7 @@ class TestAPI(BaseOperations):
 
     def test_submit_signed(self):
         """Test server behavior on submitting signed transactions"""
-        keypair = paket.get_keypair()
+        keypair = paket_stellar.get_keypair()
         new_pubkey = keypair.address().decode()
         new_seed = keypair.seed().decode()
 
@@ -342,7 +342,7 @@ class TestAPI(BaseOperations):
 
     def test_submit_invalid_transaction(self):
         """Test server behavior on submitting invalid transactions"""
-        keypair = paket.get_keypair()
+        keypair = paket_stellar.get_keypair()
         new_pubkey = keypair.address().decode()
 
         # preparing invalid transactions
@@ -369,7 +369,7 @@ class TestAPI(BaseOperations):
         accounts = [self.funded_pubkey]
         # additionally create 3 new accounts
         for _ in range(3):
-            keypair = paket.get_keypair()
+            keypair = paket_stellar.get_keypair()
             pubkey = keypair.address().decode()
             seed = keypair.seed().decode()
             self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
@@ -383,7 +383,7 @@ class TestAPI(BaseOperations):
 
     def test_prepare_create_account(self):
         """Test prepare_account endpoint on valid public keys"""
-        keypair = paket.get_keypair()
+        keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         LOGGER.info('querying prepare create account for public key: %s', pubkey)
         self.call('prepare_create_account', 200, 'could not get create account transaction',
@@ -398,7 +398,7 @@ class TestAPI(BaseOperations):
 
     def test_prepare_trust(self):
         """Test prepare_trust endpoint on valid pubkey"""
-        keypair = paket.get_keypair()
+        keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
         LOGGER.info('querying prepare trust for user: %s', pubkey)

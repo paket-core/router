@@ -4,18 +4,24 @@ import os
 import flasgger
 import flask
 
+import paket_stellar
 import util.logger
 import util.stellar_units
 import webserver.validation
 
 import db
-import paket
 import swagger_specs
 
 VERSION = swagger_specs.VERSION
 PORT = os.environ.get('PAKET_API_PORT', 8000)
 LOGGER = util.logger.logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
+
+
+# Input validators and fixers.
+webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_timestamp'] = webserver.validation.check_and_fix_natural
+webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_buls'] = webserver.validation.check_and_fix_natural
+webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.check_and_fix_natural
 
 
 # Wallet routes.
@@ -35,7 +41,7 @@ def submit_transaction_handler(transaction):
     :param transaction:
     :return:
     """
-    return {'status': 200, 'response': paket.submit_transaction_envelope(transaction)}
+    return {'status': 200, 'response': paket_stellar.submit_transaction_envelope(transaction)}
 
 
 @BLUEPRINT.route("/v{}/bul_account".format(VERSION), methods=['POST'])
@@ -48,7 +54,7 @@ def bul_account_handler(queried_pubkey):
     :param queried_pubkey:
     :return:
     """
-    account = paket.get_bul_account(queried_pubkey)
+    account = paket_stellar.get_bul_account(queried_pubkey)
     for balance_name in ('xlm_balance', 'bul_balance'):
         if balance_name in account:
             account[balance_name] = util.stellar_units.units_to_stroops(account[balance_name])
@@ -68,7 +74,8 @@ def prepare_create_account_handler(from_pubkey, new_pubkey, starting_balance=500
     :return:
     """
     starting_balance = util.stellar_units.stroops_to_units(int(starting_balance))
-    return {'status': 200, 'transaction': paket.prepare_create_account(from_pubkey, new_pubkey, starting_balance)}
+    return {'status': 200, 'transaction': paket_stellar.prepare_create_account(
+        from_pubkey, new_pubkey, starting_balance)}
 
 
 @BLUEPRINT.route("/v{}/prepare_trust".format(VERSION), methods=['POST'])
@@ -83,7 +90,7 @@ def prepare_trust_handler(from_pubkey, limit=None):
     :return:
     """
     limit = util.stellar_units.stroops_to_units(int(limit)) if limit is not None else limit
-    return {'status': 200, 'transaction': paket.prepare_trust(from_pubkey, limit)}
+    return {'status': 200, 'transaction': paket_stellar.prepare_trust(from_pubkey, limit)}
 
 
 @BLUEPRINT.route("/v{}/prepare_send_buls".format(VERSION), methods=['POST'])
@@ -99,7 +106,7 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     :return:
     """
     amount_buls = util.stellar_units.stroops_to_units(int(amount_buls))
-    return {'status': 200, 'transaction': paket.prepare_send_buls(from_pubkey, to_pubkey, amount_buls)}
+    return {'status': 200, 'transaction': paket_stellar.prepare_send_buls(from_pubkey, to_pubkey, amount_buls)}
 
 
 # Package routes.
@@ -128,10 +135,10 @@ def prepare_escrow_handler(
     """
     payment_buls = util.stellar_units.stroops_to_units(int(payment_buls), numeric_representation=True)
     collateral_buls = util.stellar_units.stroops_to_units(int(collateral_buls), numeric_representation=True)
-    return dict(status=201, **paket.prepare_escrow(
-        user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp
-    ))
+    package_details = paket_stellar.prepare_escrow(user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
+                                                   payment_buls, collateral_buls, deadline_timestamp)
+    db.create_package(**package_details)
+    return dict(status=201, **package_details)
 
 
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
@@ -197,7 +204,7 @@ def fund_handler(funded_pubkey, funded_buls=1000000000):
     :return:
     """
     funded_buls = util.stellar_units.stroops_to_units(int(funded_buls))
-    return {'status': 200, 'response': paket.fund_from_issuer(funded_pubkey, funded_buls)}
+    return {'status': 200, 'response': paket_stellar.fund_from_issuer(funded_pubkey, funded_buls)}
 
 
 @BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])
