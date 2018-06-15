@@ -5,12 +5,12 @@ import os.path
 import time
 import unittest
 
+import paket_stellar
 import util.logger
 import webserver.validation
 
 import routes
 import db
-import paket_stellar
 
 db.DB_NAME = 'test.db'
 webserver.validation.NONCES_DB_NAME = 'nonce_test.db'
