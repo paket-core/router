@@ -194,7 +194,7 @@ class TestAccount(BaseOperations):
         LOGGER.info("testing trust for %s", keypair)
         self.trust(pubkey, keypair.seed().decode())
         response = self.call('bul_account', 200, 'could not get bul account after trust', queried_pubkey=pubkey)
-        self.assertEqual(response['bul_balance'], '0')
+        self.assertEqual(int(response['bul_balance']), 0)
         return pubkey, keypair.seed().decode()
 
     def test_send(self):
