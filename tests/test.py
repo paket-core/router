@@ -12,8 +12,8 @@ import webserver.validation
 import routes
 import db
 
-db.DB_NAME = 'test.db'
-webserver.validation.NONCES_DB_NAME = 'nonce_test.db'
+db.DB_NAME = 'paket_test'
+webserver.validation.NONCES_DB_NAME = 'nonce_test'
 LOGGER = util.logger.logging.getLogger('pkt.api.test')
 util.logger.setup()
 APP = webserver.setup(routes.BLUEPRINT)
