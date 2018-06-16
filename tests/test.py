@@ -150,18 +150,9 @@ class TestAccount(BaseOperations):
     def test_no_exist(self):
         """Check no existing accounts"""
         keypair = paket_stellar.get_keypair()
-        valid_pubkey = keypair.address().decode()
-        data_set = [
-            valid_pubkey,  # valid public key
-            'GBNDWBDLL5UOD36KN3BOOKIQPCNIN3QRUO7RMN37WNBSFCPIKWJ',  # invalid public key
-            'Lorem ipsum dolor sit amet',  # random text
-            144  # random number
-        ]
-        for pubkey in data_set:
-            with self.subTest(pubkey=pubkey):
-                response = self.call('bul_account', 400,
-                                     'could not verify account does not exist', queried_pubkey=pubkey)
-                self.assertEqual(response['error'], "no account found for {}".format(pubkey))
+        pubkey = keypair.address().decode()
+        response = self.call('bul_account', 400, 'could not verify account does not exist', queried_pubkey=pubkey)
+        self.assertEqual(response['error'], "no account found for {}".format(pubkey))
 
     def test_exist(self):
         """Check existing accounts"""
