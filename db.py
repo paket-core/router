@@ -6,6 +6,7 @@ import util.db
 
 LOGGER = logging.getLogger('pkt.db')
 DB_NAME = 'paket'
+SQL_CONNECTION = util.db.custom_sql_connection('localhost', 3306, 'root', 'pass', DB_NAME)
 
 
 def enrich_package(package):
@@ -37,7 +38,7 @@ class UnknownPaket(Exception):
 
 def init_db():
     """Initialize the database."""
-    with util.db.sql_connection(DB_NAME) as sql:
+    with SQL_CONNECTION() as sql:
         # Not using IF EXISTS here in case we want different handling.
         sql.execute("SELECT table_name FROM information_schema.tables where table_name = 'packages'")
         if len(sql.fetchall()) == 1:
@@ -64,7 +65,7 @@ def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
         set_options_transaction, refund_transaction, merge_transaction, payment_transaction):
     """Create a new package row."""
-    with util.db.sql_connection(DB_NAME) as sql:
+    with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO packages (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, custodian_pubkey, deadline, payment, collateral,
@@ -76,7 +77,7 @@ def create_package(
 
 def get_package(escrow_pubkey):
     """Get package details."""
-    with util.db.sql_connection(DB_NAME) as sql:
+    with SQL_CONNECTION() as sql:
         sql.execute("SELECT * FROM packages WHERE escrow_pubkey = %s", (escrow_pubkey,))
         try:
             return enrich_package(sql.fetchone())
@@ -86,7 +87,7 @@ def get_package(escrow_pubkey):
 
 def get_packages(user_pubkey=None):
     """Get a list of packages."""
-    with util.db.sql_connection(DB_NAME) as sql:
+    with SQL_CONNECTION() as sql:
         if user_pubkey:
             sql.execute("""
                 SELECT * FROM packages
@@ -102,7 +103,7 @@ def get_packages(user_pubkey=None):
 
 def update_custodian(escrow_pubkey, custodian_pubkey):
     """Update a package's custodian."""
-    with util.db.sql_connection(DB_NAME) as sql:
+    with SQL_CONNECTION() as sql:
         sql.execute(
             "UPDATE packages SET custodian_pubkey = %s WHERE escrow_pubkey = %s", (custodian_pubkey, escrow_pubkey))
         assert sql.rowcount == 1, "update of package {} failed".format(escrow_pubkey)
