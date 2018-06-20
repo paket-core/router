@@ -1,7 +1,11 @@
-*.db
-*.pyc
+*$py.class
+*.egg-info
+*.log
+*.py[cod]
+.eggs
 .idea
-env
+__pycache__/
+build
+dist
 paket.env
-paket.log
 venv
