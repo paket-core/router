@@ -84,7 +84,7 @@ launcher account, a courier account, and a recipient account.
   launcher, and it will be the launhcer's responsability to merge this account
   back to reclaim any leftover XLMs.
     - Generate a keypair.
-    - As the launcher, call /prepare_create_account with the new pubkey given
+    - As the launcher, call /prepare_account with the new pubkey given
       as argument, sign the returned transaction (with the launcher private
       key), and submit it to /submit_transaction.
     - Optionally, check the new account by calling /bul_account - you should
@@ -188,7 +188,7 @@ BUL_ACCOUNT = {
     }
 }
 
-PREPARE_CREATE_ACCOUNT = {
+PREPARE_ACCOUNT = {
     'tags': ['wallet'],
     'parameters': [
         {

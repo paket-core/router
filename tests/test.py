@@ -1,7 +1,5 @@
 """Test the PaKeT API."""
 import json
-import os
-import os.path
 import time
 import unittest
 
@@ -10,10 +8,7 @@ import util.logger
 import webserver.validation
 
 import routes
-import db
 
-db.DB_NAME = 'paket_test'
-webserver.validation.NONCES_DB_NAME = 'nonce_test'
 LOGGER = util.logger.logging.getLogger('pkt.api.test')
 util.logger.setup()
 APP = webserver.setup(routes.BLUEPRINT)
@@ -31,20 +26,6 @@ class BaseOperations(unittest.TestCase):
         self.funded_account = paket_stellar.get_keypair(seed=self.funded_seed)
         self.funded_pubkey = self.funded_account.address().decode()
         LOGGER.info('init done')
-
-    @staticmethod
-    def cleanup():
-        """Remove db files."""
-        try:
-            os.unlink(db.DB_NAME)
-        except FileNotFoundError:
-            pass
-        try:
-            os.unlink(webserver.validation.NONCES_DB_NAME)
-        except FileNotFoundError:
-            pass
-        assert not os.path.isfile(db.DB_NAME)
-        assert not os.path.isfile(webserver.validation.NONCES_DB_NAME)
 
     @staticmethod
     def sign_transaction(transaction, seed):
@@ -86,7 +67,7 @@ class BaseOperations(unittest.TestCase):
         """Create account with starting balance"""
         LOGGER.info('creating %s from %s', new_pubkey, from_pubkey)
         unsigned = self.call(
-            'prepare_create_account', 200, 'could not get create account transaction',
+            'prepare_account', 200, 'could not get create account transaction',
             from_pubkey=from_pubkey, new_pubkey=new_pubkey, starting_balance=starting_balance)['transaction']
         response = self.submit(unsigned, seed, 'create account')
         return response
@@ -165,7 +146,7 @@ class TestAccount(BaseOperations):
             with self.subTest(pubkey=pubkey):
                 self.call('bul_account', 200, 'could not verify account exist', queried_pubkey=pubkey)
 
-    def test_create_account(self):
+    def test_account(self):
         """Create new account"""
         keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
@@ -210,16 +191,6 @@ class TestAccount(BaseOperations):
 
 class TestPackage(BaseOperations):
     """Package tests"""
-
-    def setUp(self):
-        """Prepare the test fixture"""
-        LOGGER.info('setting up')
-        self.cleanup()
-        db.init_db()
-
-    def tearDown(self):
-        LOGGER.info('tearing down')
-        self.cleanup()
 
     def test_package(self):
         """Launch a package with payment and collateral, accept by courier and then by recipient."""
@@ -270,27 +241,14 @@ class TestPackage(BaseOperations):
 class TestAPI(BaseOperations):
     """API tests. It focused on testing API endpoints by posting valid and invalid data"""
 
-    @classmethod
-    def setUpClass(cls):
-        """Prepare the class fixture"""
-        LOGGER.info('setting up')
-        cls.cleanup()
-        db.init_db()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Deconstructing the class fixture"""
-        LOGGER.info('tearing down')
-        cls.cleanup()
-
     def test_submit_unsigned(self):
         """Test server behavior on submitting unsigned transactions"""
         keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         new_account_pubkey, _ = self.create_and_setup_new_account()
         LOGGER.info('preparing unsigned transactions')
-        unsigned_create_account = self.call(
-            'prepare_create_account', 200, 'could not get create account transaction',
+        unsigned_account = self.call(
+            'prepare_account', 200, 'could not get create account transaction',
             from_pubkey=self.funded_pubkey, new_pubkey=pubkey)['transaction']
         unsigned_trust = self.call('prepare_trust', 200, 'could not get trust transaction',
                                    from_pubkey=self.funded_pubkey)['transaction']
@@ -299,7 +257,7 @@ class TestAPI(BaseOperations):
             "can not prepare send from {} to {}".format(self.funded_pubkey, new_account_pubkey),
             from_pubkey=self.funded_pubkey, to_pubkey=new_account_pubkey, amount_buls=5)['transaction']
 
-        for unsigned in (unsigned_create_account, unsigned_trust, unsigned_send_buls):
+        for unsigned in (unsigned_account, unsigned_trust, unsigned_send_buls):
             with self.subTest(unsigned=unsigned):
                 self.call(path='submit_transaction', expected_code=500,
                           fail_message='unexpected server response for submitting unsigned transaction',
@@ -312,14 +270,14 @@ class TestAPI(BaseOperations):
         new_seed = keypair.seed().decode()
 
         # checking create_account transaction
-        unsigned_create_account = self.call(
-            'prepare_create_account', 200, 'could not get create account transaction',
+        unsigned_account = self.call(
+            'prepare_account', 200, 'could not get create account transaction',
             from_pubkey=self.funded_pubkey, new_pubkey=new_pubkey)['transaction']
-        signed_create_account = self.sign_transaction(unsigned_create_account, self.funded_seed)
+        signed_account = self.sign_transaction(unsigned_account, self.funded_seed)
         LOGGER.info('Submitting signed create_account transaction')
         self.call(path='submit_transaction', expected_code=200,
                   fail_message='unexpected server response for submitting signed create_account transaction',
-                  seed=self.funded_seed, transaction=signed_create_account)
+                  seed=self.funded_seed, transaction=signed_account)
 
         # checking trust transaction
         unsigned_trust = self.call('prepare_trust', 200,
@@ -346,14 +304,14 @@ class TestAPI(BaseOperations):
         new_pubkey = keypair.address().decode()
 
         # preparing invalid transactions
-        unsigned_create_account = self.call(
-            'prepare_create_account', 200, 'could not get create account transaction',
+        unsigned_prepare_account = self.call(
+            'prepare_account', 200, 'could not get create account transaction',
             from_pubkey=self.funded_pubkey, new_pubkey=new_pubkey)['transaction']
-        signed_create_account = self.sign_transaction(unsigned_create_account, self.funded_seed)
-        signed_create_account = signed_create_account.replace('c', 'd', 1).replace('S', 't', 1).replace('a', 'r', 1)
+        signed_prepare_account = self.sign_transaction(unsigned_prepare_account, self.funded_seed)
+        signed_prepare_account = signed_prepare_account.replace('c', 'd', 1).replace('S', 't', 1).replace('a', 'r', 1)
 
         data_set = [
-            signed_create_account,
+            signed_prepare_account,
             'TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ=',
             144
         ]
@@ -397,7 +355,7 @@ class TestAPI(BaseOperations):
                 LOGGER.info('querying information about invalid account: %s', pubkey)
                 self.call('bul_account', 400, 'could not verify account exist', queried_pubkey=pubkey)
 
-    def test_invalid_prepare_create_account(self):
+    def test_invalid_prepare_account(self):
         """Test prepare_account endpoint on invalid public keys"""
         keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
@@ -414,15 +372,15 @@ class TestAPI(BaseOperations):
         for from_pubkey, new_pubkey in pubkey_pairs:
             LOGGER.info('querying prepare create invalid new account: %s from invalid account: %s',
                         new_pubkey, from_pubkey)
-            self.call('prepare_create_account', 500, 'unexpected server response for prepare_create_account',
+            self.call('prepare_account', 500, 'unexpected server response for prepare_account',
                       from_pubkey=from_pubkey, new_pubkey=new_pubkey)
 
-    def test_prepare_create_account(self):
+    def test_prepare_account(self):
         """Test prepare_account endpoint on valid public keys"""
         keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         LOGGER.info('querying prepare create account for public key: %s', pubkey)
-        self.call('prepare_create_account', 200, 'could not get create account transaction',
+        self.call('prepare_account', 200, 'could not get create account transaction',
                   from_pubkey=self.funded_pubkey, new_pubkey=pubkey)
 
     def test_prepare_send_buls(self):

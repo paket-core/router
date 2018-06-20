@@ -1,12 +1,17 @@
 """PaKeT database interface."""
 import logging
+import os
 import random
 
 import util.db
 
 LOGGER = logging.getLogger('pkt.db')
-DB_NAME = 'paket'
-SQL_CONNECTION = util.db.custom_sql_connection('localhost', 3306, 'root', 'pass', DB_NAME)
+DB_HOST = os.environ.get('PAKET_DB_HOST', '127.0.0.1')
+DB_PORT = int(os.environ.get('PAKET_DB_PORT', 3306))
+DB_USER = os.environ.get('PAKET_DB_USER', 'root')
+DB_PASSWORD = os.environ.get('PAKET_DB_PASSWORD')
+DB_NAME = os.environ.get('PAKET_DB_NAME', 'paket')
+SQL_CONNECTION = util.db.custom_sql_connection(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)
 
 
 def enrich_package(package):
