@@ -51,6 +51,10 @@ class BaseOperations(unittest.TestCase):
         response = self.app.post("/v{}/{}".format(routes.VERSION, path), headers=headers, data=kwargs)
         response = dict(real_status_code=response.status_code, **json.loads(response.data.decode()))
         if expected_code:
+            LOGGER.warning(path)
+            LOGGER.warning(kwargs)
+            LOGGER.warning(response)
+            LOGGER.warning("expecting %s got %s", expected_code, response['real_status_code'])
             self.assertEqual(response['real_status_code'], expected_code, "{} ({})".format(
                 fail_message, response.get('error')))
         return response
@@ -357,10 +361,7 @@ class TestAPI(BaseOperations):
 
     def test_invalid_prepare_account(self):
         """Test prepare_account endpoint on invalid public keys"""
-        keypair = paket_stellar.get_keypair()
-        pubkey = keypair.address().decode()
         invalid_from_pubkeys = [
-            pubkey,  # just generated pubkey
             'GBTWWXACDQOSRQ3645B2LA345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ',  # invalid pubkey
             'Lorem ipsum dolor sit amet',  # random text
             144  # random number
@@ -370,10 +371,18 @@ class TestAPI(BaseOperations):
                         for new_pubkey in invalid_new_pubkeys]
 
         for from_pubkey, new_pubkey in pubkey_pairs:
-            LOGGER.info('querying prepare create invalid new account: %s from invalid account: %s',
-                        new_pubkey, from_pubkey)
-            self.call('prepare_account', 500, 'unexpected server response for prepare_account',
-                      from_pubkey=from_pubkey, new_pubkey=new_pubkey)
+            LOGGER.info(
+                'querying prepare create invalid new account: %s from invalid account: %s', new_pubkey, from_pubkey)
+            self.call(
+                'prepare_account', 400, 'unexpected server response for prepare_account',
+                from_pubkey=from_pubkey, new_pubkey=new_pubkey)
+
+        keypair = paket_stellar.get_keypair()
+        pubkey = keypair.address().decode()
+        LOGGER.info('querying prepare create from non existing account: %s', pubkey)
+        self.call(
+            'prepare_account', 500, 'unexpected server response for prepare_account',
+            from_pubkey=pubkey, new_pubkey=pubkey)
 
     def test_prepare_account(self):
         """Test prepare_account endpoint on valid public keys"""

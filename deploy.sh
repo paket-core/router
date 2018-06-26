@@ -96,6 +96,9 @@ if [ "$create_db" ]; then
 fi
 
 if [ "$_test" ]; then
+    original_db_name="$PAKET_DB_NAME"
+    PAKET_DB_NAME=test
+    export PAKET_DB_NAME
     for package in "${local_packages[@]}"; do
         pushd "$package" > /dev/null
         echo
@@ -112,6 +115,7 @@ if [ "$_test" ]; then
     which pycodestyle > /dev/null && echo pycodestyle had $(pycodestyle --max-line-length=120 *.py **/*.py 2>&1 | wc -l) issues
     which pylint > /dev/null && pylint *.py **/*.py | tail -2 | head -1
     python -m unittest
+    PAKET_DB_NAME="$original_db_name"
 fi
 
 [ "$shell" ] && python -ic 'import util.logger; util.logger.setup(); import routes; import db'
