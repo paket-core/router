@@ -45,7 +45,9 @@ def init_db():
     """Initialize the database."""
     with SQL_CONNECTION() as sql:
         # Not using IF EXISTS here in case we want different handling.
-        sql.execute("SELECT table_name FROM information_schema.tables where table_name = 'packages'")
+        sql.execute("""
+            SELECT table_name FROM information_schema.tables
+            WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'users'""", (DB_NAME,))
         if len(sql.fetchall()) == 1:
             LOGGER.debug('database already exists')
             return
