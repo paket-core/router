@@ -51,10 +51,6 @@ class BaseOperations(unittest.TestCase):
         response = self.app.post("/v{}/{}".format(routes.VERSION, path), headers=headers, data=kwargs)
         response = dict(real_status_code=response.status_code, **json.loads(response.data.decode()))
         if expected_code:
-            LOGGER.warning(path)
-            LOGGER.warning(kwargs)
-            LOGGER.warning(response)
-            LOGGER.warning("expecting %s got %s", expected_code, response['real_status_code'])
             self.assertEqual(response['real_status_code'], expected_code, "{} ({})".format(
                 fail_message, response.get('error')))
         return response
