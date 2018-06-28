@@ -44,28 +44,26 @@ class UnknownPaket(Exception):
 def init_db():
     """Initialize the database."""
     with SQL_CONNECTION() as sql:
-        # Not using IF EXISTS here in case we want different handling.
-        sql.execute("""
-            SELECT table_name FROM information_schema.tables
-            WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'users'""", (DB_NAME,))
-        if len(sql.fetchall()) == 1:
-            LOGGER.debug('database already exists')
-            return
         sql.execute('''
             CREATE TABLE packages(
                 escrow_pubkey VARCHAR(56) UNIQUE,
                 launcher_pubkey VARCHAR(56),
                 recipient_pubkey VARCHAR(56),
-                custodian_pubkey VARCHAR(56),
                 deadline INTEGER,
                 payment INTEGER,
                 collateral INTEGER,
                 set_options_transaction VARCHAR(1024),
                 refund_transaction VARCHAR(1024),
                 merge_transaction VARCHAR(1024),
-                payment_transaction VARCHAR(1024),
-                kwargs VARCHAR(1024))''')
+                payment_transaction VARCHAR(1024))''')
         LOGGER.debug('packages table created')
+        sql.execute('''
+            CREATE TABLE custodians(
+                timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                escrow_pubkey VARCHAR(56),
+                custodian_pubkey VARCHAR(56),
+                FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
+        LOGGER.debug('custodians table created')
 
 
 def create_package(
@@ -75,19 +73,25 @@ def create_package(
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO packages (
-                escrow_pubkey, launcher_pubkey, recipient_pubkey, custodian_pubkey, deadline, payment, collateral,
+                escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
                 set_options_transaction, refund_transaction, merge_transaction, payment_transaction
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
-                escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_pubkey, deadline, payment, collateral,
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
+                escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
                 set_options_transaction, refund_transaction, merge_transaction, payment_transaction))
+        sql.execute("INSERT INTO custodians (escrow_pubkey, custodian_pubkey) VALUES (%s, %s)", (
+            escrow_pubkey, launcher_pubkey))
 
 
 def get_package(escrow_pubkey):
     """Get package details."""
     with SQL_CONNECTION() as sql:
+        sql.execute(
+            "SELECT custodian_pubkey FROM custodians WHERE escrow_pubkey = %s ORDER BY timestamp DESC LIMIT 1",
+            (escrow_pubkey,))
+        custodian_pubkey = sql.fetchall()[0]['custodian_pubkey']
         sql.execute("SELECT * FROM packages WHERE escrow_pubkey = %s", (escrow_pubkey,))
         try:
-            return enrich_package(sql.fetchone())
+            return dict(enrich_package(sql.fetchone()), custodian_pubkey=custodian_pubkey)
         except TypeError:
             raise UnknownPaket("paket {} is not valid".format(escrow_pubkey))
 
@@ -98,11 +102,10 @@ def get_packages(user_pubkey=None):
         if user_pubkey:
             sql.execute("""
                 SELECT * FROM packages
-                WHERE launcher_pubkey = %s
+                WHERE escrow_pubkey IN (
+                    SELECT escrow_pubkey FROM custodians WHERE custodian_pubkey = %s)
                 OR launcher_pubkey = %s
-                OR recipient_pubkey = %s
-                OR custodian_pubkey = %s
-            """, (user_pubkey, user_pubkey, user_pubkey, user_pubkey))
+                OR recipient_pubkey = %s""", (user_pubkey, user_pubkey, user_pubkey))
         else:
             sql.execute('SELECT * FROM packages')
         return [enrich_package(row) for row in sql.fetchall()]
@@ -111,6 +114,5 @@ def get_packages(user_pubkey=None):
 def update_custodian(escrow_pubkey, custodian_pubkey):
     """Update a package's custodian."""
     with SQL_CONNECTION() as sql:
-        sql.execute(
-            "UPDATE packages SET custodian_pubkey = %s WHERE escrow_pubkey = %s", (custodian_pubkey, escrow_pubkey))
-        assert sql.rowcount == 1, "update of package {} failed".format(escrow_pubkey)
+        sql.execute("INSERT INTO custodians (escrow_pubkey, custodian_pubkey) VALUES (%s, %s)", (
+            escrow_pubkey, custodian_pubkey))
