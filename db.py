@@ -59,7 +59,7 @@ def init_db():
         LOGGER.debug('packages table created')
         sql.execute('''
             CREATE TABLE custodians(
-                timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 escrow_pubkey VARCHAR(56),
                 custodian_pubkey VARCHAR(56),
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
