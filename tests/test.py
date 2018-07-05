@@ -8,6 +8,7 @@ import util.logger
 import webserver.validation
 
 import routes
+import db
 
 LOGGER = util.logger.logging.getLogger('pkt.api.test')
 util.logger.setup()
@@ -26,6 +27,21 @@ class BaseOperations(unittest.TestCase):
         self.funded_account = paket_stellar.get_keypair(seed=self.funded_seed)
         self.funded_pubkey = self.funded_account.address().decode()
         LOGGER.info('init done')
+
+    @classmethod
+    def setUpClass(cls):
+        """Create tables if they does not exists"""
+        try:
+            LOGGER.info('creating tables...')
+            db.init_db()
+        except db.util.db.mysql.connector.ProgrammingError:
+            LOGGER.info('tables already exists')
+
+    def setUp(self):
+        """Clear all tables in db"""
+        assert db.DB_NAME.startswith('test'), "refusing to test on db named {}".format(db.DB_NAME)
+        LOGGER.info('clearing database')
+        db.util.db.clear_tables(db.SQL_CONNECTION, db.DB_NAME)
 
     @staticmethod
     def sign_transaction(transaction, seed):
