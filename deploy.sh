@@ -35,50 +35,56 @@ set -o allexport
 . paket.env
 set +o allexport
 
+# Requires python3.
+if ! which python3 > /dev/null; then
+    echo 'python3 not found'
+    return 1 2>/dev/null
+    exit 1
+fi
+
+# Requires python packages (as specified in requirements.txt).
+installed_packages="$(pip freeze)"
+local_packages=()
+while read package; do
+    if [ ${package:0:3} = '../' ]; then
+        local_packages+=("$package")
+        if ! [ -d "$package" ]; then
+            echo "$package not found"
+            return 1 2>/dev/null
+            exit 1
+        fi
+    else
+        if ! grep "$package" <<<"$installed_packages"; then
+            echo "$package not found"
+            return 1 2>/dev/null
+            exit 1
+        fi
+
+    fi
+done < requirements.txt
+
 if [ "$install" ]; then
     if ! [ "$VIRTUAL_ENV" ]; then
         echo "refusing to install outside of virtual env"
         return 2 2>/dev/null
         exit 2
     fi
-
-    # Requires python3.
-    if ! which python3 > /dev/null; then
-        echo 'python3 not found'
-        return 1 2>/dev/null
-        exit 1
-    fi
-
-    # Requires python packages (as specified in requirements.txt).
     set -e
-    installed_packages="$(pip freeze)"
-    local_packages=()
-    while read package; do
+    for package in "${local_packages[@]}"; do
         # Make sure local packages exist and are up to date.
-        if [ ${package:0:3} = '../' ]; then
-            local_packages+=("$package")
-            if ! [ -d "$package" ]; then
-                set -e
-                q='n'; read -n 1 -p "Missing local package $package - try to fetch from github? [y|N] " q < /dev/tty; echo
-                if [ y = "$q" ]; then
-                    pushd .. > /dev/null
-                    git clone "git@github.com:paket-core/${package:3}.git"
-                    popd > /dev/null
-                else
-                    echo "Can't continue without $package"
-                    return 1 2>/dev/null
-                    exit 1
-                fi
-            else
-                q='n'; read -n 1 -p "Update local package $package? [y|N] " q < /dev/tty; echo
-                if [ y = "$q" ]; then
-                    pushd "$package" > /dev/null
-                    git pull
-                    popd > /dev/null
-                fi
+        if ! [ -d "$package" ]; then
+            pushd .. > /dev/null
+            git clone "git@github.com:paket-core/${package:3}.git"
+            popd > /dev/null
+        else
+            q='n'; read -n 1 -p "Update local package $package? [y|N] " q < /dev/tty; echo
+            if [ y = "$q" ]; then
+                pushd "$package" > /dev/null
+                git pull
+                popd > /dev/null
             fi
         fi
-    done < requirements.txt
+    done
     pip install -r requirements.txt
     set +e
 fi
