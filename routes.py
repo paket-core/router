@@ -74,8 +74,17 @@ def prepare_account_handler(from_pubkey, new_pubkey, starting_balance=50000000):
     :return:
     """
     starting_balance = util.stellar_units.stroops_to_units(int(starting_balance))
-    return {'status': 200, 'transaction': paket_stellar.prepare_create_account(
-        from_pubkey, new_pubkey, starting_balance)}
+    try:
+        return {'status': 200, 'transaction': paket_stellar.prepare_create_account(
+            from_pubkey, new_pubkey, starting_balance)}
+    # pylint: disable=broad-except
+    # stellar_base throws this as a broad exception.
+    except Exception as exception:
+        LOGGER.info(str(exception))
+        if str(exception) == 'No sequence is present, maybe not funded?':
+            return {'status': 400, 'error': "{} is not a funded account".format(from_pubkey)}
+        raise
+    # pylint: enable=broad-except
 
 
 @BLUEPRINT.route("/v{}/prepare_trust".format(VERSION), methods=['POST'])

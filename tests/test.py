@@ -357,7 +357,10 @@ class TestAPI(BaseOperations):
 
     def test_invalid_prepare_account(self):
         """Test prepare_account endpoint on invalid public keys"""
+        keypair = paket_stellar.get_keypair()
+        pubkey = keypair.address().decode()
         invalid_from_pubkeys = [
+            pubkey, # Unfunded pubkey
             'GBTWWXACDQOSRQ3645B2LA345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ',  # invalid pubkey
             'Lorem ipsum dolor sit amet',  # random text
             144  # random number
@@ -372,13 +375,6 @@ class TestAPI(BaseOperations):
             self.call(
                 'prepare_account', 400, 'unexpected server response for prepare_account',
                 from_pubkey=from_pubkey, new_pubkey=new_pubkey)
-
-        keypair = paket_stellar.get_keypair()
-        pubkey = keypair.address().decode()
-        LOGGER.info('querying prepare create from non existing account: %s', pubkey)
-        self.call(
-            'prepare_account', 500, 'unexpected server response for prepare_account',
-            from_pubkey=pubkey, new_pubkey=pubkey)
 
     def test_prepare_account(self):
         """Test prepare_account endpoint on valid public keys"""
