@@ -142,11 +142,12 @@ def prepare_escrow_handler(
     :param deadline_timestamp:
     :return:
     """
-    payment_buls = util.stellar_units.stroops_to_units(int(payment_buls), numeric_representation=True)
-    collateral_buls = util.stellar_units.stroops_to_units(int(collateral_buls), numeric_representation=True)
+    converted_payment_buls = util.stellar_units.stroops_to_units(payment_buls)
+    converted_collateral_buls = util.stellar_units.stroops_to_units(collateral_buls)
+    converted_total_buls = util.stellar_units.stroops_to_units(payment_buls + collateral_buls)
     package_details = paket_stellar.prepare_escrow(
         user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp)
+        converted_payment_buls, converted_collateral_buls, converted_total_buls, deadline_timestamp)
     db.create_package(**package_details)
     return dict(status=201, **package_details)
 
