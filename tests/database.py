@@ -7,6 +7,7 @@ import db
 LOGGER = util.logger.logging.getLogger('pkt.api.test.db')
 util.logger.setup()
 
+
 class TestDatabase(unittest.TestCase):
     """Test the API's database."""
 
@@ -28,7 +29,6 @@ class TestDatabase(unittest.TestCase):
         # Need to add launcher_pubkey which is the custdian
         self.assertDictEqual(
             db.get_package(package_kwargs['escrow_pubkey']), dict(package_kwargs, custodian_pubkey='launcher_pubkey'))
-
 
     def test_update_custodian(self):
         """Test update of custodian."""
