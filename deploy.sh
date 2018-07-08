@@ -53,15 +53,15 @@ while read package; do
             return 1 2>/dev/null
             exit 1
         fi
-    else
-        if ! grep "$package" <<<"$installed_packages"; then
-            echo "$package not found"
-            return 1 2>/dev/null
-            exit 1
-        fi
-
+        package="${package:3}="
+    fi
+    if ! grep "$package" <<<"$installed_packages"; then
+        echo "$package not found"
+        return 1 2>/dev/null
+        exit 1
     fi
 done < requirements.txt
+exit 3
 
 if [ "$install" ]; then
     if ! [ "$VIRTUAL_ENV" ]; then
