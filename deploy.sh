@@ -43,6 +43,7 @@ if ! which python3 > /dev/null; then
 fi
 
 # Requires python packages (as specified in requirements.txt).
+set -e
 installed_packages="$(pip freeze)"
 local_packages=()
 while read package; do
@@ -52,8 +53,9 @@ while read package; do
             echo "$package not found"
             return 1 2>/dev/null
             exit 1
+        else
+            package="$(grep -Po "(?<=name=.).*(?=')" "$package/setup.py")=="
         fi
-        package="${package:3}="
     fi
     if ! grep "$package" <<<"$installed_packages"; then
         echo "$package not found"
@@ -61,7 +63,7 @@ while read package; do
         exit 1
     fi
 done < requirements.txt
-exit 3
+set +e
 
 if [ "$install" ]; then
     if ! [ "$VIRTUAL_ENV" ]; then
