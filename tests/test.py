@@ -449,8 +449,8 @@ class TestAPI(BaseOperations):
         self.assertTrue(len(packages) == 1)
         self.assertEqual(packages[0]['deadline'], deadline)
         self.assertEqual(packages[0]['escrow_pubkey'], escrow_stuff['escrow'][0])
-        self.assertEqual(packages[0]['collateral'], str(collateral))
-        self.assertEqual(packages[0]['payment'], str(payment))
+        self.assertEqual(packages[0]['collateral'], collateral)
+        self.assertEqual(packages[0]['payment'], payment)
 
     def test_unauth_my_packages(self):
         """Test my_packages endpoint on unauthorized request"""
@@ -478,5 +478,5 @@ class TestAPI(BaseOperations):
                             escrow_pubkey=escrow_stuff['escrow'][0])['package']
         self.assertEqual(package['deadline'], deadline)
         self.assertEqual(package['escrow_pubkey'], escrow_stuff['escrow'][0])
-        self.assertEqual(package['collateral'], str(collateral))
-        self.assertEqual(package['payment'], str(payment))
+        self.assertEqual(package['collateral'], collateral)
+        self.assertEqual(package['payment'], payment)
