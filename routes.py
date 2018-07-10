@@ -55,9 +55,6 @@ def bul_account_handler(queried_pubkey):
     :return:
     """
     account = paket_stellar.get_bul_account(queried_pubkey)
-    for balance_name in ['xlm_balance', 'bul_balance']:
-        if balance_name in account:
-            account[balance_name] = util.conversion.units_to_stroops(account[balance_name])
     return dict(status=200, **account)
 
 
@@ -73,7 +70,6 @@ def prepare_account_handler(from_pubkey, new_pubkey, starting_balance=50000000):
     :param starting_balance:
     :return:
     """
-    starting_balance = util.conversion.stroops_to_units(int(starting_balance))
     try:
         return {'status': 200, 'transaction': paket_stellar.prepare_create_account(
             from_pubkey, new_pubkey, starting_balance)}
@@ -98,7 +94,6 @@ def prepare_trust_handler(from_pubkey, limit=None):
     :param limit:
     :return:
     """
-    limit = util.conversion.stroops_to_units(int(limit)) if limit is not None else limit
     return {'status': 200, 'transaction': paket_stellar.prepare_trust(from_pubkey, limit)}
 
 
@@ -114,7 +109,6 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     :param amount_buls:
     :return:
     """
-    amount_buls = util.conversion.stroops_to_units(int(amount_buls))
     return {'status': 200, 'transaction': paket_stellar.prepare_send_buls(from_pubkey, to_pubkey, amount_buls)}
 
 
@@ -142,14 +136,9 @@ def prepare_escrow_handler(
     :param deadline_timestamp:
     :return:
     """
-    converted_payment_buls = util.conversion.stroops_to_units(payment_buls)
-    converted_collateral_buls = util.conversion.stroops_to_units(collateral_buls)
-    converted_total_buls = util.conversion.stroops_to_units(payment_buls + collateral_buls)
     package_details = paket_stellar.prepare_escrow(
         user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
-        converted_payment_buls, converted_collateral_buls, converted_total_buls, deadline_timestamp)
-    package_details['payment'] = payment_buls
-    package_details['collateral'] = collateral_buls
+        payment_buls, collateral_buls, deadline_timestamp)
     db.create_package(**package_details)
     return dict(status=201, **package_details)
 
@@ -211,7 +200,6 @@ def fund_handler(funded_pubkey, funded_buls=1000000000):
     ---
     :return:
     """
-    funded_buls = util.conversion.stroops_to_units(int(funded_buls))
     return {'status': 200, 'response': paket_stellar.fund_from_issuer(funded_pubkey, funded_buls)}
 
 
