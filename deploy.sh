@@ -57,7 +57,7 @@ while read package; do
             package="$(grep -Po "(?<=name=.).*(?=')" "$package/setup.py")=="
         fi
     fi
-    if ! grep "$package" <<<"$installed_packages"; then
+    if ! grep "$package" > /dev/null <<<"$installed_packages"; then
         echo "$package not found"
         return 1 2>/dev/null
         exit 1
