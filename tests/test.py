@@ -25,7 +25,8 @@ class BaseOperations(unittest.TestCase):
         self.host = 'http://localhost'
         self.funded_seed = 'SDJGBJZMQ7Z4W3KMSMO2HYEV56DJPOZ7XRR7LJ5X2KW6VKBSLELR7MRQ'
         self.funded_account = paket_stellar.get_keypair(seed=self.funded_seed)
-        self.funded_pubkey = self.funded_account.address().decode() # GBTWWXA3CDQOSRQ3645B2L4A345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ
+        self.funded_pubkey = self.funded_account.address().decode()
+        # GBTWWXA3CDQOSRQ3645B2L4A345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ
         LOGGER.info('init done')
 
     @classmethod
@@ -376,7 +377,7 @@ class TestAPI(BaseOperations):
         keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         invalid_from_pubkeys = [
-            pubkey, # Unfunded pubkey
+            pubkey,  # Unfunded pubkey
             'GBTWWXACDQOSRQ3645B2LA345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ',  # invalid pubkey
             'Lorem ipsum dolor sit amet',  # random text
             144  # random number
