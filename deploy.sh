@@ -1,14 +1,19 @@
 #!/bin/bash
 # Deploy a PaKeT server.
 
+# Export environment variables.
+set -o allexport
+. paket.env
+set +o allexport
+
+# Exit if sourced.
+[ "$BASH_SOURCE" == "$0" ] || return 0
+
 # Parse options
 usage() { echo 'Usage: ./deploy.sh [i|install] [d|create-db] [t|test] [s|shell] [r|run-server]'; }
 if ! [ "$1" ]; then
-    if [ "$BASH_SOURCE" == "$0" ]; then
-        usage
-        return 0 2>/dev/null
-        exit 0
-    fi
+    usage
+    exit 0
 fi
 while [ "$1" ]; do
     case "$1" in
@@ -24,21 +29,14 @@ while [ "$1" ]; do
             run=1;;
         *)
             usage
-            return 0 2>/dev/null
             exit 0;;
     esac
     shift
 done
 
-# Export environment variables.
-set -o allexport
-. paket.env
-set +o allexport
-
 # Requires python3.
 if ! which python3 > /dev/null; then
     echo 'python3 not found'
-    return 1 2>/dev/null
     exit 1
 fi
 
@@ -51,7 +49,6 @@ while read package; do
         local_packages+=("$package")
         if ! [ -d "$package" ]; then
             echo "$package not found"
-            return 1 2>/dev/null
             exit 1
         else
             package="$(grep -Po "(?<=name=.).*(?=')" "$package/setup.py")=="
@@ -59,7 +56,6 @@ while read package; do
     fi
     if ! grep "$package" > /dev/null <<<"$installed_packages"; then
         echo "$package not found"
-        return 1 2>/dev/null
         exit 1
     fi
 done < requirements.txt
@@ -68,7 +64,6 @@ set +e
 if [ "$install" ]; then
     if ! [ "$VIRTUAL_ENV" ]; then
         echo "refusing to install outside of virtual env"
-        return 2 2>/dev/null
         exit 2
     fi
     set -e
@@ -122,5 +117,4 @@ fi
 
 [ "$run" ] && python ./routes.py
 
-return 0 2>/dev/null
 exit 0
