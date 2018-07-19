@@ -64,7 +64,6 @@ def init_db():
                 location POINT,
                 paket_user VARCHAR(56),
                 escrow_pubkey VARCHAR(56),
-                FOREIGN KEY(paket_user) REFERENCES users(pubkey),
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
         LOGGER.debug('events table created')
         sql.execute('''
