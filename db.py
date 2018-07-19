@@ -127,13 +127,13 @@ def update_custodian(escrow_pubkey, custodian_pubkey):
             escrow_pubkey, custodian_pubkey))
 
 
-def add_event(escrow_pubkey, user_pubkey, event_type, location):
+def add_event(escrow_pubkey, user_pubkey, event_type, latitude, longitude):
     """Add new package's event"""
     with SQL_CONNECTION() as sql:
         sql.execute('''
             INSERT INTO events (event_type, location, paket_user, escrow_pubkey)
-            VALUES (%s, PointFromWKB(POINT(45.2, 15.45)), %s, %s)''', (
-            event_type, user_pubkey, escrow_pubkey))
+            VALUES (%s, ST_GeomFromText('POINT(%s %s)'), %s, %s)''', (
+            event_type, latitude, longitude, user_pubkey, escrow_pubkey))
 
 
 def get_events(escrow_pubkey):
