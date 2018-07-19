@@ -58,6 +58,16 @@ def init_db():
                 payment_transaction VARCHAR(1024))''')
         LOGGER.debug('packages table created')
         sql.execute('''
+            CREATE TABLE events(
+                event_type VARCHAR(20),
+                timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                location POINT,
+                paket_user VARCHAR(56),
+                escrow_pubkey VARCHAR(56),
+                FOREIGN KEY(paket_user) REFERENCES users(pubkey),
+                FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
+        LOGGER.debug('events table created')
+        sql.execute('''
             CREATE TABLE custodians(
                 timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 escrow_pubkey VARCHAR(56),
@@ -116,3 +126,19 @@ def update_custodian(escrow_pubkey, custodian_pubkey):
     with SQL_CONNECTION() as sql:
         sql.execute("INSERT INTO custodians (escrow_pubkey, custodian_pubkey) VALUES (%s, %s)", (
             escrow_pubkey, custodian_pubkey))
+
+
+def add_event(escrow_pubkey, user_pubkey, event_type, location):
+    """Add new package's event"""
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            INSERT INTO events (event_type, location, paket_user, escrow_pubkey)
+            VALUES (%s, PointFromWKB(POINT(45.2, 15.45)), %s, %s)''', (
+            event_type, user_pubkey, escrow_pubkey))
+
+
+def get_events(escrow_pubkey):
+    """Get all escrow's events"""
+    with SQL_CONNECTION() as sql:
+        sql.execute('''SELECT * FROM events WHERE escrow_pubkey = %s''', (escrow_pubkey,))
+        return sql.fetchall()
