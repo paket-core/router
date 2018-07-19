@@ -137,7 +137,9 @@ def add_event(escrow_pubkey, user_pubkey, event_type, latitude, longitude):
 
 
 def get_events(escrow_pubkey):
-    """Get all escrow's events"""
+    """Get all package's events"""
     with SQL_CONNECTION() as sql:
-        sql.execute('''SELECT * FROM events WHERE escrow_pubkey = %s''', (escrow_pubkey,))
+        sql.execute('''
+            SELECT event_type, timestamp, ST_AsText(location) as location, paket_user, escrow_pubkey 
+            FROM events WHERE escrow_pubkey = %s''', (escrow_pubkey,))
         return sql.fetchall()
