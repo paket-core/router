@@ -21,12 +21,7 @@ def enrich_package(package):
         blockchain_url="https://testnet.stellarchain.io/address/{}".format(package['launcher_pubkey']),
         paket_url="https://paket.global/paket/{}".format(package['escrow_pubkey']),
         status=random.choice(['waiting pickup', 'in transit', 'delivered']),
-        events=[dict(
-            event_type=random.choice(['change custodian', 'in transit', 'passed customs']),
-            timestamp=random.randint(1523530844, 1535066871),
-            paket_user=random.choice(['Israel', 'Oren', 'Chen']),
-            GPS=(random.uniform(-180, 180), random.uniform(-90, 90))
-        ) for i in range(10)])
+        events=get_events(package['escrow_pubkey']))
 
 
 class UnknownUser(Exception):
