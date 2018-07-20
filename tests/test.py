@@ -254,6 +254,31 @@ class TestPackage(BaseOperations):
             int(launcher_result_balance or 0) - int(launcher_xlm_balance or 0) - int(escrow_xlm_balance or 0),
             1000, 'xlm not merged back')
 
+    def test_package_events(self):
+        """Test package's events"""
+        package_stuff = self.prepare_escrow(50000000, 100000000, int(time.time()))
+        self.submit(
+            package_stuff['transactions']['set_options_transaction'], package_stuff['escrow'][1], 'set escrow options')
+        self.call(
+            'accept_package', 200, 'courier could not accept package',
+            package_stuff['courier'][1], escrow_pubkey=package_stuff['escrow'][0])
+        self.call(
+            'accept_package', 200, 'recipient could not accept package',
+            package_stuff['recipient'][1], escrow_pubkey=package_stuff['escrow'][0])
+        db.add_event(package_stuff['escrow'][0], package_stuff['launcher'][0],
+                     'package launched', 32.813916, 34.9852845)
+        db.add_event(package_stuff['escrow'][0], package_stuff['courier'][0],
+                     'package picked', 32.813916, 34.9852845)
+        db.add_event(package_stuff['escrow'][0], package_stuff['courier'][0],
+                     'package delivered', 30.0456369, 31.237908)
+        db.add_event(package_stuff['escrow'][0], package_stuff['recipient'][0],
+                     'package received', 30.0456369, 31.237908)
+        package = self.call(path='package', expected_code=200,
+                            fail_message='does not get ok status code on valid request',
+                            escrow_pubkey=package_stuff['escrow'][0])['package']
+        self.assertEqual(len(package['events']), 4,
+                         "4 events expected for package, %s got instead".format(len(package['events'])))
+
 
 class TestAPI(BaseOperations):
     """API tests. It focused on testing API endpoints by posting valid and invalid data"""
