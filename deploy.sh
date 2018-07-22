@@ -10,7 +10,7 @@ set +o allexport
 [ "$BASH_SOURCE" == "$0" ] || return 0
 
 # Parse options
-usage() { echo 'Usage: ./deploy.sh [i|install] [d|create-db] [t|test] [s|shell] [r|run-server]'; }
+usage() { echo 'Usage: ./deploy.sh [i|install] [t|test] [s|shell] [r|run-server]'; }
 if ! [ "$1" ]; then
     usage
     exit 0
@@ -19,8 +19,6 @@ while [ "$1" ]; do
     case "$1" in
         i|install)
             install=1;;
-        d|create-db)
-            create_db=1;;
         t|test)
             _test=1;;
         s|shell)

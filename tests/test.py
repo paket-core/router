@@ -11,7 +11,6 @@ import routes
 import db
 
 LOGGER = util.logger.logging.getLogger('pkt.api.test')
-util.logger.setup()
 APP = webserver.setup(routes.BLUEPRINT)
 APP.testing = True
 

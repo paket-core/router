@@ -12,9 +12,9 @@ import webserver.validation
 import db
 import swagger_specs
 
+LOGGER = util.logger.logging.getLogger('pkt.api')
 VERSION = swagger_specs.VERSION
 PORT = os.environ.get('PAKET_API_PORT', 8000)
-LOGGER = util.logger.logging.getLogger('pkt.api')
 BLUEPRINT = flask.Blueprint('api', __name__)
 
 
