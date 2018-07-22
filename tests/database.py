@@ -5,7 +5,6 @@ import util.logger
 import db
 
 LOGGER = util.logger.logging.getLogger('pkt.api.test.db')
-util.logger.setup()
 
 
 class TestDatabase(unittest.TestCase):
