@@ -200,10 +200,12 @@ class TestAccount(BaseOperations):
             'bul_account', 200, 'can not get source account balance', queried_pubkey=self.funded_pubkey)['bul_balance']
         target_end_balance = self.call(
             'bul_account', 200, 'can not get target account balance', queried_pubkey=account[0])['bul_balance']
-        self.assertEqual(int(source_start_balance or 0) - int(source_end_balance or 0), amount_stroops,
-                         'source balance does not add up')
-        self.assertEqual(int(target_end_balance or 0) - int(target_start_balance or 0), amount_stroops,
-                         'target balance does not add up')
+        self.assertEqual(
+            int(source_start_balance or 0) - int(source_end_balance or 0), amount_stroops,
+            'source balance does not add up')
+        self.assertEqual(
+            int(target_end_balance or 0) - int(target_start_balance or 0), amount_stroops,
+            'target balance does not add up')
 
 
 class TestPackage(BaseOperations):
@@ -265,19 +267,20 @@ class TestPackage(BaseOperations):
         self.call(
             'accept_package', 200, 'recipient could not accept package',
             package_stuff['recipient'][1], escrow_pubkey=package_stuff['escrow'][0])
-        db.add_event(package_stuff['escrow'][0], package_stuff['launcher'][0],
-                     'package launched', 32.813916, 34.9852845)
-        db.add_event(package_stuff['escrow'][0], package_stuff['courier'][0],
-                     'package picked', 32.813916, 34.9852845)
-        db.add_event(package_stuff['escrow'][0], package_stuff['courier'][0],
-                     'package delivered', 30.0456369, 31.237908)
-        db.add_event(package_stuff['escrow'][0], package_stuff['recipient'][0],
-                     'package received', 30.0456369, 31.237908)
-        package = self.call(path='package', expected_code=200,
-                            fail_message='does not get ok status code on valid request',
-                            escrow_pubkey=package_stuff['escrow'][0])['package']
-        self.assertEqual(len(package['events']), 4,
-                         "4 events expected for package, %s got instead".format(len(package['events'])))
+        db.add_event(
+            package_stuff['escrow'][0], package_stuff['launcher'][0], 'package launched', 32.813916, 34.9852845)
+        db.add_event(
+            package_stuff['escrow'][0], package_stuff['courier'][0], 'package picked', 32.813916, 34.9852845)
+        db.add_event(
+            package_stuff['escrow'][0], package_stuff['courier'][0], 'package delivered', 30.0456369, 31.237908)
+        db.add_event(
+            package_stuff['escrow'][0], package_stuff['recipient'][0], 'package received', 30.0456369, 31.237908)
+        package = self.call(
+            path='package', expected_code=200,
+            fail_message='does not get ok status code on valid request',
+            escrow_pubkey=package_stuff['escrow'][0])['package']
+        self.assertEqual(
+            len(package['events']), 4, "4 events expected for package, {} got instead".format(len(package['events'])))
 
 
 class TestAPI(BaseOperations):
@@ -292,8 +295,8 @@ class TestAPI(BaseOperations):
         unsigned_account = self.call(
             'prepare_account', 200, 'could not get create account transaction',
             from_pubkey=self.funded_pubkey, new_pubkey=pubkey)['transaction']
-        unsigned_trust = self.call('prepare_trust', 200, 'could not get trust transaction',
-                                   from_pubkey=self.funded_pubkey)['transaction']
+        unsigned_trust = self.call(
+            'prepare_trust', 200, 'could not get trust transaction', from_pubkey=self.funded_pubkey)['transaction']
         unsigned_send_buls = self.call(
             'prepare_send_buls', 200,
             "can not prepare send from {} to {}".format(self.funded_pubkey, new_account_pubkey),
@@ -301,9 +304,10 @@ class TestAPI(BaseOperations):
 
         for unsigned in (unsigned_account, unsigned_trust, unsigned_send_buls):
             with self.subTest(unsigned=unsigned):
-                self.call(path='submit_transaction', expected_code=500,
-                          fail_message='unexpected server response for submitting unsigned transaction',
-                          seed=self.funded_seed, transaction=unsigned)
+                self.call(
+                    path='submit_transaction', expected_code=500,
+                    fail_message='unexpected server response for submitting unsigned transaction',
+                    seed=self.funded_seed, transaction=unsigned)
 
     def test_submit_signed(self):
         """Test server behavior on submitting signed transactions"""
@@ -317,18 +321,20 @@ class TestAPI(BaseOperations):
             from_pubkey=self.funded_pubkey, new_pubkey=new_pubkey)['transaction']
         signed_account = self.sign_transaction(unsigned_account, self.funded_seed)
         LOGGER.info('Submitting signed create_account transaction')
-        self.call(path='submit_transaction', expected_code=200,
-                  fail_message='unexpected server response for submitting signed create_account transaction',
-                  seed=self.funded_seed, transaction=signed_account)
+        self.call(
+            path='submit_transaction', expected_code=200,
+            fail_message='unexpected server response for submitting signed create_account transaction',
+            seed=self.funded_seed, transaction=signed_account)
 
         # checking trust transaction
-        unsigned_trust = self.call('prepare_trust', 200,
-                                   'could not get trust transaction', from_pubkey=new_pubkey)['transaction']
+        unsigned_trust = self.call(
+            'prepare_trust', 200, 'could not get trust transaction', from_pubkey=new_pubkey)['transaction']
         signed_trust = self.sign_transaction(unsigned_trust, new_seed)
         LOGGER.info('Submitting signed trust transaction')
-        self.call(path='submit_transaction', expected_code=200,
-                  fail_message='unexpected server response for submitting signed trust transaction',
-                  seed=new_seed, transaction=signed_trust)
+        self.call(
+            path='submit_transaction', expected_code=200,
+            fail_message='unexpected server response for submitting signed trust transaction',
+            seed=new_seed, transaction=signed_trust)
 
         # checking send_buls transaction
         unsigned_send_buls = self.call(
@@ -336,9 +342,10 @@ class TestAPI(BaseOperations):
             from_pubkey=self.funded_pubkey, to_pubkey=new_pubkey, amount_buls=5)['transaction']
         signed_send_buls = self.sign_transaction(unsigned_send_buls, self.funded_seed)
         LOGGER.info('Submitting signed send_buls transaction')
-        self.call(path='submit_transaction', expected_code=200,
-                  fail_message='unexpected server response for submitting signed send_buls transaction',
-                  seed=self.funded_seed, transaction=signed_send_buls)
+        self.call(
+            path='submit_transaction', expected_code=200,
+            fail_message='unexpected server response for submitting signed send_buls transaction',
+            seed=self.funded_seed, transaction=signed_send_buls)
 
     def test_submit_invalid_transaction(self):
         """Test server behavior on submitting invalid transactions"""
@@ -360,9 +367,10 @@ class TestAPI(BaseOperations):
         for invalid_transaction in data_set:
             with self.subTest(transaction=invalid_transaction):
                 LOGGER.info('submiting invalid transaction: %s', invalid_transaction)
-                self.call(path='submit_transaction', expected_code=500,
-                          fail_message='unexpected result while submiting invalid transaction',
-                          transaction=invalid_transaction)
+                self.call(
+                    path='submit_transaction', expected_code=500,
+                    fail_message='unexpected result while submiting invalid transaction',
+                    transaction=invalid_transaction)
 
     def test_bul_account(self):
         """Test server behavior on querying information about valid account"""
@@ -423,15 +431,17 @@ class TestAPI(BaseOperations):
         keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
         LOGGER.info('querying prepare create account for public key: %s', pubkey)
-        self.call('prepare_account', 200, 'could not get create account transaction',
-                  from_pubkey=self.funded_pubkey, new_pubkey=pubkey)
+        self.call(
+            'prepare_account', 200, 'could not get create account transaction',
+            from_pubkey=self.funded_pubkey, new_pubkey=pubkey)
 
     def test_prepare_send_buls(self):
         """Test prepare_send_buls endpoint on valid public key"""
         pubkey, _ = self.create_and_setup_new_account()
         LOGGER.info('querying prepare send buls for user: %s', pubkey)
-        self.call('prepare_send_buls', 200, 'can not prepare send from {} to {}'.format(self.funded_pubkey, pubkey),
-                  from_pubkey=self.funded_pubkey, to_pubkey=pubkey, amount_buls=50000000)
+        self.call(
+            'prepare_send_buls', 200, 'can not prepare send from {} to {}'.format(self.funded_pubkey, pubkey),
+            from_pubkey=self.funded_pubkey, to_pubkey=pubkey, amount_buls=50000000)
 
     def test_prepare_trust(self):
         """Test prepare_trust endpoint on valid pubkey"""
@@ -447,31 +457,34 @@ class TestAPI(BaseOperations):
         deadline = int(time.time())
         escrow_stuff = self.prepare_escrow(payment, collateral, deadline)
 
-        self.submit(escrow_stuff['transactions']['set_options_transaction'],
-                    escrow_stuff['escrow'][1], 'set escrow options')
+        self.submit(
+            escrow_stuff['transactions']['set_options_transaction'], escrow_stuff['escrow'][1], 'set escrow options')
         self.send(escrow_stuff['launcher'][1], escrow_stuff['escrow'][0], payment)
         self.send(escrow_stuff['courier'][1], escrow_stuff['escrow'][0], collateral)
         for member in (escrow_stuff['courier'], escrow_stuff['recipient']):
             LOGGER.info('accepting package: %s for user %s', escrow_stuff['escrow'][0], member[1])
-            self.call('accept_package', 200, 'member could not accept package',
-                      member[1], escrow_pubkey=escrow_stuff['escrow'][0])
+            self.call(
+                'accept_package', 200, 'member could not accept package',
+                member[1], escrow_pubkey=escrow_stuff['escrow'][0])
 
     def test_my_packages(self):
         """Test my_packages endpoint on valid pubkey"""
         account = self.create_and_setup_new_account()
         LOGGER.info('querying packages for new user: %s', account[0])
-        packages = self.call(path='my_packages', expected_code=200,
-                             fail_message='does not get ok status code on valid request', seed=account[1],
-                             user_pubkey=account[0])['packages']
+        packages = self.call(
+            path='my_packages', expected_code=200,
+            fail_message='does not get ok status code on valid request', seed=account[1],
+            user_pubkey=account[0])['packages']
         self.assertTrue(len(packages) == 0)
 
         payment, collateral = 50000000, 100000000
         deadline = int(time.time())
         escrow_stuff = self.prepare_escrow(payment, collateral, deadline)
         LOGGER.info('querying packages for user: %s', escrow_stuff['launcher'][0])
-        packages = self.call(path='my_packages', expected_code=200,
-                             fail_message='does not get ok status code on valid request',
-                             seed=escrow_stuff['launcher'][1], user_pubkey=escrow_stuff['launcher'][0])['packages']
+        packages = self.call(
+            path='my_packages', expected_code=200,
+            fail_message='does not get ok status code on valid request',
+            seed=escrow_stuff['launcher'][1], user_pubkey=escrow_stuff['launcher'][0])['packages']
         self.assertTrue(len(packages) == 1)
         self.assertEqual(packages[0]['deadline'], deadline)
         self.assertEqual(packages[0]['escrow_pubkey'], escrow_stuff['escrow'][0])
@@ -481,9 +494,10 @@ class TestAPI(BaseOperations):
     def test_unauth_my_packages(self):
         """Test my_packages endpoint on unauthorized request"""
         LOGGER.info('querying packages without authorization')
-        self.call(path='my_packages', expected_code=400,
-                  fail_message='does not get unauthorized status code on unauthorized request',
-                  user_pubkey=self.funded_pubkey)
+        self.call(
+            path='my_packages', expected_code=400,
+            fail_message='does not get unauthorized status code on unauthorized request',
+            user_pubkey=self.funded_pubkey)
 
     def test_prepare_escrow(self):
         """Test prepare_escrow endpoint on valid public keys"""
@@ -499,9 +513,10 @@ class TestAPI(BaseOperations):
         LOGGER.info('preparing new escrow')
         escrow_stuff = self.prepare_escrow(payment, collateral, deadline)
         LOGGER.info('querying package with valid escrow pubkey: %s', escrow_stuff['escrow'][0])
-        package = self.call(path='package', expected_code=200,
-                            fail_message='does not get ok status code on valid request',
-                            escrow_pubkey=escrow_stuff['escrow'][0])['package']
+        package = self.call(
+            path='package', expected_code=200,
+            fail_message='does not get ok status code on valid request',
+            escrow_pubkey=escrow_stuff['escrow'][0])['package']
         self.assertEqual(package['deadline'], deadline)
         self.assertEqual(package['escrow_pubkey'], escrow_stuff['escrow'][0])
         self.assertEqual(package['collateral'], collateral)

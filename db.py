@@ -116,27 +116,27 @@ def get_packages(user_pubkey=None):
 
 
 def update_custodian(escrow_pubkey, custodian_pubkey):
-    """Update a package's custodian."""
+    """Update a package custodian."""
     with SQL_CONNECTION() as sql:
         sql.execute("INSERT INTO custodians (escrow_pubkey, custodian_pubkey) VALUES (%s, %s)", (
             escrow_pubkey, custodian_pubkey))
 
 
 def add_event(escrow_pubkey, user_pubkey, event_type, latitude, longitude):
-    """Add new package's event"""
+    """Add a package event."""
     with SQL_CONNECTION() as sql:
-        sql.execute('''
+        sql.execute("""
             INSERT INTO events (event_type, location, paket_user, escrow_pubkey)
-            VALUES (%s, ST_GeomFromText('POINT(%s %s)'), %s, %s)''', (
-                event_type, latitude, longitude, user_pubkey, escrow_pubkey))
+            VALUES (%s, ST_GeomFromText('POINT(%s %s)'), %s, %s)
+        """, (event_type, latitude, longitude, user_pubkey, escrow_pubkey))
 
 
 def get_events(escrow_pubkey):
-    """Get all package's events"""
+    """Get all package events."""
     with SQL_CONNECTION() as sql:
-        sql.execute('''
-            SELECT event_type, timestamp, ST_AsText(location) as location, paket_user, escrow_pubkey 
-            FROM events WHERE escrow_pubkey = %s''', (escrow_pubkey,))
+        sql.execute("""
+            SELECT event_type, timestamp, ST_AsText(location) as location, paket_user, escrow_pubkey
+            FROM events WHERE escrow_pubkey = %s""", (escrow_pubkey,))
         return [{
             key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
                 for event in sql.fetchall()]
