@@ -267,13 +267,13 @@ class TestPackage(BaseOperations):
             'accept_package', 200, 'recipient could not accept package',
             package_stuff['recipient'][1], escrow_pubkey=package_stuff['escrow'][0])
         db.add_event(
-            package_stuff['escrow'][0], package_stuff['launcher'][0], 'package launched', 32.813916, 34.9852845)
+            package_stuff['escrow'][0], package_stuff['launcher'][0], 'package launched', '32.8139164, 34.9852845')
         db.add_event(
-            package_stuff['escrow'][0], package_stuff['courier'][0], 'package picked', 32.813916, 34.9852845)
+            package_stuff['escrow'][0], package_stuff['courier'][0], 'package picked', '32.8139164, 34.9852845')
         db.add_event(
-            package_stuff['escrow'][0], package_stuff['courier'][0], 'package delivered', 30.0456369, 31.237908)
+            package_stuff['escrow'][0], package_stuff['courier'][0], 'package delivered', '30.0456369, 31.2379082')
         db.add_event(
-            package_stuff['escrow'][0], package_stuff['recipient'][0], 'package received', 30.0456369, 31.237908)
+            package_stuff['escrow'][0], package_stuff['recipient'][0], 'package received', '30.0456369, 31.2379082')
         package = self.call(
             path='package', expected_code=200,
             fail_message='does not get ok status code on valid request',

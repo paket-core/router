@@ -56,7 +56,7 @@ def init_db():
             CREATE TABLE events(
                 event_type VARCHAR(20),
                 timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-                location POINT,
+                location VARCHAR(22),
                 paket_user VARCHAR(56),
                 escrow_pubkey VARCHAR(56),
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
@@ -122,20 +122,20 @@ def update_custodian(escrow_pubkey, custodian_pubkey):
             escrow_pubkey, custodian_pubkey))
 
 
-def add_event(escrow_pubkey, user_pubkey, event_type, latitude, longitude):
+def add_event(escrow_pubkey, user_pubkey, event_type, location):
     """Add a package event."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO events (event_type, location, paket_user, escrow_pubkey)
-            VALUES (%s, ST_GeomFromText('POINT(%s %s)'), %s, %s)
-        """, (event_type, latitude, longitude, user_pubkey, escrow_pubkey))
+            VALUES (%s, %s, %s, %s)
+        """, (event_type, location, user_pubkey, escrow_pubkey))
 
 
 def get_events(escrow_pubkey):
     """Get all package events."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
-            SELECT event_type, timestamp, ST_AsText(location) as location, paket_user, escrow_pubkey
+            SELECT event_type, timestamp, location, paket_user, escrow_pubkey
             FROM events WHERE escrow_pubkey = %s""", (escrow_pubkey,))
         return [{
             key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
