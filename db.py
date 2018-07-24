@@ -93,10 +93,8 @@ def get_packages(user_pubkey=None):
         if user_pubkey:
             sql.execute("""
                 SELECT * FROM packages
-                WHERE escrow_pubkey IN (
-                    SELECT escrow_pubkey FROM custodians WHERE custodian_pubkey = %s)
-                OR launcher_pubkey = %s
-                OR recipient_pubkey = %s""", (user_pubkey, user_pubkey, user_pubkey))
+                WHERE launcher_pubkey = %s
+                OR recipient_pubkey = %s""", (user_pubkey, user_pubkey))
         else:
             sql.execute('SELECT * FROM packages')
         return [enrich_package(row) for row in sql.fetchall()]
