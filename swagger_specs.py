@@ -344,7 +344,7 @@ PACKAGE = {
                 'pubkey': {
                     'type': 'string'
                 },
-                'GPS': {
+                'location': {
                     'type': 'string'
                 }
             }
@@ -398,6 +398,27 @@ PACKAGE = {
                 '$ref': '#/definitions/Package-info'
             }
         }
+    }
+}
+
+ADD_EVENT = {
+    'tags': ['packages'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'pubkey of package escrow',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'event_type', 'description': 'type of event',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'location', 'description': 'GPS coordinates where event happened',
+            'in': 'formData', 'required': True, 'type': 'string'}
+    ],
+    'responses': {
+            '200': {'description': 'event successfully added'}
     }
 }
 
