@@ -188,6 +188,23 @@ def package_handler(escrow_pubkey):
     return {'status': 200, 'package': package}
 
 
+@BLUEPRINT.route("/v{}/add_event".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.ADD_EVENT)
+@webserver.validation.call([], require_auth=True)
+def add_event_handler(user_pubkey, escrow_pubkey, event_type, location):
+    """
+    Add new event for package.
+    ---
+    :param user_pubkey:
+    :param escrow_pubkey:
+    :param event_type:
+    :param location:
+    :return:
+    """
+    db.add_event(escrow_pubkey, user_pubkey, event_type, location)
+    return {'status': 200}
+
+
 # Debug routes.
 
 
