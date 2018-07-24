@@ -75,8 +75,6 @@ def create_package(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
                 set_options_transaction, refund_transaction, merge_transaction, payment_transaction))
-        sql.execute("INSERT INTO custodians (escrow_pubkey, custodian_pubkey) VALUES (%s, %s)", (
-            escrow_pubkey, launcher_pubkey))
 
 
 def get_package(escrow_pubkey):
