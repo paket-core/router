@@ -61,13 +61,6 @@ def init_db():
                 escrow_pubkey VARCHAR(56),
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
         LOGGER.debug('events table created')
-        sql.execute('''
-            CREATE TABLE custodians(
-                timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-                escrow_pubkey VARCHAR(56),
-                custodian_pubkey VARCHAR(56),
-                FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
-        LOGGER.debug('custodians table created')
 
 
 def create_package(
@@ -89,13 +82,9 @@ def create_package(
 def get_package(escrow_pubkey):
     """Get package details."""
     with SQL_CONNECTION() as sql:
-        sql.execute(
-            "SELECT custodian_pubkey FROM custodians WHERE escrow_pubkey = %s ORDER BY timestamp DESC LIMIT 1",
-            (escrow_pubkey,))
-        custodian_pubkey = sql.fetchall()[0]['custodian_pubkey']
         sql.execute("SELECT * FROM packages WHERE escrow_pubkey = %s", (escrow_pubkey,))
         try:
-            return dict(enrich_package(sql.fetchone()), custodian_pubkey=custodian_pubkey)
+            return dict(enrich_package(sql.fetchone()))
         except TypeError:
             raise UnknownPaket("paket {} is not valid".format(escrow_pubkey))
 
@@ -115,13 +104,6 @@ def get_packages(user_pubkey=None):
         return [enrich_package(row) for row in sql.fetchall()]
 
 
-def update_custodian(escrow_pubkey, custodian_pubkey):
-    """Update a package custodian."""
-    with SQL_CONNECTION() as sql:
-        sql.execute("INSERT INTO custodians (escrow_pubkey, custodian_pubkey) VALUES (%s, %s)", (
-            escrow_pubkey, custodian_pubkey))
-
-
 def add_event(escrow_pubkey, user_pubkey, event_type, location):
     """Add a package event."""
     with SQL_CONNECTION() as sql:
@@ -135,8 +117,8 @@ def get_events(escrow_pubkey):
     """Get all package events."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
-            SELECT event_type, timestamp, location, paket_user, escrow_pubkey
-            FROM events WHERE escrow_pubkey = %s""", (escrow_pubkey,))
+            SELECT * FROM events WHERE escrow_pubkey = %s
+            ORDER BY timestamp ASC""", (escrow_pubkey,))
         return [{
             key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
                 for event in sql.fetchall()]

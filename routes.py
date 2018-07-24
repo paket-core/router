@@ -156,7 +156,7 @@ def accept_package_handler(user_pubkey, escrow_pubkey):
     :param escrow_pubkey:
     :return:
     """
-    db.update_custodian(escrow_pubkey, user_pubkey)
+    db.add_event(escrow_pubkey, user_pubkey, 'accept_package', 'None')
     return {'status': 200}
 
 

@@ -361,9 +361,6 @@ PACKAGE = {
                 'collateral': {
                     'type': 'integer'
                 },
-                'custodian-id': {
-                    'type': 'string'
-                },
                 'deadline-timestamp': {
                     'type': 'integer'
                 },
