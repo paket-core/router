@@ -520,3 +520,14 @@ class TestAPI(BaseOperations):
         self.assertEqual(package['escrow_pubkey'], escrow_stuff['escrow'][0])
         self.assertEqual(package['collateral'], collateral)
         self.assertEqual(package['payment'], payment)
+
+    def test_add_event(self):
+        """Test add_event endpoint"""
+        payment, collateral = 50000000, 100000000
+        deadline = int(time.time())
+        LOGGER.info('preparing new escrow')
+        escrow_stuff = self.prepare_escrow(payment, collateral, deadline)
+        self.call(
+            path='add_event', expected_code=200,
+            fail_message='could not add event', seed=escrow_stuff['launcher'][1],
+            escrow_pubkey=escrow_stuff['escrow'][0], event_type='package launched', location='32.1245, 22.43153')
