@@ -75,6 +75,7 @@ def create_package(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
                 set_options_transaction, refund_transaction, merge_transaction, payment_transaction))
+    add_event(escrow_pubkey, launcher_pubkey, 'launched', None)
 
 
 def get_package(escrow_pubkey):
