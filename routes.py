@@ -148,7 +148,6 @@ def prepare_escrow_handler(
 @webserver.validation.call(['escrow_pubkey'], require_auth=True)
 def accept_package_handler(user_pubkey, escrow_pubkey, location=None):
     """
-    (Deprecated)
     Accept a package.
     If the package requires collateral, commit it.
     If user is the package's recipient, release all funds from the escrow.
@@ -158,7 +157,6 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location=None):
     :param location:
     :return:
     """
-    LOGGER.warning("/v%s/accept_package is deprecated and will be removed in future", VERSION)
     db.add_event(escrow_pubkey, user_pubkey, 'accept_package', location)
     return {'status': 200}
 
@@ -196,6 +194,7 @@ def package_handler(escrow_pubkey):
 @webserver.validation.call(['escrow_pubkey', 'event_type', 'location'], require_auth=True)
 def add_event_handler(user_pubkey, escrow_pubkey, event_type, location):
     """
+    (Deprecated)
     Add new event for package.
     ---
     :param user_pubkey:
@@ -204,6 +203,7 @@ def add_event_handler(user_pubkey, escrow_pubkey, event_type, location):
     :param location:
     :return:
     """
+    LOGGER.warning("/v%s/add_event is deprecated and will be removed in future", VERSION)
     db.add_event(escrow_pubkey, user_pubkey, event_type, location)
     return {'status': 200}
 
