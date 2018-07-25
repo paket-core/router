@@ -163,3 +163,12 @@ class DbBaseTest(PaketBaseTest):
         pubkey = keypair.address().decode()
         seed = keypair.seed().decode()
         return pubkey, seed
+
+    def prepare_package_members(self):
+        launcher = self.generate_keypair()
+        courier = self.generate_keypair()
+        recipient = self.generate_keypair()
+        escrow = self.generate_keypair()
+        return {
+            'launcher': launcher, 'courier': courier,
+            'recipient': recipient, 'escrow': escrow}
