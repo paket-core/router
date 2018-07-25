@@ -146,7 +146,7 @@ def prepare_escrow_handler(
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ACCEPT_PACKAGE)
 @webserver.validation.call(['escrow_pubkey'], require_auth=True)
-def accept_package_handler(user_pubkey, escrow_pubkey):
+def accept_package_handler(user_pubkey, escrow_pubkey, location=None):
     """
     (Deprecated)
     Accept a package.
@@ -155,10 +155,11 @@ def accept_package_handler(user_pubkey, escrow_pubkey):
     ---
     :param user_pubkey:
     :param escrow_pubkey:
+    :param location:
     :return:
     """
     LOGGER.warning("/v%s/accept_package is deprecated and will be removed in future", VERSION)
-    db.add_event(escrow_pubkey, user_pubkey, 'accept_package', 'None')
+    db.add_event(escrow_pubkey, user_pubkey, 'accept_package', location)
     return {'status': 200}
 
 
