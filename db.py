@@ -93,12 +93,23 @@ def get_packages(user_pubkey=None):
     with SQL_CONNECTION() as sql:
         if user_pubkey:
             sql.execute("""
-                SELECT * FROM packages
-                WHERE launcher_pubkey = %s
-                OR recipient_pubkey = %s""", (user_pubkey, user_pubkey))
+            SELECT * FROM packages
+            WHERE launcher_pubkey = %s""", (user_pubkey,))
+            launched = [enrich_package(row) for row in sql.fetchall()]
+            sql.execute("""
+            SELECT * FROM packages
+            WHERE recipient_pubkey = %s""", (user_pubkey,))
+            received = [enrich_package(row) for row in sql.fetchall()]
+            sql.execute("""
+            SELECT * FROM packages
+            WHERE escrow_pubkey IN (
+                SELECT escrow_pubkey FROM events
+                WHERE event_type = 'couriered' AND paket_user = %s)""", (user_pubkey,))
+            couriered = [enrich_package(row) for row in sql.fetchall()]
+            return {'launched': launched, 'received': received, 'couriered': couriered}
         else:
             sql.execute('SELECT * FROM packages')
-        return [enrich_package(row) for row in sql.fetchall()]
+            return [enrich_package(row) for row in sql.fetchall()]
 
 
 def add_event(escrow_pubkey, user_pubkey, event_type, location):
