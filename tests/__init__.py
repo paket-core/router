@@ -152,3 +152,14 @@ class ApiBaseTest(PaketBaseTest):
             'escrow': escrow,
             'transactions': escrow_transactions
         }
+
+
+class DbBaseTest(PaketBaseTest):
+    """Base class for db tests."""
+
+    def generate_keypair(self):
+        """Generate new stellar keypair."""
+        keypair = paket_stellar.get_keypair()
+        pubkey = keypair.address().decode()
+        seed = keypair.seed().decode()
+        return pubkey, seed
