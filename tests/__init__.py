@@ -14,6 +14,22 @@ APP = webserver.setup(routes.BLUEPRINT)
 APP.testing = True
 
 
+def create_tables():
+    """Create tables if they does not exists"""
+    try:
+        LOGGER.info('creating tables...')
+        db.init_db()
+    except db.util.db.mysql.connector.ProgrammingError:
+        LOGGER.info('tables already exists')
+
+
+def clear_tables():
+    """Clear all tables in db"""
+    assert db.DB_NAME.startswith('test'), "refusing to test on db named {}".format(db.DB_NAME)
+    LOGGER.info('clearing database')
+    db.util.db.clear_tables(db.SQL_CONNECTION, db.DB_NAME)
+
+
 class BaseOperations(unittest.TestCase):
     """Base class for PaKet tests that implements methods for posting data to API server."""
 
@@ -29,18 +45,12 @@ class BaseOperations(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create tables if they does not exists"""
-        try:
-            LOGGER.info('creating tables...')
-            db.init_db()
-        except db.util.db.mysql.connector.ProgrammingError:
-            LOGGER.info('tables already exists')
+        """Setting up class fixture before running tests."""
+        create_tables()
 
     def setUp(self):
-        """Clear all tables in db"""
-        assert db.DB_NAME.startswith('test'), "refusing to test on db named {}".format(db.DB_NAME)
-        LOGGER.info('clearing database')
-        db.util.db.clear_tables(db.SQL_CONNECTION, db.DB_NAME)
+        """Setting up the test fixture before exercising it."""
+        clear_tables()
 
     @staticmethod
     def sign_transaction(transaction, seed):
