@@ -423,6 +423,24 @@ ADD_EVENT = {
     }
 }
 
+CHANGED_LOCATION = {
+    'tags': ['packages'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'pubkey of package escrow',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'location', 'description': 'GPS coordinates where user is at this moment',
+            'in': 'formData', 'required': True, 'type': 'string'}
+    ],
+    'responses': {
+        '200': {'description': 'event successfully added'}
+    }
+}
+
 FUND_FROM_ISSUER = {
     'tags': ['debug'],
     'parameters': [
