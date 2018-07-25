@@ -157,7 +157,7 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location=None):
     :param location:
     :return:
     """
-    db.add_event(escrow_pubkey, user_pubkey, 'accept_package', location)
+    db.add_event(escrow_pubkey, user_pubkey, 'couriered', location)
     return {'status': 200}
 
 
