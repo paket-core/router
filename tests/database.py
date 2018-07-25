@@ -1,19 +1,12 @@
 """Test the PAKET API database."""
-import unittest
-
-import util.logger
-import db
-
-LOGGER = util.logger.logging.getLogger('pkt.api.test.db')
+import tests
 
 
-class TestDatabase(unittest.TestCase):
+class TestDatabase(tests.unittest.TestCase):
     """Test the API's database."""
 
     def setUp(self):
-        assert db.DB_NAME.startswith('test'), "refusing to test on db named {}".format(db.DB_NAME)
-        LOGGER.info('clearing database')
-        db.util.db.clear_tables(db.SQL_CONNECTION, db.DB_NAME)
+        tests.clear_tables()
 
     def test_init(self):
         """Test that the db is clean."""
@@ -28,3 +21,13 @@ class TestDatabase(unittest.TestCase):
         # Need to add launcher_pubkey which is the custdian
         self.assertDictEqual(
             db.get_package(package_kwargs['escrow_pubkey']), dict(package_kwargs, custodian_pubkey='launcher_pubkey'))
+
+
+
+
+
+class CreatePackageTest(tests.unittest.TestCase):
+    """"""
+
+    def test_create_package(self):
+        """"""

@@ -30,8 +30,21 @@ def clear_tables():
     db.util.db.clear_tables(db.SQL_CONNECTION, db.DB_NAME)
 
 
-class BaseOperations(unittest.TestCase):
-    """Base class for PaKet tests that implements methods for posting data to API server."""
+class PaketBaseTest(unittest.TestCase):
+    """Base class for PaKeT tests."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Setting up class fixture before running tests."""
+        create_tables()
+
+    def setUp(self):
+        """Setting up the test fixture before exercising it."""
+        clear_tables()
+
+
+class ApiBaseTest(PaketBaseTest):
+    """Base class for routes tests."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -42,15 +55,6 @@ class BaseOperations(unittest.TestCase):
         self.funded_pubkey = self.funded_account.address().decode()
         # GBTWWXA3CDQOSRQ3645B2L4A345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ
         LOGGER.info('init done')
-
-    @classmethod
-    def setUpClass(cls):
-        """Setting up class fixture before running tests."""
-        create_tables()
-
-    def setUp(self):
-        """Setting up the test fixture before exercising it."""
-        clear_tables()
 
     @staticmethod
     def sign_transaction(transaction, seed):

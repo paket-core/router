@@ -4,7 +4,7 @@ import time
 import tests
 
 
-class SubmitTransactionTest(tests.BaseOperations):
+class SubmitTransactionTest(tests.ApiBaseTest):
     """Test for submit_transaction route."""
 
     def test_submit_signed(self):
@@ -46,7 +46,7 @@ class SubmitTransactionTest(tests.BaseOperations):
             seed=self.funded_seed, transaction=signed_send_buls)
 
 
-class BulAccountTest(tests.BaseOperations):
+class BulAccountTest(tests.ApiBaseTest):
     """Test for bul_account endpoint."""
 
     def test_bul_account(self):
@@ -67,7 +67,7 @@ class BulAccountTest(tests.BaseOperations):
                 self.call('bul_account', 200, 'could not verify account exist', queried_pubkey=account)
 
 
-class PrepareAccountTest(tests.BaseOperations):
+class PrepareAccountTest(tests.ApiBaseTest):
     """Test for prepare_account endpoint."""
 
     def test_prepare_account(self):
@@ -80,7 +80,7 @@ class PrepareAccountTest(tests.BaseOperations):
             from_pubkey=self.funded_pubkey, new_pubkey=pubkey)
 
 
-class PrepareTrustTest(tests.BaseOperations):
+class PrepareTrustTest(tests.ApiBaseTest):
     """Test for prepare_trust endpoint."""
 
     def test_prepare_trust(self):
@@ -92,7 +92,7 @@ class PrepareTrustTest(tests.BaseOperations):
         self.call('prepare_trust', 200, 'could not get trust transaction', from_pubkey=pubkey)
 
 
-class PrepareSendBulsTest(tests.BaseOperations):
+class PrepareSendBulsTest(tests.ApiBaseTest):
     """Test for prepare_send_buls endpoint."""
 
     def test_prepare_send_buls(self):
@@ -104,7 +104,7 @@ class PrepareSendBulsTest(tests.BaseOperations):
             from_pubkey=self.funded_pubkey, to_pubkey=pubkey, amount_buls=50000000)
 
 
-class PrepareEscrowTest(tests.BaseOperations):
+class PrepareEscrowTest(tests.ApiBaseTest):
     """Test for prepare_escrow endpoint."""
 
     def test_prepare_escrow(self):
@@ -115,7 +115,7 @@ class PrepareEscrowTest(tests.BaseOperations):
         self.prepare_escrow(payment, collateral, deadline)
 
 
-class AcceptPackageTest(tests.BaseOperations):
+class AcceptPackageTest(tests.ApiBaseTest):
     """Test for accept_package endpoint."""
 
     def test_accept_package(self):
@@ -135,7 +135,7 @@ class AcceptPackageTest(tests.BaseOperations):
                 member[1], escrow_pubkey=escrow_stuff['escrow'][0])
 
 
-class MyPackagesTest(tests.BaseOperations):
+class MyPackagesTest(tests.ApiBaseTest):
     """Test for my_packages endpoint."""
 
     def test_my_packages(self):
@@ -163,7 +163,7 @@ class MyPackagesTest(tests.BaseOperations):
         self.assertEqual(packages[0]['payment'], payment)
 
 
-class PackageTest(tests.BaseOperations):
+class PackageTest(tests.ApiBaseTest):
     """Test for package endpoint."""
 
     def test_package(self):
@@ -183,7 +183,7 @@ class PackageTest(tests.BaseOperations):
         self.assertEqual(package['payment'], payment)
 
 
-class AddEventTest(tests.BaseOperations):
+class AddEventTest(tests.ApiBaseTest):
     """Test for add_event endpoint."""
 
     def test_add_event(self):
