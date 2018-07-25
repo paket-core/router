@@ -290,6 +290,10 @@ ACCEPT_PACKAGE = {
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
             'in': 'formData', 'required': True, 'type': 'string',
+        },
+        {
+            'name': 'location', 'description': 'location of place where user accepted package',
+            'in': 'formData', 'required': False, 'type': 'string'
         }
     ],
     'responses': {
