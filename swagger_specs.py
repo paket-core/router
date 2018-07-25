@@ -415,7 +415,7 @@ ADD_EVENT = {
             'in': 'formData', 'required': True, 'type': 'string'}
     ],
     'responses': {
-            '200': {'description': 'event successfully added'}
+        '200': {'description': 'event successfully added'}
     }
 }
 

@@ -157,7 +157,7 @@ def accept_package_handler(user_pubkey, escrow_pubkey):
     :param escrow_pubkey:
     :return:
     """
-    LOGGER.warning("/v{}/accept_package is deprecated and will be removed in future".format(VERSION))
+    LOGGER.warning("/v%s/accept_package is deprecated and will be removed in future", VERSION)
     db.add_event(escrow_pubkey, user_pubkey, 'accept_package', 'None')
     return {'status': 200}
 
