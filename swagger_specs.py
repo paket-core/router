@@ -290,6 +290,10 @@ ACCEPT_PACKAGE = {
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
             'in': 'formData', 'required': True, 'type': 'string',
+        },
+        {
+            'name': 'location', 'description': 'location of place where user accepted package',
+            'in': 'formData', 'required': False, 'type': 'string'
         }
     ],
     'responses': {
@@ -412,6 +416,24 @@ ADD_EVENT = {
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'GPS coordinates where event happened',
+            'in': 'formData', 'required': True, 'type': 'string'}
+    ],
+    'responses': {
+        '200': {'description': 'event successfully added'}
+    }
+}
+
+CHANGED_LOCATION = {
+    'tags': ['packages'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'pubkey of package escrow',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'location', 'description': 'GPS coordinates where user is at this moment',
             'in': 'formData', 'required': True, 'type': 'string'}
     ],
     'responses': {
