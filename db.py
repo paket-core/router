@@ -127,7 +127,8 @@ def get_events(escrow_pubkey=None):
     with SQL_CONNECTION() as sql:
         if escrow_pubkey:
             sql.execute("""
-                SELECT * FROM events WHERE escrow_pubkey = %s
+                SELECT paket_user, event_type, timestamp, location FROM events
+                WHERE escrow_pubkey = %s
                 ORDER BY timestamp ASC""", (escrow_pubkey,))
             return [{
                 key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
