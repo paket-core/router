@@ -133,6 +133,11 @@ class AcceptPackageTest(tests.ApiBaseTest):
             self.call(
                 'accept_package', 200, 'member could not accept package',
                 member[1], escrow_pubkey=escrow_stuff['escrow'][0])
+            events = tests.db.get_events(escrow_stuff['escrow'][0])
+            expected_event_type = 'couriered' if member == escrow_stuff['courier'] else 'received'
+            self.assertEqual(
+                events[-1]['event_type'], expected_event_type,
+                "'{}' event expected, but '{}' got instead".format(expected_event_type, events[-1]['event_type']))
 
 
 class MyPackagesTest(tests.ApiBaseTest):
