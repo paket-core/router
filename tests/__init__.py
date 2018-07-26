@@ -157,7 +157,8 @@ class ApiBaseTest(PaketBaseTest):
 class DbBaseTest(PaketBaseTest):
     """Base class for db tests."""
 
-    def generate_keypair(self):
+    @staticmethod
+    def generate_keypair():
         """Generate new stellar keypair."""
         keypair = paket_stellar.get_keypair()
         pubkey = keypair.address().decode()
@@ -165,6 +166,7 @@ class DbBaseTest(PaketBaseTest):
         return pubkey, seed
 
     def prepare_package_members(self):
+        """Prepare launcher, courier, recipient and escrow keys"""
         launcher = self.generate_keypair()
         courier = self.generate_keypair()
         recipient = self.generate_keypair()
