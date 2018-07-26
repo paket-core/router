@@ -107,7 +107,7 @@ def get_packages(user_pubkey=None):
                 WHERE event_type = 'couriered' AND paket_user = %s)""", (user_pubkey,))
             couriered = [dict(enrich_package(row), user_role='courier') for row in sql.fetchall()]
             return [
-                dict(package, custodian_pubkey=package['events'][0]['paket_user'])
+                dict(package, custodian_pubkey=package['events'][-1]['paket_user'])
                 for package in launched + received + couriered]
         sql.execute('SELECT * FROM packages')
         return [enrich_package(row) for row in sql.fetchall()]

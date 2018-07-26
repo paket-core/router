@@ -91,36 +91,45 @@ class GetPackagesTest(tests.DbBaseTest):
     def test_get_user_packages(self):
         """Getting user packages test."""
         user = self.generate_keypair()
-        package_members = self.prepare_package_members()
+        first_package_members = self.prepare_package_members()
         tests.LOGGER.info('creating package with user role: launcher')
         tests.db.create_package(
-            package_members['escrow'][0], user[0], package_members['recipient'][0],
+            first_package_members['escrow'][0], user[0], first_package_members['recipient'][0],
             time.time(), 50000000, 100000000, None, None, None, None)
-        package_members = self.prepare_package_members()
+        second_package_members = self.prepare_package_members()
         tests.LOGGER.info('creating package with user role: recipient')
         tests.db.create_package(
-            package_members['escrow'][0], package_members['launcher'][0], user[0],
+            second_package_members['escrow'][0], second_package_members['launcher'][0], user[0],
             time.time(), 50000000, 100000000, None, None, None, None)
-        package_members = self.prepare_package_members()
+        third_package_members = self.prepare_package_members()
         tests.LOGGER.info('creating package with user role: courier')
         tests.db.create_package(
-            package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-            time.time(), 50000000, 100000000, None, None, None, None)
-        tests.db.add_event(package_members['escrow'][0], user[0], 'couriered', None)
+            third_package_members['escrow'][0], third_package_members['launcher'][0],
+            third_package_members['recipient'][0], time.time(), 50000000, 100000000, None, None, None, None)
+        tests.db.add_event(third_package_members['escrow'][0], user[0], 'couriered', None)
 
         packages = tests.db.get_packages(user[0])
-        self.assertIn('launched', packages, 'result does not contained launched packages')
-        self.assertIn('received', packages, 'result does not contained received packages')
-        self.assertIn('couriered', packages, 'result does not contained couriered packages')
-        self.assertEqual(
-            len(packages['launched']), 1,
-            "expected 1 launched package, {} got instead".format(len(packages['launched'])))
-        self.assertEqual(
-            len(packages['received']), 1,
-            "expected 1 received package, {} got instead".format(len(packages['received'])))
-        self.assertEqual(
-            len(packages['couriered']), 1,
-            "expected 1 couriered package, {} got instead".format(len(packages['couriered'])))
+        self.assertEqual(len(packages), 3, "3 packages expected, {} got instead".format(len(packages)))
+        package = next((
+            package for package in packages if package['launcher_pubkey'] == user[0]), None)
+        self.assertEqual(package['user_role'], 'launcher',
+                         "expected role: 'launcher', '{}' got instead".format(package['user_role']))
+        self.assertEqual(package['custodian_pubkey'], user[0],
+                         "{} expected as custodian, {} got instead".format(user[0], package['custodian_pubkey']))
+        package = next((
+            package for package in packages if package['recipient_pubkey'] == user[0]), None)
+        self.assertEqual(package['user_role'], 'recipient',
+                         "expected role: 'recipient', '{}' got instead".format(package['user_role']))
+        self.assertEqual(package['custodian_pubkey'], second_package_members['launcher'][0],
+                         "{} expected as custodian, {} got instead".format(
+                             second_package_members['launcher'][0], package['custodian_pubkey']))
+        package = next((
+            package for package in packages
+            if user[0] not in (package['recipient_pubkey'], package['launcher_pubkey'])), None)
+        self.assertEqual(package['user_role'], 'courier',
+                         "expected role: 'courier', '{}' got instead".format(package['user_role']))
+        self.assertEqual(package['custodian_pubkey'], user[0],
+                         "{} expected as custodian, {} got instead".format(user[0], package['custodian_pubkey']))
 
 
 class AddEventTest(tests.DbBaseTest):
@@ -163,10 +172,10 @@ class GetEventsTest(tests.DbBaseTest):
         for user in new_package_members:
             tests.db.add_event(new_package_members['escrow'][0], user[0], 'new event', None)
         events = tests.db.get_events(package_members['escrow'][0])
-        self.assertEqual(len(events), 1, "expected 1 event for package: {}, but {} got instead".format(
+        self.assertEqual(len(events), 1, "expected 1 event for package: '{}', but '{}' got instead".format(
             package_members['escrow'][0], len(events)))
         events = tests.db.get_events(new_package_members['escrow'][0])
-        self.assertEqual(len(events), 5, "expected 5 events for package: {}, but {} got instead".format(
+        self.assertEqual(len(events), 5, "expected 5 events for package: '{}', but '{}' got instead".format(
             package_members['escrow'][0], len(events)))
 
     def test_get_escrow_events(self):
