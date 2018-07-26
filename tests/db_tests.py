@@ -73,3 +73,50 @@ class GetPackageTest(tests.DbBaseTest):
         """Getting package with invalid pubkey"""
         with self.assertRaises(tests.db.UnknownPaket, msg='UnknownPaket was not raised on invalid pubkey'):
             tests.db.get_package('invalid pubkey')
+
+
+class GetPackagesTest(tests.DbBaseTest):
+    """Getting packages test."""
+
+    def test_get_packages(self):
+        """Getting packages test."""
+        for i in range(5):
+            package_members = self.prepare_package_members()
+            tests.db.create_package(
+                package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
+                time.time(), i * 10 ** 7, i * 2 * 10 ** 7, None, None, None, None)
+        packages = tests.db.get_packages()
+        self.assertEqual(len(packages), 5, "expected 5 packages, {} got instead".format(len(packages)))
+
+    def test_get_user_packages(self):
+        user = self.generate_keypair()
+        package_members = self.prepare_package_members()
+        tests.LOGGER.info('creating package with user role: launcher')
+        tests.db.create_package(
+            package_members['escrow'][0], user[0], package_members['recipient'][0],
+            time.time(), 50000000, 100000000, None, None, None, None)
+        package_members = self.prepare_package_members()
+        tests.LOGGER.info('creating package with user role: recipient')
+        tests.db.create_package(
+            package_members['escrow'][0], package_members['launcher'][0], user[0],
+            time.time(), 50000000, 100000000, None, None, None, None)
+        package_members = self.prepare_package_members()
+        tests.LOGGER.info('creating package with user role: courier')
+        tests.db.create_package(
+            package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
+            time.time(), 50000000, 100000000, None, None, None, None)
+        tests.db.add_event(package_members['escrow'][0], user[0], 'couriered', None)
+
+        packages = tests.db.get_packages(user[0])
+        self.assertIn('launched', packages, 'result does not contained launched packages')
+        self.assertIn('received', packages, 'result does not contained received packages')
+        self.assertIn('couriered', packages, 'result does not contained couriered packages')
+        self.assertEqual(
+            len(packages['launched']), 1,
+            "expected 1 launched package, {} got instead".format(len(packages['launched'])))
+        self.assertEqual(
+            len(packages['received']), 1,
+            "expected 1 received package, {} got instead".format(len(packages['received'])))
+        self.assertEqual(
+            len(packages['couriered']), 1,
+            "expected 1 couriered package, {} got instead".format(len(packages['couriered'])))
