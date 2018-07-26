@@ -95,18 +95,20 @@ def get_packages(user_pubkey=None):
             sql.execute("""
             SELECT * FROM packages
             WHERE launcher_pubkey = %s""", (user_pubkey,))
-            launched = [enrich_package(row) for row in sql.fetchall()]
+            launched = [dict(enrich_package(row), user_role='launcher') for row in sql.fetchall()]
             sql.execute("""
             SELECT * FROM packages
             WHERE recipient_pubkey = %s""", (user_pubkey,))
-            received = [enrich_package(row) for row in sql.fetchall()]
+            received = [dict(enrich_package(row), user_role='recipient') for row in sql.fetchall()]
             sql.execute("""
             SELECT * FROM packages
             WHERE escrow_pubkey IN (
                 SELECT escrow_pubkey FROM events
                 WHERE event_type = 'couriered' AND paket_user = %s)""", (user_pubkey,))
-            couriered = [enrich_package(row) for row in sql.fetchall()]
-            return {'launched': launched, 'received': received, 'couriered': couriered}
+            couriered = [dict(enrich_package(row), user_role='courier') for row in sql.fetchall()]
+            return [
+                dict(package, custodian_pubkey=package['events'][0]['paket_user'])
+                for package in launched + received + couriered]
         sql.execute('SELECT * FROM packages')
         return [enrich_package(row) for row in sql.fetchall()]
 
