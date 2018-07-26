@@ -89,6 +89,7 @@ class GetPackagesTest(tests.DbBaseTest):
         self.assertEqual(len(packages), 5, "expected 5 packages, {} got instead".format(len(packages)))
 
     def test_get_user_packages(self):
+        """Getting user packages test."""
         user = self.generate_keypair()
         package_members = self.prepare_package_members()
         tests.LOGGER.info('creating package with user role: launcher')
@@ -120,3 +121,27 @@ class GetPackagesTest(tests.DbBaseTest):
         self.assertEqual(
             len(packages['couriered']), 1,
             "expected 1 couriered package, {} got instead".format(len(packages['couriered'])))
+
+
+class AddEventTest(tests.DbBaseTest):
+    """Adding event test."""
+
+    def test_add_event(self):
+        """Adding event test."""
+        package_members = self.prepare_package_members()
+        tests.db.create_package(
+            package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
+            time.time(), 50000000, 100000000, None, None, None, None)
+        tests.db.add_event(package_members['escrow'][0], package_members['courier'][0], 'couriered', None)
+        events = tests.db.get_events(package_members['escrow'][0])
+        self.assertEqual(len(events), 2, "2 events expected, but {} got instead".format(len(events)))
+        couriered_event = next((event for event in events if event['event_type'] == 'couriered'), None)
+        self.assertIsNotNone(couriered_event, "expected event with event_type: 'couriered', None got instead")
+        self.assertEqual(
+            couriered_event['escrow_pubkey'], package_members['escrow'][0],
+            "expected event with escrow_pubkey: {}, but {} got instead".format(
+                package_members['escrow'][0], couriered_event['escrow_pubkey']))
+        self.assertEqual(
+            couriered_event['paket_user'], package_members['courier'][0],
+            "expected event with paket_user: {}, but {} got instead".format(
+                package_members['courier'][0], couriered_event['paket_user']))
