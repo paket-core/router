@@ -147,10 +147,6 @@ class AddEventTest(tests.DbBaseTest):
         couriered_event = next((event for event in events if event['event_type'] == 'couriered'), None)
         self.assertIsNotNone(couriered_event, "expected event with event_type: 'couriered', None got instead")
         self.assertEqual(
-            couriered_event['escrow_pubkey'], package_members['escrow'][0],
-            "expected event with escrow_pubkey: {}, but {} got instead".format(
-                package_members['escrow'][0], couriered_event['escrow_pubkey']))
-        self.assertEqual(
             couriered_event['paket_user'], package_members['courier'][0],
             "expected event with paket_user: {}, but {} got instead".format(
                 package_members['courier'][0], couriered_event['paket_user']))
