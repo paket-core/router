@@ -107,9 +107,8 @@ def get_packages(user_pubkey=None):
                 WHERE event_type = 'couriered' AND paket_user = %s)""", (user_pubkey,))
             couriered = [enrich_package(row) for row in sql.fetchall()]
             return {'launched': launched, 'received': received, 'couriered': couriered}
-        else:
-            sql.execute('SELECT * FROM packages')
-            return [enrich_package(row) for row in sql.fetchall()]
+        sql.execute('SELECT * FROM packages')
+        return [enrich_package(row) for row in sql.fetchall()]
 
 
 def add_event(escrow_pubkey, user_pubkey, event_type, location):
@@ -121,12 +120,15 @@ def add_event(escrow_pubkey, user_pubkey, event_type, location):
         """, (event_type, location, user_pubkey, escrow_pubkey))
 
 
-def get_events(escrow_pubkey):
+def get_events(escrow_pubkey=None):
     """Get all package events."""
     with SQL_CONNECTION() as sql:
-        sql.execute("""
-            SELECT * FROM events WHERE escrow_pubkey = %s
-            ORDER BY timestamp ASC""", (escrow_pubkey,))
-        return [{
-            key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
-                for event in sql.fetchall()]
+        if escrow_pubkey:
+            sql.execute("""
+                SELECT * FROM events WHERE escrow_pubkey = %s
+                ORDER BY timestamp ASC""", (escrow_pubkey,))
+            return [{
+                key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
+                    for event in sql.fetchall()]
+        sql.execute('SELECT * FROM events')
+        return sql.fetchall()
