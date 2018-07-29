@@ -12,7 +12,7 @@ class CreatePackageTest(tests.DbBaseTest):
         package_members = self.prepare_package_members()
         tests.db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-            time.time(), 50000000, 100000000, None, None, None, None)
+            50000000, 100000000, time.time(), None, None, None, None)
         with tests.db.SQL_CONNECTION() as sql:
             sql.execute('SELECT * FROM packages')
             packages = sql.fetchall()
@@ -54,7 +54,7 @@ class GetPackageTest(tests.DbBaseTest):
         package_members = self.prepare_package_members()
         tests.db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-            time.time(), 50000000, 100000000, None, None, None, None)
+            50000000, 100000000, time.time(), None, None, None, None)
         package = tests.db.get_package(package_members['escrow'][0])
         self.assertEqual(
             package['escrow_pubkey'], package_members['escrow'][0],
@@ -84,7 +84,7 @@ class GetPackagesTest(tests.DbBaseTest):
             package_members = self.prepare_package_members()
             tests.db.create_package(
                 package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-                time.time(), i * 10 ** 7, i * 2 * 10 ** 7, None, None, None, None)
+                i * 10 ** 7, i * 2 * 10 ** 7, time.time(), None, None, None, None)
         packages = tests.db.get_packages()
         self.assertEqual(len(packages), 5, "expected 5 packages, {} got instead".format(len(packages)))
 
@@ -95,17 +95,17 @@ class GetPackagesTest(tests.DbBaseTest):
         tests.LOGGER.info('creating package with user role: launcher')
         tests.db.create_package(
             first_package_members['escrow'][0], user[0], first_package_members['recipient'][0],
-            time.time(), 50000000, 100000000, None, None, None, None)
+            50000000, 100000000, time.time(), None, None, None, None)
         second_package_members = self.prepare_package_members()
         tests.LOGGER.info('creating package with user role: recipient')
         tests.db.create_package(
             second_package_members['escrow'][0], second_package_members['launcher'][0], user[0],
-            time.time(), 50000000, 100000000, None, None, None, None)
+            50000000, 100000000, time.time(), None, None, None, None)
         third_package_members = self.prepare_package_members()
         tests.LOGGER.info('creating package with user role: courier')
         tests.db.create_package(
             third_package_members['escrow'][0], third_package_members['launcher'][0],
-            third_package_members['recipient'][0], time.time(), 50000000, 100000000, None, None, None, None)
+            third_package_members['recipient'][0], 50000000, 100000000, time.time(), None, None, None, None)
         tests.db.add_event(third_package_members['escrow'][0], user[0], 'couriered', None)
 
         packages = tests.db.get_packages(user[0])
@@ -140,7 +140,7 @@ class AddEventTest(tests.DbBaseTest):
         package_members = self.prepare_package_members()
         tests.db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-            time.time(), 50000000, 100000000, None, None, None, None)
+            50000000, 100000000, time.time(), None, None, None, None)
         tests.db.add_event(package_members['escrow'][0], package_members['courier'][0], 'couriered', None)
         events = tests.db.get_events(package_members['escrow'][0])
         self.assertEqual(len(events), 2, "2 events expected, but {} got instead".format(len(events)))
@@ -160,11 +160,11 @@ class GetEventsTest(tests.DbBaseTest):
         package_members = self.prepare_package_members()
         tests.db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-            time.time(), 50000000, 100000000, None, None, None, None)
+            50000000, 100000000, time.time(), None, None, None, None)
         new_package_members = self.prepare_package_members()
         tests.db.create_package(
             new_package_members['escrow'][0], new_package_members['launcher'][0], new_package_members['recipient'][0],
-            time.time(), 50000000, 100000000, None, None, None, None)
+            50000000, 100000000, time.time(), None, None, None, None)
         for user in new_package_members:
             tests.db.add_event(new_package_members['escrow'][0], user[0], 'new event', None)
         events = tests.db.get_events(package_members['escrow'][0])
@@ -180,7 +180,7 @@ class GetEventsTest(tests.DbBaseTest):
         for members in packages_members:
             tests.db.create_package(
                 members['escrow'][0], members['launcher'][0], members['recipient'][0],
-                time.time(), 50000000, 100000000, None, None, None, None)
+                50000000, 100000000, time.time(), None, None, None, None)
         for members in packages_members:
             events = tests.db.get_events(members['escrow'][0])
             self.assertEqual(len(events), 1, "1 event expected for escrow: {}, but {} got instead".format(
