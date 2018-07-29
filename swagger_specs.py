@@ -416,6 +416,37 @@ FUND_FROM_ISSUER = {
     }
 }
 
+CREATE_MOCK_PACKAGE = {
+    'tags': [
+        'debug'
+    ],
+    'parameters': [
+        {
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'launcher_pubkey', 'description': 'launcher pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'recipient_pubkey', 'description': 'recipient pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'payment_buls', 'description': 'BULs promised as payment',
+            'in': 'formData', 'required': True, 'type': 'integer'},
+        {
+            'name': 'collateral_buls', 'description': 'BULs promised as collateral',
+            'in': 'formData', 'required': True, 'type': 'integer'},
+        {
+            'name': 'deadline_timestamp', 'description': 'deadline timestamp',
+            'in': 'formData', 'required': True, 'type': 'integer'},
+    ],
+    'responses': {
+        '201': {
+            'description': 'package details',
+        }
+    }
+}
+
 PACKAGES = {
     'tags': ['debug'],
     'responses': {
