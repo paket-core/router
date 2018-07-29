@@ -1,7 +1,6 @@
 """PaKeT database interface."""
 import logging
 import os
-import random
 
 import util.db
 
@@ -12,21 +11,6 @@ DB_USER = os.environ.get('PAKET_DB_USER', 'root')
 DB_PASSWORD = os.environ.get('PAKET_DB_PASSWORD')
 DB_NAME = os.environ.get('PAKET_DB_NAME', 'paket')
 SQL_CONNECTION = util.db.custom_sql_connection(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)
-
-
-def enrich_package(package):
-    """Add some mock data to the package."""
-    return dict(
-        package,
-        blockchain_url="https://testnet.stellarchain.io/address/{}".format(package['launcher_pubkey']),
-        paket_url="https://paket.global/paket/{}".format(package['escrow_pubkey']),
-        status=random.choice(['waiting pickup', 'in transit', 'delivered']),
-        events=[dict(
-            event_type=random.choice(['change custodian', 'in transit', 'passed customs']),
-            timestamp=random.randint(1523530844, 1535066871),
-            paket_user=random.choice(['Israel', 'Oren', 'Chen']),
-            GPS=(random.uniform(-180, 180), random.uniform(-90, 90))
-        ) for i in range(10)])
 
 
 class UnknownUser(Exception):
@@ -58,16 +42,70 @@ def init_db():
                 payment_transaction VARCHAR(1024))''')
         LOGGER.debug('packages table created')
         sql.execute('''
-            CREATE TABLE custodians(
+            CREATE TABLE events(
                 timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 escrow_pubkey VARCHAR(56),
-                custodian_pubkey VARCHAR(56),
+                user_pubkey VARCHAR(56),
+                event_type VARCHAR(20),
+                location VARCHAR(22),
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
-        LOGGER.debug('custodians table created')
+        LOGGER.debug('events table created')
+
+
+def add_event(escrow_pubkey, user_pubkey, event_type, location):
+    """Add a package event."""
+    with SQL_CONNECTION() as sql:
+        sql.execute("""
+            INSERT INTO events (escrow_pubkey, user_pubkey, event_type, location)
+            VALUES (%s, %s, %s, %s)
+        """, (escrow_pubkey, user_pubkey, event_type, location))
+
+
+def get_events(escrow_pubkey):
+    """Get all package events."""
+    with SQL_CONNECTION() as sql:
+        sql.execute("""
+            SELECT timestamp, user_pubkey, event_type, location FROM events
+            WHERE escrow_pubkey = %s
+            ORDER BY timestamp ASC""", (escrow_pubkey,))
+        # Fix for mysql-connector bug which makes sql.fetchall() return some
+        # keys as (unjsonable) bytes.
+        return [{
+            key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
+                for event in sql.fetchall()]
+
+
+def enrich_package(package, user_role=None, user_pubkey=None):
+    """Add some periferal data to the package object."""
+    package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
+    package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
+    package['events'] = get_events(package['escrow_pubkey'])
+    event_types = set([event['event_type'] for event in package['events']])
+
+    if 'received' in event_types:
+        package['status'] = 'delivered'
+    elif 'couriered' in event_types:
+        package['status'] = 'in transit'
+    elif 'launched' in event_types:
+        package['status'] = 'waiting pickup'
+    else:
+        package['status'] = 'unknown'
+
+    if user_role:
+        package['user_role'] = user_role
+    elif user_pubkey:
+        if user_pubkey == package['launcher_pubkey']:
+            package['user_role'] = 'launcher'
+        elif user_pubkey == package['recipient_pubkey']:
+            package['user_role'] = 'recipient'
+        else:
+            package['user_role'] = 'unknown'
+
+    return package
 
 
 def create_package(
-        escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment, collateral, deadline,
         set_options_transaction, refund_transaction, merge_transaction, payment_transaction):
     """Create a new package row."""
     with SQL_CONNECTION() as sql:
@@ -78,20 +116,16 @@ def create_package(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
                 set_options_transaction, refund_transaction, merge_transaction, payment_transaction))
-        sql.execute("INSERT INTO custodians (escrow_pubkey, custodian_pubkey) VALUES (%s, %s)", (
-            escrow_pubkey, launcher_pubkey))
+    add_event(escrow_pubkey, launcher_pubkey, 'launched', None)
+    return enrich_package(get_package(escrow_pubkey))
 
 
 def get_package(escrow_pubkey):
     """Get package details."""
     with SQL_CONNECTION() as sql:
-        sql.execute(
-            "SELECT custodian_pubkey FROM custodians WHERE escrow_pubkey = %s ORDER BY timestamp DESC LIMIT 1",
-            (escrow_pubkey,))
-        custodian_pubkey = sql.fetchall()[0]['custodian_pubkey']
         sql.execute("SELECT * FROM packages WHERE escrow_pubkey = %s", (escrow_pubkey,))
         try:
-            return dict(enrich_package(sql.fetchone()), custodian_pubkey=custodian_pubkey)
+            return enrich_package(sql.fetchone())
         except TypeError:
             raise UnknownPaket("paket {} is not valid".format(escrow_pubkey))
 
@@ -101,18 +135,21 @@ def get_packages(user_pubkey=None):
     with SQL_CONNECTION() as sql:
         if user_pubkey:
             sql.execute("""
-                SELECT * FROM packages
-                WHERE escrow_pubkey IN (
-                    SELECT escrow_pubkey FROM custodians WHERE custodian_pubkey = %s)
-                OR launcher_pubkey = %s
-                OR recipient_pubkey = %s""", (user_pubkey, user_pubkey, user_pubkey))
-        else:
-            sql.execute('SELECT * FROM packages')
+            SELECT * FROM packages
+            WHERE launcher_pubkey = %s""", (user_pubkey,))
+            launched = [enrich_package(row, user_role='launcher') for row in sql.fetchall()]
+            sql.execute("""
+            SELECT * FROM packages
+            WHERE recipient_pubkey = %s""", (user_pubkey,))
+            received = [enrich_package(row, user_role='recipient') for row in sql.fetchall()]
+            sql.execute("""
+            SELECT * FROM packages
+            WHERE escrow_pubkey IN (
+                SELECT escrow_pubkey FROM events
+                WHERE event_type = 'couriered' AND user_pubkey = %s)""", (user_pubkey,))
+            couriered = [enrich_package(row, user_role='courier') for row in sql.fetchall()]
+            return [
+                dict(package, custodian_pubkey=package['events'][-1]['user_pubkey'])
+                for package in launched + received + couriered]
+        sql.execute('SELECT * FROM packages')
         return [enrich_package(row) for row in sql.fetchall()]
-
-
-def update_custodian(escrow_pubkey, custodian_pubkey):
-    """Update a package's custodian."""
-    with SQL_CONNECTION() as sql:
-        sql.execute("INSERT INTO custodians (escrow_pubkey, custodian_pubkey) VALUES (%s, %s)", (
-            escrow_pubkey, custodian_pubkey))

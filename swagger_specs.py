@@ -290,6 +290,10 @@ ACCEPT_PACKAGE = {
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
             'in': 'formData', 'required': True, 'type': 'string',
+        },
+        {
+            'name': 'location', 'description': 'location of place where user accepted package',
+            'in': 'formData', 'required': False, 'type': 'string'
         }
     ],
     'responses': {
@@ -344,7 +348,7 @@ PACKAGE = {
                 'pubkey': {
                     'type': 'string'
                 },
-                'GPS': {
+                'location': {
                     'type': 'string'
                 }
             }
@@ -360,9 +364,6 @@ PACKAGE = {
                 },
                 'collateral': {
                     'type': 'integer'
-                },
-                'custodian-id': {
-                    'type': 'string'
                 },
                 'deadline-timestamp': {
                     'type': 'integer'
@@ -401,6 +402,45 @@ PACKAGE = {
     }
 }
 
+ADD_EVENT = {
+    'tags': ['packages'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'pubkey of package escrow',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'event_type', 'description': 'type of event',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'location', 'description': 'GPS coordinates where event happened',
+            'in': 'formData', 'required': True, 'type': 'string'}
+    ],
+    'responses': {
+        '200': {'description': 'event successfully added'}
+    }
+}
+
+CHANGED_LOCATION = {
+    'tags': ['packages'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'pubkey of package escrow',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'location', 'description': 'GPS coordinates where user is at this moment',
+            'in': 'formData', 'required': True, 'type': 'string'}
+    ],
+    'responses': {
+        '200': {'description': 'event successfully added'}
+    }
+}
+
 FUND_FROM_ISSUER = {
     'tags': ['debug'],
     'parameters': [
@@ -413,6 +453,37 @@ FUND_FROM_ISSUER = {
     ],
     'responses': {
         '200': {'description': 'funding successful'}
+    }
+}
+
+CREATE_MOCK_PACKAGE = {
+    'tags': [
+        'debug'
+    ],
+    'parameters': [
+        {
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'launcher_pubkey', 'description': 'launcher pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'recipient_pubkey', 'description': 'recipient pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'payment_buls', 'description': 'BULs promised as payment',
+            'in': 'formData', 'required': True, 'type': 'integer'},
+        {
+            'name': 'collateral_buls', 'description': 'BULs promised as collateral',
+            'in': 'formData', 'required': True, 'type': 'integer'},
+        {
+            'name': 'deadline_timestamp', 'description': 'deadline timestamp',
+            'in': 'formData', 'required': True, 'type': 'integer'},
+    ],
+    'responses': {
+        '201': {
+            'description': 'package details',
+        }
     }
 }
 
