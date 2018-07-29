@@ -68,16 +68,40 @@ def get_events(escrow_pubkey):
             SELECT timestamp, user_pubkey, event_type, location FROM events
             WHERE escrow_pubkey = %s
             ORDER BY timestamp ASC""", (escrow_pubkey,))
-        events = {}
-        for event in sql.fetchall():
-            if event['event_type'] not in events:
-                events[event['event_type']] = [event]
-            else:
-                events[event['event_type']].append(event)
-        return events
-        #    }
-        #        for event in sql.fetchall()]
-        #for {key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
+        # Fix for mysql-connector bug which makes sql.fetchall() return some
+        # keys as (unjsonable) bytes.
+        return [{
+            key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
+                for event in sql.fetchall()]
+
+
+def enrich_package(package, user_role=None, user_pubkey=None):
+    """Add some periferal data to the package object."""
+    package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
+    package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
+    package['events'] = get_events(package['escrow_pubkey'])
+    event_types = set([event['event_type'] for event in package['events']])
+
+    if 'received' in event_types:
+        package['status'] = 'delivered'
+    elif 'couriered' in event_types:
+        package['status'] = 'in transit'
+    elif 'launched' in event_types:
+        package['status'] = 'waiting pickup'
+    else:
+        package['status'] = 'unknown'
+
+    if user_role:
+        package['user_role'] = user_role
+    elif user_pubkey:
+        if user_pubkey == package['launcher_pubkey']:
+            package['user_role'] = 'launcher'
+        elif user_pubkey == package['recipient_pubkey']:
+            package['user_role'] = 'recipient'
+        else:
+            package['user_role'] = 'unknown'
+
+    return package
 
 
 def create_package(
@@ -93,22 +117,7 @@ def create_package(
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
                 set_options_transaction, refund_transaction, merge_transaction, payment_transaction))
     add_event(escrow_pubkey, launcher_pubkey, 'launched', None)
-
-
-def enrich_package(package):
-    """Add some periferal data to the package object."""
-    package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
-    package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
-    package['events'] = get_events(package['escrow_pubkey'])
-    if 'received' in package['events']:
-        package['status'] = 'delivered'
-    elif 'couriered' in package['events']:
-        package['status'] = 'in transit'
-    elif 'launched' in package['events']:
-        package['status'] = 'waiting pickup'
-    else:
-        package['status'] = 'unknown'
-    return package
+    return enrich_package(get_package(escrow_pubkey))
 
 
 def get_package(escrow_pubkey):
@@ -128,17 +137,17 @@ def get_packages(user_pubkey=None):
             sql.execute("""
             SELECT * FROM packages
             WHERE launcher_pubkey = %s""", (user_pubkey,))
-            launched = [dict(enrich_package(row), user_role='launcher') for row in sql.fetchall()]
+            launched = [enrich_package(row, user_role='launcher') for row in sql.fetchall()]
             sql.execute("""
             SELECT * FROM packages
             WHERE recipient_pubkey = %s""", (user_pubkey,))
-            received = [dict(enrich_package(row), user_role='recipient') for row in sql.fetchall()]
+            received = [enrich_package(row, user_role='recipient') for row in sql.fetchall()]
             sql.execute("""
             SELECT * FROM packages
             WHERE escrow_pubkey IN (
                 SELECT escrow_pubkey FROM events
                 WHERE event_type = 'couriered' AND user_pubkey = %s)""", (user_pubkey,))
-            couriered = [dict(enrich_package(row), user_role='courier') for row in sql.fetchall()]
+            couriered = [enrich_package(row, user_role='courier') for row in sql.fetchall()]
             return [
                 dict(package, custodian_pubkey=package['events'][-1]['user_pubkey'])
                 for package in launched + received + couriered]
