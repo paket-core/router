@@ -37,9 +37,9 @@ class CreatePackageTest(tests.DbBaseTest):
             "created event '{}', but must be 'launched'".format(
                 events[0]['event_type']))
         self.assertEqual(
-            events[0]['paket_user'], package_members['launcher'][0],
+            events[0]['user_pubkey'], package_members['launcher'][0],
             "created event for user: {}, but must be for: {}".format(
-                events[0]['paket_user'], package_members['launcher'][0]))
+                events[0]['user_pubkey'], package_members['launcher'][0]))
         self.assertEqual(
             events[0]['escrow_pubkey'], package_members['escrow'][0],
             "created event for escrow: {}, but must be for: {}".format(
@@ -147,9 +147,9 @@ class AddEventTest(tests.DbBaseTest):
         couriered_event = next((event for event in events if event['event_type'] == 'couriered'), None)
         self.assertIsNotNone(couriered_event, "expected event with event_type: 'couriered', None got instead")
         self.assertEqual(
-            couriered_event['paket_user'], package_members['courier'][0],
-            "expected event with paket_user: {}, but {} got instead".format(
-                package_members['courier'][0], couriered_event['paket_user']))
+            couriered_event['user_pubkey'], package_members['courier'][0],
+            "expected event with user_pubkey: {}, but {} got instead".format(
+                package_members['courier'][0], couriered_event['user_pubkey']))
 
 
 class GetEventsTest(tests.DbBaseTest):
