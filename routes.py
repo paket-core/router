@@ -118,7 +118,7 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
 @BLUEPRINT.route("/v{}/prepare_escrow".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PREPARE_ESCROW)
 @webserver.validation.call(
-    ['launcher_pubkey', 'recipient_pubkey', 'courier_pubkey', 'deadline_timestamp', 'payment_buls', 'collateral_buls'],
+    ['launcher_pubkey', 'recipient_pubkey', 'courier_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp'],
     require_auth=True)
 def prepare_escrow_handler(
         user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
@@ -239,6 +239,23 @@ def fund_handler(funded_pubkey, funded_buls=1000000000):
     :return:
     """
     return {'status': 200, 'response': paket_stellar.fund_from_issuer(funded_pubkey, funded_buls)}
+
+
+@BLUEPRINT.route("/v{}/debug/create_mock_package".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.CREATE_MOCK_PACKAGE)
+@webserver.validation.call(
+    ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp'])
+def create_mock_package_handler(
+        escrow_pubkey, launcher_pubkey, recipient_pubkey,
+        payment_buls, collateral_buls, deadline_timestamp):
+    """
+    Create a mock package - for debug only.
+    ---
+    :return:
+    """
+    return {'status': 201, 'package': db.create_package(
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
+        'mock_setopts', 'mock_refund', 'mock merge', 'mock payment')}
 
 
 @BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])
