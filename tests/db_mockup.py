@@ -27,7 +27,7 @@ def init_db():
 
 def add_event(escrow_pubkey, user_pubkey, event_type, location):
     """Add a package event."""
-    PACKAGES.append({
+    EVENTS.append({
         'escrow_pubkey': escrow_pubkey, 'user_pubkey': user_pubkey,
         'event_type': event_type, 'location': location, 'timestamp': time.time()})
 
