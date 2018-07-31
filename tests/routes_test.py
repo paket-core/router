@@ -1,5 +1,4 @@
 """Tests for routes module"""
-import os
 import json
 import time
 import unittest
@@ -27,7 +26,7 @@ class ApiBaseTest(unittest.TestCase):
         super().__init__(*args, **kwargs)
         self.app = APP.test_client()
         self.host = 'http://localhost'
-        self.funded_seed = os.environ.get('PAKET_TEST_FUNDER_SEED')
+        self.funded_seed = 'SDJGBJZMQ7Z4W3KMSMO2HYEV56DJPOZ7XRR7LJ5X2KW6VKBSLELR7MRQ'
         self.funded_account = paket_stellar.get_keypair(seed=self.funded_seed)
         self.funded_pubkey = self.funded_account.address().decode()
         LOGGER.info('init done')
