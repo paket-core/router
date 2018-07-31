@@ -29,7 +29,6 @@ class ApiBaseTest(unittest.TestCase):
         self.funded_seed = 'SDJGBJZMQ7Z4W3KMSMO2HYEV56DJPOZ7XRR7LJ5X2KW6VKBSLELR7MRQ'
         self.funded_account = paket_stellar.get_keypair(seed=self.funded_seed)
         self.funded_pubkey = self.funded_account.address().decode()
-        # GBTWWXA3CDQOSRQ3645B2L4A345CRSKSV6MSBUO4LSHC26ZMNOYFN2YJ
         LOGGER.info('init done')
 
     def setUp(self):
