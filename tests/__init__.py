@@ -59,7 +59,7 @@ class ApiBaseTest(PaketBaseTest):
     @staticmethod
     def sign_transaction(transaction, seed):
         """Sign transaction with provided seed"""
-        builder = paket_stellar.stellar_base.builder.Builder(horizon=paket_stellar.HORIZON, secret=seed)
+        builder = paket_stellar.stellar_base.builder.Builder(horizon=paket_stellar.HORIZON_SERVER, secret=seed)
         builder.import_from_xdr(transaction)
         builder.sign()
         signed_transaction = builder.gen_te().xdr().decode()

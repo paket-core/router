@@ -283,4 +283,5 @@ def view_log_handler(lines_num=10):
 
 
 if __name__ == '__main__':
+    util.logger.setup()
     webserver.run(BLUEPRINT, swagger_specs.CONFIG, PORT)
