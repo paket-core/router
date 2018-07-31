@@ -280,8 +280,3 @@ def view_log_handler(lines_num=10):
     """
     with open(os.path.join(util.logger.LOG_DIR_NAME, util.logger.LOG_FILE_NAME)) as logfile:
         return {'status': 200, 'log': logfile.readlines()[:-1 - lines_num:-1]}
-
-
-if __name__ == '__main__':
-    util.logger.setup()
-    webserver.run(BLUEPRINT, swagger_specs.CONFIG, PORT)
