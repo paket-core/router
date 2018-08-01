@@ -47,7 +47,7 @@ def init_db():
                 escrow_pubkey VARCHAR(56),
                 user_pubkey VARCHAR(56),
                 event_type VARCHAR(20),
-                location VARCHAR(22),
+                location VARCHAR(24),
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
         LOGGER.debug('events table created')
 
