@@ -47,7 +47,7 @@ def init_db():
                 escrow_pubkey VARCHAR(56),
                 user_pubkey VARCHAR(56),
                 event_type VARCHAR(20),
-                location VARCHAR(22),
+                location VARCHAR(24),
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
         LOGGER.debug('events table created')
 
@@ -106,7 +106,7 @@ def enrich_package(package, user_role=None, user_pubkey=None):
 
 def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, payment, collateral, deadline,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction):
+        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location=None):
     """Create a new package row."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
@@ -116,7 +116,7 @@ def create_package(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
                 set_options_transaction, refund_transaction, merge_transaction, payment_transaction))
-    add_event(escrow_pubkey, launcher_pubkey, 'launched', None)
+    add_event(escrow_pubkey, launcher_pubkey, 'launched', location)
     return enrich_package(get_package(escrow_pubkey))
 
 

@@ -108,7 +108,7 @@ class ApiBaseTest(unittest.TestCase):
             from_pubkey=from_pubkey, to_pubkey=to_pubkey, amount_buls=amount_buls)['transaction']
         return self.submit(unsigned, from_seed, description)
 
-    def prepare_escrow(self, payment, collateral, deadline):
+    def prepare_escrow(self, payment, collateral, deadline, location=None):
         """Create launcher, courier, recipient, escrow accounts and call prepare_escrow"""
         LOGGER.info('preparing package accounts')
         launcher = self.create_and_setup_new_account(payment)
@@ -122,7 +122,7 @@ class ApiBaseTest(unittest.TestCase):
         escrow_transactions = self.call(
             'prepare_escrow', 201, 'can not prepare escrow transactions', escrow[1],
             launcher_pubkey=launcher[0], courier_pubkey=courier[0], recipient_pubkey=recipient[0],
-            payment_buls=payment, collateral_buls=collateral, deadline_timestamp=deadline)
+            payment_buls=payment, collateral_buls=collateral, deadline_timestamp=deadline, location=location)
 
         return {
             'launcher': launcher,
@@ -242,6 +242,22 @@ class PrepareEscrowTest(ApiBaseTest):
         deadline = int(time.time())
         LOGGER.info('preparing new escrow')
         self.prepare_escrow(payment, collateral, deadline)
+
+    def test_prepare_with_location(self):
+        """Test preparing escrow transaction with used optional location arg."""
+        payment, collateral = 50000000, 100000000
+        deadline = int(time.time())
+        location = '-37.4244753,-12.4845718'
+        LOGGER.info("preparing new escrow at location: %s", location)
+        escrow_pubkey = self.prepare_escrow(payment, collateral, deadline, location)['escrow']
+        events = routes.db.get_events(escrow_pubkey[0])
+        self.assertEqual(
+            len(events), 1,
+            "expected 1 event for escrow: {}, {} got instead".format(escrow_pubkey, len(events)))
+        self.assertEqual(
+            events[0]['location'], location,
+            "expected location: {} for escrow: {}, {} got instead".format(
+                location, escrow_pubkey, events[0]['location']))
 
 
 class AcceptPackageTest(ApiBaseTest):
