@@ -273,6 +273,9 @@ PREPARE_ESCROW = {
         {
             'name': 'deadline_timestamp', 'description': 'deadline timestamp',
             'in': 'formData', 'required': True, 'type': 'integer'},
+        {
+            'name': 'location', 'description': 'GPS location in format "latitude, longitude"',
+            'in': 'formData', 'required': False, 'type': 'string'}
     ],
     'responses': {
         '201': {

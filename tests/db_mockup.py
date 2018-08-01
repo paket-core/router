@@ -43,7 +43,7 @@ def get_events(escrow_pubkey):
 
 def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, payment, collateral, deadline,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction):
+        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location=None):
     """Create a new package row."""
     PACKAGES.append({
         'escrow_pubkey': escrow_pubkey, 'launcher_pubkey': launcher_pubkey,
@@ -51,7 +51,7 @@ def create_package(
         'set_options_transaction': set_options_transaction, 'refund_transaction': refund_transaction,
         'merge_transaction': merge_transaction, 'payment_transaction': payment_transaction
     })
-    add_event(escrow_pubkey, launcher_pubkey, 'launched', None)
+    add_event(escrow_pubkey, launcher_pubkey, 'launched', location)
     return db.enrich_package(get_package(escrow_pubkey))
 
 

@@ -122,7 +122,7 @@ def prepare_send_buls_handler(from_pubkey, to_pubkey, amount_buls):
     require_auth=True)
 def prepare_escrow_handler(
         user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp):
+        payment_buls, collateral_buls, deadline_timestamp, location=None):
     """
     Launch a package.
     Use this call to create a new package for delivery.
@@ -134,12 +134,13 @@ def prepare_escrow_handler(
     :param payment_buls:
     :param collateral_buls:
     :param deadline_timestamp:
+    :param location:
     :return:
     """
     package_details = paket_stellar.prepare_escrow(
         user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
         payment_buls, collateral_buls, deadline_timestamp)
-    db.create_package(**package_details)
+    db.create_package(**dict(package_details, location=location))
     return dict(status=201, **package_details)
 
 
