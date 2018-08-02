@@ -66,11 +66,8 @@ class CreatePackageTest(DbBaseTest):
         db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
             50000000, 100000000, time.time(), None, None, None, None)
-        with db.SQL_CONNECTION() as sql:
-            sql.execute('SELECT * FROM packages')
-            packages = sql.fetchall()
-            sql.execute('SELECT * FROM events')
-            events = sql.fetchall()
+        events = db.get_events(package_members['escrow'][0])
+        packages = db.get_packages(package_members['launcher'][0])
         self.assertEqual(len(packages), 1, '')
         self.assertEqual(len(events), 1, '')
         self.assertEqual(
@@ -90,13 +87,13 @@ class CreatePackageTest(DbBaseTest):
             "created event '{}', but must be 'launched'".format(
                 events[0]['event_type']))
         self.assertEqual(
+            packages[0]['launch_date'], events[0]['timestamp'],
+            "package has launch date {}, but was launched at {}".format(
+                packages[0]['launch_date'], events[0]['timestamp']))
+        self.assertEqual(
             events[0]['user_pubkey'], package_members['launcher'][0],
             "created event for user: {}, but must be for: {}".format(
                 events[0]['user_pubkey'], package_members['launcher'][0]))
-        self.assertEqual(
-            events[0]['escrow_pubkey'], package_members['escrow'][0],
-            "created event for escrow: {}, but must be for: {}".format(
-                events[0]['escrow_pubkey'], package_members['escrow'][0]))
 
 
 class GetPackageTest(DbBaseTest):
