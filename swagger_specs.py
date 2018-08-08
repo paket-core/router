@@ -247,7 +247,7 @@ PREPARE_SEND_BULS = {
     }
 }
 
-PREPARE_ESCROW = {
+CREATE_PACKAGE = {
     'tags': [
         'packages'
     ],
@@ -256,10 +256,10 @@ PREPARE_ESCROW = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'launcher_pubkey', 'description': 'escrow pubkey',
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'courier_pubkey', 'description': 'courier pubkey',
+            'name': 'launcher_pubkey', 'description': 'launcher pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'recipient_pubkey', 'description': 'recipient pubkey',
@@ -274,12 +274,24 @@ PREPARE_ESCROW = {
             'name': 'deadline_timestamp', 'description': 'deadline timestamp',
             'in': 'formData', 'required': True, 'type': 'integer'},
         {
+            'name': 'set_options_transaction', 'description': 'Transaction with set signers',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'refund_transaction', 'description': 'Transaction for case of failed delivery',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'merge_transaction', 'description': 'Transaction for draining the remaining XLM to the launcher',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'payment_transaction', 'description': 'Transaction for case of successful delivery',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
             'name': 'location', 'description': 'GPS location in format "latitude, longitude"',
             'in': 'formData', 'required': False, 'type': 'string'}
     ],
     'responses': {
         '201': {
-            'description': 'escrow transactions',
+            'description': 'package details',
         }
     }
 }
