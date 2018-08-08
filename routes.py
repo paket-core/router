@@ -4,7 +4,6 @@ import os
 import flasgger
 import flask
 
-import paket_stellar
 import util.logger
 import util.conversion
 import webserver.validation
