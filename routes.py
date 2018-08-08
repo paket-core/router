@@ -12,10 +12,10 @@ import webserver.validation
 import db
 import swagger_specs
 
-LOGGER = util.logger.logging.getLogger('pkt.api')
+LOGGER = util.logger.logging.getLogger('pkt.router')
 VERSION = swagger_specs.VERSION
-PORT = os.environ.get('PAKET_API_PORT', 8000)
-BLUEPRINT = flask.Blueprint('api', __name__)
+PORT = os.environ.get('PAKET_ROUTER_PORT', 8000)
+BLUEPRINT = flask.Blueprint('router', __name__)
 
 
 # Input validators and fixers.
