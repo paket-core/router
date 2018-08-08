@@ -42,8 +42,8 @@ def prepare_escrow_handler(
     :param escrow_pubkey:
     :param launcher_pubkey:
     :param recipient_pubkey:
-    :param payment:
-    :param collateral:
+    :param payment_buls:
+    :param collateral_buls:
     :param deadline_timestamp:
     :param set_options_transaction:
     :param refund_transaction:
