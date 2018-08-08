@@ -46,6 +46,7 @@ def init_db():
                 timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 escrow_pubkey VARCHAR(56),
                 user_pubkey VARCHAR(56),
+                call_sign VARCHAR(32),
                 event_type VARCHAR(20),
                 location VARCHAR(24),
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
@@ -56,16 +57,16 @@ def add_event(escrow_pubkey, user_pubkey, event_type, location):
     """Add a package event."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
-            INSERT INTO events (escrow_pubkey, user_pubkey, event_type, location)
-            VALUES (%s, %s, %s, %s)
-        """, (escrow_pubkey, user_pubkey, event_type, location))
+            INSERT INTO events (escrow_pubkey, user_pubkey, call_sign, event_type, location)
+            VALUES (%s, %s, ((SELECT call_sign FROM testpaket.users WHERE pubkey = %s)), %s, %s)
+        """, (escrow_pubkey, user_pubkey, user_pubkey, event_type, location))
 
 
 def get_events(escrow_pubkey):
     """Get all package events."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
-            SELECT timestamp, user_pubkey, event_type, location FROM events
+            SELECT timestamp, user_pubkey, call_sign, event_type, location FROM events
             WHERE escrow_pubkey = %s
             ORDER BY timestamp ASC""", (escrow_pubkey,))
         # Fix for mysql-connector bug which makes sql.fetchall() return some
