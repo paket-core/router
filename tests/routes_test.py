@@ -19,7 +19,7 @@ routes.db = tests.db_mockup
 # pylint: enable=invalid-name
 
 
-class ApiBaseTest(unittest.TestCase):
+class RouterBaseTest(unittest.TestCase):
     """Base class for routes tests."""
 
     def __init__(self, *args, **kwargs):
@@ -133,107 +133,7 @@ class ApiBaseTest(unittest.TestCase):
         }
 
 
-class SubmitTransactionTest(ApiBaseTest):
-    """Test for submit_transaction route."""
-
-    def test_submit_signed(self):
-        """Test submitting signed transactions."""
-        keypair = paket_stellar.get_keypair()
-        new_pubkey = keypair.address().decode()
-        new_seed = keypair.seed().decode()
-
-        # checking create_account transaction
-        unsigned_account = self.call(
-            'prepare_account', 200, 'could not get create account transaction',
-            from_pubkey=self.funded_pubkey, new_pubkey=new_pubkey)['transaction']
-        signed_account = self.sign_transaction(unsigned_account, self.funded_seed)
-        LOGGER.info('Submitting signed create_account transaction')
-        self.call(
-            path='submit_transaction', expected_code=200,
-            fail_message='unexpected server response for submitting signed create_account transaction',
-            seed=self.funded_seed, transaction=signed_account)
-
-        # checking trust transaction
-        unsigned_trust = self.call(
-            'prepare_trust', 200, 'could not get trust transaction', from_pubkey=new_pubkey)['transaction']
-        signed_trust = self.sign_transaction(unsigned_trust, new_seed)
-        LOGGER.info('Submitting signed trust transaction')
-        self.call(
-            path='submit_transaction', expected_code=200,
-            fail_message='unexpected server response for submitting signed trust transaction',
-            seed=new_seed, transaction=signed_trust)
-
-        # checking send_buls transaction
-        unsigned_send_buls = self.call(
-            'prepare_send_buls', 200, "can not prepare send from {} to {}".format(self.funded_pubkey, new_pubkey),
-            from_pubkey=self.funded_pubkey, to_pubkey=new_pubkey, amount_buls=5)['transaction']
-        signed_send_buls = self.sign_transaction(unsigned_send_buls, self.funded_seed)
-        LOGGER.info('Submitting signed send_buls transaction')
-        self.call(
-            path='submit_transaction', expected_code=200,
-            fail_message='unexpected server response for submitting signed send_buls transaction',
-            seed=self.funded_seed, transaction=signed_send_buls)
-
-
-class BulAccountTest(ApiBaseTest):
-    """Test for bul_account endpoint."""
-
-    def test_bul_account(self):
-        """Test getting existing account."""
-        accounts = [self.funded_pubkey]
-        # additionally create 3 new accounts
-        for _ in range(3):
-            keypair = paket_stellar.get_keypair()
-            pubkey = keypair.address().decode()
-            seed = keypair.seed().decode()
-            self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
-            self.trust(pubkey, seed)
-            accounts.append(pubkey)
-
-        for account in accounts:
-            with self.subTest(account=account):
-                LOGGER.info('getting information about account: %s', account)
-                self.call('bul_account', 200, 'could not verify account exist', queried_pubkey=account)
-
-
-class PrepareAccountTest(ApiBaseTest):
-    """Test for prepare_account endpoint."""
-
-    def test_prepare_account(self):
-        """Test preparing transaction for creating account."""
-        keypair = paket_stellar.get_keypair()
-        pubkey = keypair.address().decode()
-        LOGGER.info('preparing create account transaction for public key: %s', pubkey)
-        self.call(
-            'prepare_account', 200, 'could not get create account transaction',
-            from_pubkey=self.funded_pubkey, new_pubkey=pubkey)
-
-
-class PrepareTrustTest(ApiBaseTest):
-    """Test for prepare_trust endpoint."""
-
-    def test_prepare_trust(self):
-        """Test preparing transaction for trusting BULs."""
-        keypair = paket_stellar.get_keypair()
-        pubkey = keypair.address().decode()
-        self.create_account(from_pubkey=self.funded_pubkey, new_pubkey=pubkey, seed=self.funded_seed)
-        LOGGER.info('querying prepare trust for user: %s', pubkey)
-        self.call('prepare_trust', 200, 'could not get trust transaction', from_pubkey=pubkey)
-
-
-class PrepareSendBulsTest(ApiBaseTest):
-    """Test for prepare_send_buls endpoint."""
-
-    def test_prepare_send_buls(self):
-        """Test preparing transaction for sending BULs."""
-        pubkey, _ = self.create_and_setup_new_account()
-        LOGGER.info('preparing send buls transaction for user: %s', pubkey)
-        self.call(
-            'prepare_send_buls', 200, 'can not prepare send from {} to {}'.format(self.funded_pubkey, pubkey),
-            from_pubkey=self.funded_pubkey, to_pubkey=pubkey, amount_buls=50000000)
-
-
-class PrepareEscrowTest(ApiBaseTest):
+class PrepareEscrowTest(RouterBaseTest):
     """Test for prepare_escrow endpoint."""
 
     def test_prepare_escrow(self):
@@ -260,7 +160,7 @@ class PrepareEscrowTest(ApiBaseTest):
                 location, escrow_pubkey, events[0]['location']))
 
 
-class AcceptPackageTest(ApiBaseTest):
+class AcceptPackageTest(RouterBaseTest):
     """Test for accept_package endpoint."""
 
     def test_accept_package(self):
@@ -285,7 +185,7 @@ class AcceptPackageTest(ApiBaseTest):
                 "'{}' event expected, but '{}' got instead".format(expected_event_type, events[-1]['event_type']))
 
 
-class MyPackagesTest(ApiBaseTest):
+class MyPackagesTest(RouterBaseTest):
     """Test for my_packages endpoint."""
 
     def test_my_packages(self):
@@ -313,7 +213,7 @@ class MyPackagesTest(ApiBaseTest):
         self.assertEqual(packages[0]['payment'], payment)
 
 
-class PackageTest(ApiBaseTest):
+class PackageTest(RouterBaseTest):
     """Test for package endpoint."""
 
     def test_package(self):
@@ -333,7 +233,7 @@ class PackageTest(ApiBaseTest):
         self.assertEqual(package['payment'], payment)
 
 
-class AddEventTest(ApiBaseTest):
+class AddEventTest(RouterBaseTest):
     """Test for add_event endpoint."""
 
     def test_add_event(self):
