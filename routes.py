@@ -27,32 +27,35 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
 # Package routes.
 
 
-@BLUEPRINT.route("/v{}/prepare_escrow".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.PREPARE_ESCROW)
+@BLUEPRINT.route("/v{}/create_package".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.CREATE_PACKAGE)
 @webserver.validation.call(
-    ['launcher_pubkey', 'recipient_pubkey', 'courier_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp'],
+    ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey', 'payment', 'collateral', 'deadline_timestamp',
+     'set_options_transaction', 'refund_transaction', 'payment_transaction', 'merge_transaction'],
     require_auth=True)
 def prepare_escrow_handler(
-        user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp, location=None):
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment, collateral, deadline_timestamp,
+        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location=None):
     """
-    Launch a package.
+    Create a package.
     Use this call to create a new package for delivery.
     ---
-    :param user_pubkey: the escrow pubkey
+    :param escrow_pubkey:
     :param launcher_pubkey:
-    :param courier_pubkey:
     :param recipient_pubkey:
-    :param payment_buls:
-    :param collateral_buls:
+    :param payment:
+    :param collateral:
     :param deadline_timestamp:
+    :param set_options_transaction:
+    :param refund_transaction:
+    :param merge_transaction:
+    :param payment_transaction:
     :param location:
     :return:
     """
-    package_details = paket_stellar.prepare_escrow(
-        user_pubkey, launcher_pubkey, courier_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp)
-    db.create_package(**dict(package_details, location=location))
+    package_details = db.create_package(
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment, collateral, deadline_timestamp,
+        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location)
     return dict(status=201, **package_details)
 
 
