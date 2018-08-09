@@ -29,18 +29,17 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
 @BLUEPRINT.route("/v{}/create_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CREATE_PACKAGE)
 @webserver.validation.call(
-    ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp',
+    ['escrow_pubkey', 'recipient_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp',
      'set_options_transaction', 'refund_transaction', 'payment_transaction', 'merge_transaction'],
     require_auth=True)
 def create_package_handler(
-        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
+        user_pubkey, escrow_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
         set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location=None):
     """
     Create a package.
     Use this call to create a new package for delivery.
     ---
     :param escrow_pubkey:
-    :param launcher_pubkey:
     :param recipient_pubkey:
     :param payment_buls:
     :param collateral_buls:
@@ -53,7 +52,7 @@ def create_package_handler(
     :return:
     """
     package_details = db.create_package(
-        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
+        escrow_pubkey, user_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
         set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location)
     return dict(status=201, **package_details)
 
