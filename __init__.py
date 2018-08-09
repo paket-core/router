@@ -1,1 +1,1 @@
-"""API server for the PAKET project."""
+"""Router server for the PAKET project."""
