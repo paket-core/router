@@ -39,6 +39,7 @@ def create_package_handler(
     Create a package.
     Use this call to create a new package for delivery.
     ---
+    :param user_pubkey:
     :param escrow_pubkey:
     :param recipient_pubkey:
     :param payment_buls:
@@ -54,7 +55,7 @@ def create_package_handler(
     package_details = db.create_package(
         escrow_pubkey, user_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
         set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location)
-    return dict(status=201, **package_details)
+    return dict(status=201, package=package_details)
 
 
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
