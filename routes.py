@@ -32,7 +32,7 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
     ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp',
      'set_options_transaction', 'refund_transaction', 'payment_transaction', 'merge_transaction'],
     require_auth=True)
-def prepare_escrow_handler(
+def create_package_handler(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
         set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location=None):
     """
