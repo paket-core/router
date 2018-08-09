@@ -7,7 +7,7 @@ import util.logger
 
 import db
 
-LOGGER = util.logger.logging.getLogger('pkt.api.test')
+LOGGER = util.logger.logging.getLogger('pkt.router.test')
 
 
 def create_tables():
