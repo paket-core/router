@@ -5,14 +5,14 @@ import os.path
 import util.logger
 import webserver
 
-import api.routes
+import router.routes
 
 # Python imports are silly.
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # pylint: disable=wrong-import-position
-import api.swagger_specs
+import router.swagger_specs
 # pylint: enable=wrong-import-position
 
 util.logger.setup()
 
-webserver.run(api.routes.BLUEPRINT, api.swagger_specs.CONFIG, api.routes.PORT)
+webserver.run(router.routes.BLUEPRINT, router.swagger_specs.CONFIG, router.routes.PORT)
