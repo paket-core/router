@@ -111,7 +111,6 @@ def package_handler(escrow_pubkey):
 @webserver.validation.call(['escrow_pubkey', 'event_type', 'location'], require_auth=True)
 def add_event_handler(user_pubkey, escrow_pubkey, event_type, location):
     """
-    (Deprecated)
     Add new event for package.
     ---
     :param user_pubkey:
@@ -120,7 +119,6 @@ def add_event_handler(user_pubkey, escrow_pubkey, event_type, location):
     :param location:
     :return:
     """
-    LOGGER.warning("/v%s/add_event is deprecated and will be removed in future", VERSION)
     db.add_event(escrow_pubkey, user_pubkey, event_type, location)
     return {'status': 200}
 
