@@ -111,7 +111,7 @@ class CreatePackageTest(RouterBaseTest):
         location = '-37.4244753,-12.4845718'
         LOGGER.info("preparing new escrow at location: %s", location)
         escrow_pubkey = self.create_package(payment, collateral, deadline, location)['escrow']
-        events = routes.db.get_events(escrow_pubkey[0])
+        events = routes.db.get_package_events(escrow_pubkey[0])
         self.assertEqual(
             len(events), 1,
             "expected 1 event for escrow: {}, {} got instead".format(escrow_pubkey, len(events)))
@@ -134,7 +134,7 @@ class AcceptPackageTest(RouterBaseTest):
             self.call(
                 'accept_package', 200, 'member could not accept package',
                 member[1], escrow_pubkey=package['escrow'][0])
-            events = routes.db.get_events(package['escrow'][0])
+            events = routes.db.get_package_events(package['escrow'][0])
             expected_event_type = 'couriered' if member == package['courier'] else 'received'
             self.assertEqual(
                 events[-1]['event_type'], expected_event_type,
