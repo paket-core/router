@@ -61,18 +61,28 @@ def add_event(escrow_pubkey, user_pubkey, event_type, location):
         """, (escrow_pubkey, user_pubkey, event_type, location))
 
 
-def get_events(escrow_pubkey):
-    """Get all package events."""
+def get_events(escrow_pubkey=None, limit=100):
+    """Get a list of events."""
+    if escrow_pubkey:
+        with SQL_CONNECTION() as sql:
+            sql.execute("""
+                SELECT timestamp, user_pubkey, event_type, location FROM events 
+                WHERE escrow_pubkey = %s 
+                ORDER BY timestamp ASC""", (escrow_pubkey,))
+            # Fix for mysql-connector bug which makes sql.fetchall() return some
+            # keys as (unjsonable) bytes.
+            return [{
+                key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
+                    for event in sql.fetchall()]
+
     with SQL_CONNECTION() as sql:
-        sql.execute("""
-            SELECT timestamp, user_pubkey, event_type, location FROM events
-            WHERE escrow_pubkey = %s
-            ORDER BY timestamp ASC""", (escrow_pubkey,))
-        # Fix for mysql-connector bug which makes sql.fetchall() return some
-        # keys as (unjsonable) bytes.
-        return [{
+        sql.execute("SELECT * FROM events LIMIT %s", (limit,))
+        events = [{
             key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
-                for event in sql.fetchall()]
+                  for event in sql.fetchall()]
+        return {
+            'packages_events': [event for event in events if event['escrow_pubkey'] is not None],
+            'user_events': [event for event in events if event['escrow_pubkey'] is None]}
 
 
 def enrich_package(package, user_role=None, user_pubkey=None):
@@ -80,7 +90,7 @@ def enrich_package(package, user_role=None, user_pubkey=None):
     package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
     package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
     package['events'] = get_events(package['escrow_pubkey'])
-    event_types = set([event['event_type'] for event in package['events']])
+    event_types = {[event['event_type'] for event in package['events']]}
     package['launch_date'] = package['events'][0]['timestamp']
 
     if 'received' in event_types:
