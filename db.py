@@ -93,7 +93,7 @@ def enrich_package(package, user_role=None, user_pubkey=None):
     package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
     package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
     package['events'] = get_package_events(package['escrow_pubkey'])
-    event_types = {[event['event_type'] for event in package['events']]}
+    event_types = {event['event_type'] for event in package['events']}
     package['launch_date'] = package['events'][0]['timestamp']
 
     if 'received' in event_types:
