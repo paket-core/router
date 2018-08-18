@@ -7,7 +7,7 @@ import util.logger
 
 import db
 
-LOGGER = util.logger.logging.getLogger('pkt.api.test')
+LOGGER = util.logger.logging.getLogger('pkt.router.test')
 
 
 def create_tables():
@@ -216,7 +216,7 @@ class GetEventsTest(DbBaseTest):
             new_package_members['escrow'][0], new_package_members['launcher'][0], new_package_members['recipient'][0],
             50000000, 100000000, time.time(), None, None, None, None)
         for user in new_package_members:
-            db.add_event(new_package_members['escrow'][0], user[0], 'new event', None)
+            db.add_event(new_package_members['escrow'][0], new_package_members[user][0], 'new event', None)
         events = db.get_events(package_members['escrow'][0])
         self.assertEqual(len(events), 1, "expected 1 event for package: '{}', but '{}' got instead".format(
             package_members['escrow'][0], len(events)))

@@ -1,8 +1,7 @@
-PAKET API Server
-================
+PAKET Router Server
+===================
 
-The PAKET API Server is a centralized server which provides a bridge between
-mobile and Web apps and the Stellar network, in addition to some rudimentary
-routing capabilities.
+The PAKET Router Server handles creating and accepting packages, adding events and locations,
+and requesting package-related information.
 
 To deploy, test, and run the server, use [the PAKET manager bundle](/paket-core/manager).

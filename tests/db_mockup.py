@@ -4,7 +4,7 @@ import time
 
 import db
 
-LOGGER = logging.getLogger('pkt.db')
+LOGGER = logging.getLogger('pkt.mock-db')
 PACKAGES = []
 EVENTS = []
 
