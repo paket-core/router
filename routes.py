@@ -34,7 +34,7 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
     require_auth=True)
 def create_package_handler(
         user_pubkey, escrow_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location=None):
+        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location):
     """
     Create a package.
     Use this call to create a new package for delivery.
@@ -60,8 +60,8 @@ def create_package_handler(
 
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ACCEPT_PACKAGE)
-@webserver.validation.call(['escrow_pubkey'], require_auth=True)
-def accept_package_handler(user_pubkey, escrow_pubkey, location=None):
+@webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
+def accept_package_handler(user_pubkey, escrow_pubkey, location):
     """
     Accept a package.
     If the package requires collateral, commit it.
@@ -74,7 +74,7 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location=None):
     """
     package = db.get_package(escrow_pubkey)
     event_type = 'received' if package['recipient_pubkey'] == user_pubkey else 'couriered'
-    db.add_event(escrow_pubkey, user_pubkey, event_type, location)
+    db.add_event(user_pubkey, event_type, location, escrow_pubkey)
     return {'status': 200}
 
 
@@ -108,18 +108,19 @@ def package_handler(escrow_pubkey):
 
 @BLUEPRINT.route("/v{}/add_event".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ADD_EVENT)
-@webserver.validation.call(['escrow_pubkey', 'event_type', 'location'], require_auth=True)
-def add_event_handler(user_pubkey, escrow_pubkey, event_type, location):
+@webserver.validation.call(['event_type', 'location'], require_auth=True)
+def add_event_handler(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None):
     """
     Add new event for package.
     ---
     :param user_pubkey:
-    :param escrow_pubkey:
     :param event_type:
     :param location:
+    :param escrow_pubkey:
+    :param kwargs:
     :return:
     """
-    db.add_event(escrow_pubkey, user_pubkey, event_type, location)
+    db.add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs)
     return {'status': 200}
 
 
@@ -135,7 +136,7 @@ def changed_location_handler(user_pubkey, escrow_pubkey, location):
     :param location:
     :return:
     """
-    db.add_event(escrow_pubkey, user_pubkey, 'changed location', location)
+    db.add_event(user_pubkey, 'changed location', location, escrow_pubkey)
     return {'status': 200}
 
 
@@ -178,8 +179,8 @@ def events_handler(max_events_num=100, mock=None):
     """
     Get all events.
     ---
-    :param limit:
     :param max_events_num:
+    :param mock:
     :return:
     """
     if not bool(mock):
