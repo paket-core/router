@@ -29,7 +29,7 @@ def jsonable(list_of_dicts):
     """Fix for mysql-connector bug which makes sql.fetchall() return some keys as (unjsonable) bytes."""
     return [{
         key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in dict_.items()}
-        for dict_ in list_of_dicts]
+            for dict_ in list_of_dicts]
 
 
 def init_db():
@@ -83,9 +83,9 @@ def get_events(max_events_num):
 def get_package_events(escrow_pubkey):
     """Get a list of events relating to a package."""
     with SQL_CONNECTION() as sql:
-        sql.execute(""" 
-                    SELECT timestamp, user_pubkey, event_type, location, kwargs FROM events 
-                    WHERE escrow_pubkey = %s 
+        sql.execute("""
+                    SELECT timestamp, user_pubkey, event_type, location, kwargs FROM events
+                    WHERE escrow_pubkey = %s
                     ORDER BY timestamp ASC""", (escrow_pubkey,))
         return jsonable(sql.fetchall())
 

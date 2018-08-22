@@ -29,7 +29,7 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
 @BLUEPRINT.route("/v{}/create_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CREATE_PACKAGE)
 @webserver.validation.call(
-    ['escrow_pubkey', 'recipient_pubkey',  'launcher_phone_number', 'recipient_phone_number', 'payment_buls',
+    ['escrow_pubkey', 'recipient_pubkey', 'launcher_phone_number', 'recipient_phone_number', 'payment_buls',
      'collateral_buls', 'deadline_timestamp', 'description', 'from_location', 'to_location', 'event_location'],
     require_auth=True)
 def create_package_handler(
