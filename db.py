@@ -25,6 +25,13 @@ class UnknownPaket(Exception):
     """Unknown paket ID."""
 
 
+def jsonable(list_of_dicts):
+    """Fix for mysql-connector bug which makes sql.fetchall() return some keys as (unjsonable) bytes."""
+    return [{
+        key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in dict_.items()}
+        for dict_ in list_of_dicts]
+
+
 def init_db():
     """Initialize the database."""
     with SQL_CONNECTION() as sql:
@@ -44,10 +51,10 @@ def init_db():
         sql.execute('''
             CREATE TABLE events(
                 timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-                escrow_pubkey VARCHAR(56),
-                user_pubkey VARCHAR(56),
-                event_type VARCHAR(20),
-                location VARCHAR(24),
+                escrow_pubkey VARCHAR(56) NULL,
+                user_pubkey VARCHAR(56) NOT NULL,
+                event_type VARCHAR(20) NOT NULL,
+                location VARCHAR(24) NULL,
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
         LOGGER.debug('events table created')
 
@@ -61,26 +68,32 @@ def add_event(escrow_pubkey, user_pubkey, event_type, location):
         """, (escrow_pubkey, user_pubkey, event_type, location))
 
 
-def get_events(escrow_pubkey):
-    """Get all package events."""
+def get_events(max_events_num):
+    """Get all user and package events up to a limit."""
     with SQL_CONNECTION() as sql:
-        sql.execute("""
-            SELECT timestamp, user_pubkey, event_type, location FROM events
-            WHERE escrow_pubkey = %s
-            ORDER BY timestamp ASC""", (escrow_pubkey,))
-        # Fix for mysql-connector bug which makes sql.fetchall() return some
-        # keys as (unjsonable) bytes.
-        return [{
-            key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in event.items()}
-                for event in sql.fetchall()]
+        sql.execute("SELECT * FROM events LIMIT %s", (int(max_events_num),))
+        events = jsonable(sql.fetchall())
+        return {
+            'packages_events': [event for event in events if event['escrow_pubkey'] is not None],
+            'user_events': [event for event in events if event['escrow_pubkey'] is None]}
+
+
+def get_package_events(escrow_pubkey):
+    """Get a list of events relating to a package."""
+    with SQL_CONNECTION() as sql:
+        sql.execute(""" 
+                    SELECT timestamp, user_pubkey, event_type, location FROM events 
+                    WHERE escrow_pubkey = %s 
+                    ORDER BY timestamp ASC""", (escrow_pubkey,))
+        return jsonable(sql.fetchall())
 
 
 def enrich_package(package, user_role=None, user_pubkey=None):
     """Add some periferal data to the package object."""
     package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
     package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
-    package['events'] = get_events(package['escrow_pubkey'])
-    event_types = set([event['event_type'] for event in package['events']])
+    package['events'] = get_package_events(package['escrow_pubkey'])
+    event_types = {event['event_type'] for event in package['events']}
     package['launch_date'] = package['events'][0]['timestamp']
 
     if 'received' in event_types:

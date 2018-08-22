@@ -171,6 +171,100 @@ def packages_handler():
     return {'status': 200, 'packages': db.get_packages()}
 
 
+@BLUEPRINT.route("/v{}/events".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.EVENTS)
+@webserver.validation.call
+def events_handler(max_events_num=100, mock=None):
+    """
+    Get all events.
+    ---
+    :param limit:
+    :param max_events_num:
+    :return:
+    """
+    if not bool(mock):
+        events = db.get_events(max_events_num)
+        # Mock data. Temporary.
+    else:
+        events = {
+            'packages_events': [{
+                'timestamp': '2018-08-03 14:29:18.116482',
+                'escrow_pubkey': 'GB5SUIN2OEJXG2GDYG6EGB544DQLUVZX35SJJVLHWCEZ4FYWRWW236FB',
+                'user_pubkey': 'GBUPZ63WK2ZLOCXPCUOMM7XRUGXOVJC3RIBL7KBTUSHLKFRKVHUB757L',
+                'event_type': 'launched', 'location': '51.4983407,-0.173709'
+            }, {
+                'timestamp': '2018-08-03 14:35:05.958315',
+                'escrow_pubkey': 'GB5SUIN2OEJXG2GDYG6EGB544DQLUVZX35SJJVLHWCEZ4FYWRWW236FB',
+                'user_pubkey': 'GCBKJ3QLHCBK5WBF4UZ5K2LOVDI63WG2SKLIWIMREPRLCTIHD6B5QR65',
+                'event_type': 'couriered', 'location': '51.4983407,-0.173709'
+            }, {
+                'timestamp': '2018-08-04 17:02:55.138572',
+                'escrow_pubkey': 'GB5SUIN2OEJXG2GDYG6EGB544DQLUVZX35SJJVLHWCEZ4FYWRWW236FB',
+                'user_pubkey': 'GDRGF2BU7CV4QU4E54B72BJEL4CWFMTTVSVJMKWESK32HLTYD4ZEWJOR',
+                'event_type': 'received', 'location': '53.3979468,-2.932953'
+            }, {
+                'timestamp': '2018-08-03 06:35:17.169421',
+                'escrow_pubkey': 'GBMU5SWBUNBCDRUMIZNCDOTMIRGLBFY5DEPIE4OTBAUOFK4V3HOENAGT',
+                'user_pubkey': 'GANEU37FIEBICW6352CVIUD7GYOV5H7W5YUE5ECDH5PJNF7R5ISYJR3K',
+                'event_type': 'launched', 'location': '31.2373787,34.7889161'
+            }, {
+                'timestamp': '2018-08-03 07:01:17.192375',
+                'escrow_pubkey': 'GBMU5SWBUNBCDRUMIZNCDOTMIRGLBFY5DEPIE4OTBAUOFK4V3HOENAGT',
+                'user_pubkey': 'GBL4FZ6HCA6SQATD5UYHQYMVWASBEZCKGL2P7PEU6VNLONVFZY6DPV3R',
+                'event_type': 'couriered', 'location': '31.2373787,34.7889161'
+            }, {
+                'timestamp': '2018-08-05 22:05:53.162485',
+                'escrow_pubkey': 'GBMU5SWBUNBCDRUMIZNCDOTMIRGLBFY5DEPIE4OTBAUOFK4V3HOENAGT',
+                'user_pubkey': 'GBYYI24HZ75OYBAHZOUVAAQNS5YHMN32VLCDBZFXHAAJKRRSCZICBIDJ',
+                'event_type': 'received', 'location': '32.8266712,34.9774087'
+            }, {
+                'timestamp': '2018-08-07 05:55:15.168276',
+                'escrow_pubkey': 'GALIFYZ6GDHXWDH2QZLRJY2XS77A6WXILDFSRH6ZZM3IYOIH2XEK3TAK',
+                'user_pubkey': 'GAZ2UUQUEYY2LHAQMP4M737DXXX3TM7L6BE5JT7LYWS5GYL6VXQ6HASR',
+                'event_type': 'launched', 'location': '12.926039,77.5056131'
+            }, {
+                'timestamp': '2018-08-07 09:14:18.137124',
+                'escrow_pubkey': 'GALIFYZ6GDHXWDH2QZLRJY2XS77A6WXILDFSRH6ZZM3IYOIH2XEK3TAK',
+                'user_pubkey': 'GBQR3QGZOS2K4MQPPJDKRMJ6MIEACCG4BRO23UE33TDFRZOM57VL5O5J',
+                'event_type': 'couriered', 'location': '12.926039,77.5056131'
+            }, {
+                'timestamp': '2018-08-09 14:27:16.143762',
+                'escrow_pubkey': 'GALIFYZ6GDHXWDH2QZLRJY2XS77A6WXILDFSRH6ZZM3IYOIH2XEK3TAK',
+                'user_pubkey': 'GAYOZB7SZBD7O4UPLLQNXFN5ZZCQJSXBKERNIY4MIWL7DVXF7DBF7OU6',
+                'event_type': 'received', 'location': '28.7050581,77.1419526'}],
+            'user_events': [{
+                'timestamp': '2018-08-01 17:46:18.169723',
+                'escrow_pubkey': None,
+                'user_pubkey': 'GBUPZ63WK2ZLOCXPCUOMM7XRUGXOVJC3RIBL7KBTUSHLKFRKVHUB757L',
+                'event_type': 'installed app', 'location': '51.5482912,-0.3048464'
+            }, {
+                'timestamp': '2018-07-22 19:36:18.123142',
+                'escrow_pubkey': None,
+                'user_pubkey': 'GCCYNSN3WETV2FBASFVXKAJ54OX4NUTP4ZUJFGXTX47A2GRQYQ52QQBK',
+                'event_type': 'installed app', 'location': '50.2443519,28.6989147'
+            }, {
+                'timestamp': '2018-07-22 19:58:38.164237',
+                'escrow_pubkey': None,
+                'user_pubkey': 'GCCYNSN3WETV2FBASFVXKAJ54OX4NUTP4ZUJFGXTX47A2GRQYQ52QQBK',
+                'event_type': 'passed kyc', 'location': '50.2443519,28.6989147'
+            }, {
+                'timestamp': '2018-07-28 05:34:21.134562',
+                'escrow_pubkey': None,
+                'user_pubkey': 'GBOTDKM6ZJNV54QLXKTU5WSYFXJZDZZSGKTYHDNWDDVAEVB73DPLSP4H',
+                'event_type': 'funded account', 'location': '22.9272893,113.3443182'
+            }, {
+                'timestamp': '2018-07-30 22:12:21.136421',
+                'escrow_pubkey': None,
+                'user_pubkey': 'GAUHIJXEV2D46G375FJNCUBGVUKXRF7C3VC7U3HUPCBIZUYHJKP4N6XA',
+                'event_type': 'funded account', 'location': '-16.2658233,-47.9159335'
+            }, {
+                'timestamp': '2018-08-03 17:35:14.136415',
+                'escrow_pubkey': None,
+                'user_pubkey': 'GAL54ATIHYBWMKYUNQSM3QAGZGCUBJGF6KEFFSQTEV7JOOA72UEJP4UL',
+                'event_type': 'funded account', 'location': '51.0465554,-114.0752757'}]}
+    return {'status': 200, 'events': events}
+
+
 @BLUEPRINT.route("/v{}/debug/log".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.LOG)
 @webserver.validation.call

@@ -66,7 +66,7 @@ class CreatePackageTest(DbBaseTest):
         db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
             50000000, 100000000, time.time(), None, None, None, None)
-        events = db.get_events(package_members['escrow'][0])
+        events = db.get_package_events(package_members['escrow'][0])
         packages = db.get_packages(package_members['launcher'][0])
         self.assertEqual(len(packages), 1, '')
         self.assertEqual(len(events), 1, '')
@@ -192,7 +192,7 @@ class AddEventTest(DbBaseTest):
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
             50000000, 100000000, time.time(), None, None, None, None)
         db.add_event(package_members['escrow'][0], package_members['courier'][0], 'couriered', None)
-        events = db.get_events(package_members['escrow'][0])
+        events = db.get_package_events(package_members['escrow'][0])
         self.assertEqual(len(events), 2, "2 events expected, but {} got instead".format(len(events)))
         couriered_event = next((event for event in events if event['event_type'] == 'couriered'), None)
         self.assertIsNotNone(couriered_event, "expected event with event_type: 'couriered', None got instead")
@@ -217,10 +217,10 @@ class GetEventsTest(DbBaseTest):
             50000000, 100000000, time.time(), None, None, None, None)
         for user in new_package_members:
             db.add_event(new_package_members['escrow'][0], new_package_members[user][0], 'new event', None)
-        events = db.get_events(package_members['escrow'][0])
+            events = db.get_package_events(package_members['escrow'][0])
         self.assertEqual(len(events), 1, "expected 1 event for package: '{}', but '{}' got instead".format(
             package_members['escrow'][0], len(events)))
-        events = db.get_events(new_package_members['escrow'][0])
+        events = db.get_package_events(new_package_members['escrow'][0])
         self.assertEqual(len(events), 5, "expected 5 events for package: '{}', but '{}' got instead".format(
             package_members['escrow'][0], len(events)))
 
@@ -232,7 +232,7 @@ class GetEventsTest(DbBaseTest):
                 members['escrow'][0], members['launcher'][0], members['recipient'][0],
                 50000000, 100000000, time.time(), None, None, None, None)
         for members in packages_members:
-            events = db.get_events(members['escrow'][0])
+            events = db.get_package_events(members['escrow'][0])
             self.assertEqual(len(events), 1, "1 event expected for escrow: {}, but {} got instead".format(
                 members['escrow'][0], len(events)))
 
@@ -240,6 +240,6 @@ class GetEventsTest(DbBaseTest):
             for _ in range(index):
                 db.add_event(members['escrow'][0], members['courier'][0], 'couriered', None)
         for index, members in enumerate(packages_members):
-            events = db.get_events(members['escrow'][0])
+            events = db.get_package_events(members['escrow'][0])
             self.assertEqual(len(events), index+1, "{} event expected for escrow: {}, but {} got instead".format(
                 index + 1, members['escrow'][0], len(events)))
