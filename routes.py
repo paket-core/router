@@ -78,6 +78,18 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location=None):
     return {'status': 200}
 
 
+@BLUEPRINT.route("/v{}/available_packages".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.AVAILABLE_PACKAGES)
+@webserver.validation.call
+def available_packages():
+    """
+    Get available for couriering packages with acceptable deadline.
+    ---
+    :return:
+    """
+    return {'status': 200, 'packages': db.get_available_packages()}
+
+
 @BLUEPRINT.route("/v{}/my_packages".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.MY_PACKAGES)
 @webserver.validation.call(require_auth=True)

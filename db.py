@@ -146,7 +146,7 @@ def get_package(escrow_pubkey):
 
 
 def get_available_packages():
-    """Get packages with acceptable deadline."""
+    """Get available packages with acceptable deadline."""
     with SQL_CONNECTION() as sql:
         current_time = int(time.time())
         sql.execute("""
