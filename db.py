@@ -40,9 +40,14 @@ def init_db():
                 escrow_pubkey VARCHAR(56) UNIQUE,
                 launcher_pubkey VARCHAR(56),
                 recipient_pubkey VARCHAR(56),
-                deadline INTEGER,
+                launcher_phone_number VARCHAR(32),
+                recipient_phone_number VARCHAR(32),
                 payment INTEGER,
-                collateral INTEGER)''')
+                collateral INTEGER,
+                deadline INTEGER,
+                description VARCHAR(300),
+                from_location VARCHAR(24),
+                to_location VARCHAR(24))''')
         LOGGER.debug('packages table created')
         sql.execute('''
             CREATE TABLE events(
@@ -115,15 +120,19 @@ def enrich_package(package, user_role=None, user_pubkey=None):
     return package
 
 
-def create_package(escrow_pubkey, launcher_pubkey, recipient_pubkey, payment, collateral, deadline, location):
+def create_package(
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number,
+        payment, collateral, deadline, description, from_location, to_location, event_location):
     """Create a new package row."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO packages (
-                escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral
-            ) VALUES (%s, %s, %s, %s, %s, %s)""", (
-                escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral))
-    add_event(launcher_pubkey, 'launched', location, escrow_pubkey)
+                escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number,
+                payment, collateral, deadline, description, from_location, to_location
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
+                escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number,
+                payment, collateral, deadline, description, from_location, to_location))
+    add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey)
     return enrich_package(get_package(escrow_pubkey))
 
 
