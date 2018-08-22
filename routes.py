@@ -29,12 +29,10 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
 @BLUEPRINT.route("/v{}/create_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CREATE_PACKAGE)
 @webserver.validation.call(
-    ['escrow_pubkey', 'recipient_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp',
-     'set_options_transaction', 'refund_transaction', 'payment_transaction', 'merge_transaction'],
+    ['escrow_pubkey', 'recipient_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp'],
     require_auth=True)
 def create_package_handler(
-        user_pubkey, escrow_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location):
+        user_pubkey, escrow_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp, location):
     """
     Create a package.
     Use this call to create a new package for delivery.
@@ -45,16 +43,11 @@ def create_package_handler(
     :param payment_buls:
     :param collateral_buls:
     :param deadline_timestamp:
-    :param set_options_transaction:
-    :param refund_transaction:
-    :param merge_transaction:
-    :param payment_transaction:
     :param location:
     :return:
     """
     package_details = db.create_package(
-        escrow_pubkey, user_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location)
+        escrow_pubkey, user_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp, location)
     return dict(status=201, package=package_details)
 
 
@@ -156,8 +149,8 @@ def create_mock_package_handler(
     :return:
     """
     return {'status': 201, 'package': db.create_package(
-        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
-        'mock_setopts', 'mock_refund', 'mock merge', 'mock payment')}
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment_buls, collateral_buls,
+        deadline_timestamp, 'mock_location')}
 
 
 @BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])

@@ -111,18 +111,6 @@ CREATE_PACKAGE = {
             'name': 'deadline_timestamp', 'description': 'deadline timestamp',
             'in': 'formData', 'required': True, 'type': 'integer'},
         {
-            'name': 'set_options_transaction', 'description': 'Transaction with set signers',
-            'in': 'formData', 'required': True, 'type': 'string'},
-        {
-            'name': 'refund_transaction', 'description': 'Transaction for case of failed delivery',
-            'in': 'formData', 'required': True, 'type': 'string'},
-        {
-            'name': 'merge_transaction', 'description': 'Transaction for draining the remaining XLM to the launcher',
-            'in': 'formData', 'required': True, 'type': 'string'},
-        {
-            'name': 'payment_transaction', 'description': 'Transaction for case of successful delivery',
-            'in': 'formData', 'required': True, 'type': 'string'},
-        {
             'name': 'location', 'description': 'GPS location in format "latitude, longitude"',
             'in': 'formData', 'required': True, 'type': 'string'}
     ],
