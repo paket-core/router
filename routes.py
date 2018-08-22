@@ -147,26 +147,32 @@ def changed_location_handler(user_pubkey, escrow_pubkey, location):
 @BLUEPRINT.route("/v{}/debug/create_mock_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CREATE_MOCK_PACKAGE)
 @webserver.validation.call(
-    ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey',
-     'payment_buls', 'collateral_buls', 'deadline_timestamp', 'location'])
+    ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey', 'launcher_phone_number', 'recipient_phone_number'
+     'payment_buls', 'collateral_buls', 'deadline_timestamp', 'description',
+     'from_location', 'to_location', 'event_location'])
 def create_mock_package_handler(
-        escrow_pubkey, launcher_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp, location):
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number, payment_buls,
+        collateral_buls, deadline_timestamp, description, from_location, to_location, event_location):
     """
     Create a mock package - for debug only.
     ---
     :param escrow_pubkey:
     :param launcher_pubkey:
     :param recipient_pubkey:
+    :param launcher_phone_number:
+    :param recipient_phone_number:
     :param payment_buls:
     :param collateral_buls:
     :param deadline_timestamp:
-    :param location:
+    :param description:
+    :param from_location:
+    :param to_location:
+    :param event_location:
     :return:
     """
     return {'status': 201, 'package': db.create_package(
-        escrow_pubkey, launcher_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp, location)}
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number, payment_buls,
+        collateral_buls, deadline_timestamp, description, from_location, to_location, event_location)}
 
 
 @BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])
