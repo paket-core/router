@@ -150,11 +150,11 @@ def get_available_packages():
     with SQL_CONNECTION() as sql:
         current_time = int(time.time())
         sql.execute("""
-        SELECT escrow_pubkey as escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction
+        SELECT escrow_pubkey as escrow_pubkey, packages.*
         FROM packages WHERE deadline > %s AND
         NOT EXISTS(SELECT escrow_pubkey FROM events WHERE escrow_pubkey = escrow_pubkey AND
-                   event_type = 'received' OR event_type` = 'couriered')""", current_time)
+                   event_type = 'received' OR event_type = 'couriered')""", (current_time,))
+        return [enrich_package(row) for row in sql.fetchall()]
 
 
 def get_packages(user_pubkey=None):
