@@ -123,8 +123,11 @@ CREATE_PACKAGE = {
             'name': 'to_location', 'description': 'GPS location of place where package need to be delivered to',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'event_location', 'description': 'GPS location of place where launcher submited package info"',
-            'in': 'formData', 'required': True, 'type': 'string'}
+            'name': 'event_location', 'description': 'GPS location of place where launcher submited package info',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'package photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
     'responses': {
         '201': {

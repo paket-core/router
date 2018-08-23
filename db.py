@@ -46,6 +46,7 @@ def init_db():
                 collateral INTEGER,
                 deadline INTEGER,
                 description VARCHAR(300),
+                photo BLOB NULL,
                 from_location VARCHAR(24),
                 to_location VARCHAR(24))''')
         LOGGER.debug('packages table created')
@@ -122,16 +123,16 @@ def enrich_package(package, user_role=None, user_pubkey=None):
 
 def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
-        payment, collateral, deadline, description, from_location, to_location, event_location):
+        payment, collateral, deadline, description, from_location, to_location, event_location, photo=None):
     """Create a new package row."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO packages (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
-                payment, collateral, deadline, description, from_location, to_location
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
+                payment, collateral, deadline, description, phone, from_location, to_location
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
-                payment, collateral, deadline, description, from_location, to_location))
+                payment, collateral, deadline, description, photo, from_location, to_location))
     add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey)
     return enrich_package(get_package(escrow_pubkey))
 

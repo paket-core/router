@@ -33,8 +33,8 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
      'collateral_buls', 'deadline_timestamp', 'description', 'from_location', 'to_location', 'event_location'],
     require_auth=True)
 def create_package_handler(
-        user_pubkey, escrow_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number,
-        payment_buls, collateral_buls, deadline_timestamp, description, from_location, to_location, event_location):
+        user_pubkey, escrow_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number, payment_buls,
+        collateral_buls, deadline_timestamp, description, from_location, to_location, event_location, photo=None):
     """
     Create a package.
     Use this call to create a new package for delivery.
@@ -51,12 +51,13 @@ def create_package_handler(
     :param from_location:
     :param to_location:
     :param event_location:
+    :param photo:
     :return:
     """
     package_details = db.create_package(
-        escrow_pubkey, user_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number,
-        payment_buls, collateral_buls, deadline_timestamp, description, from_location, to_location, event_location)
-    return dict(status=201, package=package_details)
+        escrow_pubkey, user_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number, payment_buls,
+        collateral_buls, deadline_timestamp, description, from_location, to_location, event_location, photo)
+    return {'status': 201, 'package': package_details}
 
 
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
