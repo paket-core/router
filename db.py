@@ -2,6 +2,7 @@
 import logging
 import os
 
+import paket_stellar
 import util.db
 
 LOGGER = logging.getLogger('pkt.db')
@@ -89,7 +90,7 @@ def get_package_events(escrow_pubkey):
         return jsonable(sql.fetchall())
 
 
-def enrich_package(package, user_role=None, user_pubkey=None):
+def enrich_package(package, user_role=None, user_pubkey=None, check_escrow=False):
     """Add some periferal data to the package object."""
     package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
     package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
@@ -116,6 +117,11 @@ def enrich_package(package, user_role=None, user_pubkey=None):
         else:
             package['user_role'] = 'unknown'
 
+    if check_escrow:
+        escrow_account = paket_stellar.get_bul_account(package['escrow_pubkey'])
+        package['launcher_deposited'] = escrow_account['bul_balance'] >= package['payment']
+        package['courier_deposited'] = escrow_account['bul_balance'] >= package['payment'] + package['collateral']
+
     return package
 
 
@@ -135,12 +141,12 @@ def create_package(
     return enrich_package(get_package(escrow_pubkey))
 
 
-def get_package(escrow_pubkey):
+def get_package(escrow_pubkey, check_escrow=False):
     """Get package details."""
     with SQL_CONNECTION() as sql:
         sql.execute("SELECT * FROM packages WHERE escrow_pubkey = %s", (escrow_pubkey,))
         try:
-            return enrich_package(sql.fetchone())
+            return enrich_package(sql.fetchone(), check_escrow=check_escrow)
         except TypeError:
             raise UnknownPaket("paket {} is not valid".format(escrow_pubkey))
 
