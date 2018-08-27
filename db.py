@@ -3,6 +3,7 @@ import logging
 import os
 import time
 
+import paket_stellar
 import util.db
 
 LOGGER = logging.getLogger('pkt.db')
@@ -89,7 +90,7 @@ def get_package_events(escrow_pubkey):
         return jsonable(sql.fetchall())
 
 
-def enrich_package(package, user_role=None, user_pubkey=None):
+def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=False):
     """Add some periferal data to the package object."""
     package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
     package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
@@ -115,6 +116,10 @@ def enrich_package(package, user_role=None, user_pubkey=None):
             package['user_role'] = 'recipient'
         else:
             package['user_role'] = 'unknown'
+
+    if check_solvency:
+        launcher_account = paket_stellar.get_bul_account(package['launcher_pubkey'])
+        package['launcher_solvency'] = launcher_account['bul_balance'] >= package['payment']
 
     return package
 
@@ -154,7 +159,7 @@ def get_available_packages():
         FROM packages WHERE deadline > %s AND
         NOT EXISTS(SELECT escrow_pubkey FROM events WHERE escrow_pubkey = escrow_pubkey AND
                    event_type = 'received' OR event_type = 'couriered')""", (current_time,))
-        return [enrich_package(row) for row in sql.fetchall()]
+        return [enrich_package(row, check_solvency=True) for row in sql.fetchall()]
 
 
 def get_packages(user_pubkey=None):
