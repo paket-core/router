@@ -158,6 +158,15 @@ ACCEPT_PACKAGE = {
     }
 }
 
+AVAILABLE_PACKAGES = {
+    'tags': ['packages'],
+    'responses': {
+        '200': {
+            'description': 'available for couriering packages with acceptable deadline'
+        }
+    }
+}
+
 MY_PACKAGES = {
     'tags': ['packages'],
     'parameters': [
