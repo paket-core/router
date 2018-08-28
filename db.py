@@ -129,6 +129,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
         escrow_account = paket_stellar.get_bul_account(package['escrow_pubkey'])
         package['payment_deposited'] = escrow_account['bul_balance'] >= package['payment']
         package['collateral_deposited'] = escrow_account['bul_balance'] >= package['payment'] + package['collateral']
+        package['correctly_deposited'] = escrow_account['bul_balance'] == package['payment'] + package['collateral']
 
     return package
 
