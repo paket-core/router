@@ -29,7 +29,7 @@ def jsonable(list_of_dicts):
     """Fix for mysql-connector bug which makes sql.fetchall() return some keys as (unjsonable) bytes."""
     return [{
         key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in dict_.items()}
-        for dict_ in list_of_dicts]
+            for dict_ in list_of_dicts]
 
 
 def init_db():
@@ -40,13 +40,15 @@ def init_db():
                 escrow_pubkey VARCHAR(56) UNIQUE,
                 launcher_pubkey VARCHAR(56),
                 recipient_pubkey VARCHAR(56),
-                deadline INTEGER,
+                launcher_contact VARCHAR(32),
+                recipient_contact VARCHAR(32),
                 payment INTEGER,
                 collateral INTEGER,
-                set_options_transaction VARCHAR(1024),
-                refund_transaction VARCHAR(1024),
-                merge_transaction VARCHAR(1024),
-                payment_transaction VARCHAR(1024))''')
+                deadline INTEGER,
+                description VARCHAR(300),
+                photo BLOB NULL,
+                from_location VARCHAR(24),
+                to_location VARCHAR(24))''')
         LOGGER.debug('packages table created')
         sql.execute('''
             CREATE TABLE events(
@@ -82,9 +84,9 @@ def get_events(max_events_num):
 def get_package_events(escrow_pubkey):
     """Get a list of events relating to a package."""
     with SQL_CONNECTION() as sql:
-        sql.execute(""" 
-                    SELECT timestamp, user_pubkey, event_type, location, kwargs FROM events 
-                    WHERE escrow_pubkey = %s 
+        sql.execute("""
+                    SELECT timestamp, user_pubkey, event_type, location, kwargs FROM events
+                    WHERE escrow_pubkey = %s
                     ORDER BY timestamp ASC""", (escrow_pubkey,))
         return jsonable(sql.fetchall())
 
@@ -120,18 +122,18 @@ def enrich_package(package, user_role=None, user_pubkey=None):
 
 
 def create_package(
-        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment, collateral, deadline,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location):
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
+        payment, collateral, deadline, description, from_location, to_location, event_location, photo=None):
     """Create a new package row."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO packages (
-                escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
-                set_options_transaction, refund_transaction, merge_transaction, payment_transaction
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
-                escrow_pubkey, launcher_pubkey, recipient_pubkey, deadline, payment, collateral,
-                set_options_transaction, refund_transaction, merge_transaction, payment_transaction))
-    add_event(launcher_pubkey, 'launched', location, escrow_pubkey)
+                escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
+                payment, collateral, deadline, description, phone, from_location, to_location
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
+                escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
+                payment, collateral, deadline, description, photo, from_location, to_location))
+    add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey)
     return enrich_package(get_package(escrow_pubkey))
 
 
