@@ -196,8 +196,10 @@ PACKAGE = {
     'parameters': [
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
-            'in': 'formData', 'required': True, 'type': 'string',
-        }
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'check_escrow', 'description': 'include information about payment and collateral if specified',
+            'in': 'formData', 'required': False, 'type': 'integer'}
     ],
     'definitions': {
         'Event': {

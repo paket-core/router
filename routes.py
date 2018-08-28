@@ -109,14 +109,15 @@ def my_packages_handler(user_pubkey):
 @BLUEPRINT.route("/v{}/package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PACKAGE)
 @webserver.validation.call(['escrow_pubkey'])
-def package_handler(escrow_pubkey):
+def package_handler(escrow_pubkey, check_escrow=None):
     """
     Get a full info about a single package.
     ---
     :param escrow_pubkey:
+    :param check_escrow:
     :return:
     """
-    package = db.get_package(escrow_pubkey)
+    package = db.get_package(escrow_pubkey, bool(check_escrow))
     return {'status': 200, 'package': package}
 
 
