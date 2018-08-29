@@ -126,6 +126,18 @@ CREATE_PACKAGE = {
             'name': 'event_location', 'description': 'GPS location of place where launcher submited package info',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
+            'name': 'set_options_transaction', 'description': 'Transaction with set signers',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'refund_transaction', 'description': 'Transaction for case of failed delivery',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'merge_transaction', 'description': 'Transaction for draining the remaining XLM to the launcher',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'payment_transaction', 'description': 'Transaction for case of successful delivery',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
             'name': 'photo', 'description': 'package photo',
             'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
@@ -335,10 +347,16 @@ CREATE_MOCK_PACKAGE = {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'launcher_pubkey', 'description': 'launcher pubkey',
+            'name': 'launcher_pubkey', 'description': 'recipient pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'recipient_pubkey', 'description': 'recipient pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'launcher_phone_number', 'description': 'phone number of the launcher',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'recipient_phone_number', 'description': 'phone number of the recipient',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'payment_buls', 'description': 'BULs promised as payment',
@@ -349,6 +367,33 @@ CREATE_MOCK_PACKAGE = {
         {
             'name': 'deadline_timestamp', 'description': 'deadline timestamp',
             'in': 'formData', 'required': True, 'type': 'integer'},
+        {
+            'name': 'description', 'description': 'package description (300 characters max)',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'from_location', 'description': 'GPS location of place where launcher will give package to courier',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'to_location', 'description': 'GPS location of place where package need to be delivered to',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'event_location', 'description': 'GPS location of place where launcher submited package info',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'set_options_transaction', 'description': 'Transaction with set signers',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'refund_transaction', 'description': 'Transaction for case of failed delivery',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'merge_transaction', 'description': 'Transaction for draining the remaining XLM to the launcher',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'payment_transaction', 'description': 'Transaction for case of successful delivery',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'package photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
     'responses': {
         '201': {
