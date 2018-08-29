@@ -1,4 +1,5 @@
 """PaKeT database interface."""
+import json
 import logging
 import os
 import time
@@ -101,6 +102,14 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     event_types = {event['event_type'] for event in package['events']}
     package['launch_date'] = package['events'][0]['timestamp']
 
+    launch_event = next((event for event in package['events'] if event['event_type'] == 'launched'), None)
+    if launch_event is not None:
+        xdrs = json.loads(launch_event['kwargs'])
+        package['set_options_transaction'] = xdrs['set_options_transaction']
+        package['refund_transaction'] = xdrs['refund_transaction']
+        package['merge_transaction'] = xdrs['merge_transaction']
+        package['payment_transaction'] = xdrs['payment_transaction']
+
     if 'received' in event_types:
         package['status'] = 'delivered'
     elif 'couriered' in event_types:
@@ -119,7 +128,6 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
             package['user_role'] = 'recipient'
         else:
             package['user_role'] = 'unknown'
-
 
     if check_solvency:
         launcher_account = paket_stellar.get_bul_account(package['launcher_pubkey'])
