@@ -145,8 +145,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
 
 def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
-        payment, collateral, deadline, description, from_location, to_location, event_location,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, photo=None):
+        payment, collateral, deadline, description, from_location, to_location, event_location, photo=None):
     """Create a new package row."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
@@ -156,12 +155,7 @@ def create_package(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
                 payment, collateral, deadline, description, photo, from_location, to_location))
-    xdrs = json.dumps({
-        'set_options_transaction': set_options_transaction,
-        'refund_transaction': refund_transaction,
-        'merge_transaction': merge_transaction,
-        'payment_transaction': payment_transaction})
-    add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey, kwargs=xdrs)
+    add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey)
     return enrich_package(get_package(escrow_pubkey))
 
 

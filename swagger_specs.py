@@ -126,18 +126,6 @@ CREATE_PACKAGE = {
             'name': 'event_location', 'description': 'GPS location of place where launcher submited package info',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'set_options_transaction', 'description': 'Transaction with set signers',
-            'in': 'formData', 'required': True, 'type': 'string'},
-        {
-            'name': 'refund_transaction', 'description': 'Transaction for case of failed delivery',
-            'in': 'formData', 'required': True, 'type': 'string'},
-        {
-            'name': 'merge_transaction', 'description': 'Transaction for draining the remaining XLM to the launcher',
-            'in': 'formData', 'required': True, 'type': 'string'},
-        {
-            'name': 'payment_transaction', 'description': 'Transaction for case of successful delivery',
-            'in': 'formData', 'required': True, 'type': 'string'},
-        {
             'name': 'photo', 'description': 'package photo',
             'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
