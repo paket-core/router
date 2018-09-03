@@ -180,7 +180,7 @@ def get_available_packages(location, radius=5):
                    event_type = 'received' OR event_type = 'couriered')""", (current_time,))
         packages =  [enrich_package(row, check_solvency=True) for row in sql.fetchall()]
         filtered_by_location = [package for package in packages if util.distance.haversine(
-            location, package['events'][0]['location']) <= radius]
+            location, package['from_location']) <= radius]
         return filtered_by_location
 
 
