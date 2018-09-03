@@ -6,6 +6,7 @@ import time
 
 import paket_stellar
 import util.db
+import util.distance
 
 LOGGER = logging.getLogger('pkt.db')
 DB_HOST = os.environ.get('PAKET_DB_HOST', '127.0.0.1')
@@ -174,7 +175,7 @@ def get_package(escrow_pubkey, check_escrow=False):
             raise UnknownPaket("paket {} is not valid".format(escrow_pubkey))
 
 
-def get_available_packages():
+def get_available_packages(location, radius=5):
     """Get available packages with acceptable deadline."""
     with SQL_CONNECTION() as sql:
         current_time = int(time.time())
@@ -183,7 +184,10 @@ def get_available_packages():
         FROM packages WHERE deadline > %s AND
         NOT EXISTS(SELECT escrow_pubkey FROM events WHERE escrow_pubkey = escrow_pubkey AND
                    event_type = 'received' OR event_type = 'couriered')""", (current_time,))
-        return [enrich_package(row, check_solvency=True) for row in sql.fetchall()]
+        packages =  [enrich_package(row, check_solvency=True) for row in sql.fetchall()]
+        filtered_by_location = [package for package in packages if util.distance.haversine(
+            location, package['events'][0]['location']) <= radius]
+        return filtered_by_location
 
 
 def get_packages(user_pubkey=None):

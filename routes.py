@@ -89,14 +89,15 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location):
 
 @BLUEPRINT.route("/v{}/available_packages".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.AVAILABLE_PACKAGES)
-@webserver.validation.call
-def available_packages():
+@webserver.validation.call(['location'])
+def available_packages(location, radius=5):
     """
     Get available for couriering packages with acceptable deadline.
+    Packages filtered by distance and launcher solvency.
     ---
     :return:
     """
-    return {'status': 200, 'packages': db.get_available_packages()}
+    return {'status': 200, 'packages': db.get_available_packages(location, radius)}
 
 
 @BLUEPRINT.route("/v{}/my_packages".format(VERSION), methods=['POST'])

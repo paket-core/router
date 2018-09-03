@@ -172,9 +172,19 @@ ACCEPT_PACKAGE = {
 
 AVAILABLE_PACKAGES = {
     'tags': ['packages'],
+    'parameters': [
+        {
+            'name': 'location', 'description': 'location of place for searching packages nearby',
+            'in': 'formData', 'required': True, 'type': 'string',
+        },
+        {
+            'name': 'radius', 'description': 'maximum search radius (in km)',
+            'in': 'formData', 'required': False, 'type': 'int'
+        }
+    ],
     'responses': {
         '200': {
-            'description': 'available for couriering packages with acceptable deadline'
+            'description': 'available for couriering packages'
         }
     }
 }
