@@ -151,7 +151,7 @@ def create_package(
         sql.execute("""
             INSERT INTO packages (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
-                payment, collateral, deadline, description, phone, from_location, to_location
+                payment, collateral, deadline, description, photo, from_location, to_location
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact,
                 payment, collateral, deadline, description, photo, from_location, to_location))
