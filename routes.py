@@ -85,6 +85,23 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location):
     return {'status': 200}
 
 
+@BLUEPRINT.route("/v{}/assign_xdrs".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.ASSIGN_XDRS)
+@webserver.validation.call(['escrow_pubkey', 'location', 'kwargs'], require_auth=True)
+def assign_xdrs_handler(user_pubkey, escrow_pubkey, location, kwargs):
+    """
+    Assign XDRs transaction to package.
+    ---
+    :param user_pubkey:
+    :param escrow_pubkey:
+    :param location:
+    :param kwargs:
+    :return:
+    """
+    db.add_event(user_pubkey, 'xdrs assigned', location, escrow_pubkey, kwargs)
+    return {'status': 200}
+
+
 @BLUEPRINT.route("/v{}/available_packages".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.AVAILABLE_PACKAGES)
 @webserver.validation.call(['location'])

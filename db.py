@@ -105,9 +105,9 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     event_types = {event['event_type'] for event in package['events']}
     package['launch_date'] = package['events'][0]['timestamp']
 
-    launch_event = next((event for event in package['events'] if event['event_type'] == 'launched'), None)
-    if launch_event is not None:
-        xdrs = json.loads(launch_event['kwargs'])
+    xdrs_event = next((event for event in package['events'] if event['event_type'] == 'xdrs assigned'), None)
+    if xdrs_event is not None:
+        xdrs = json.loads(xdrs_event['kwargs'])
         package['set_options_transaction'] = xdrs['set_options_transaction']
         package['refund_transaction'] = xdrs['refund_transaction']
         package['merge_transaction'] = xdrs['merge_transaction']

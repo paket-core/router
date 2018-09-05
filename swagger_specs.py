@@ -164,6 +164,32 @@ ACCEPT_PACKAGE = {
     }
 }
 
+ASSIGN_XDRS = {
+    'tags': ['packages'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'in': 'formData', 'required': True, 'type': 'string',
+        },
+        {
+            'name': 'location', 'description': 'location of place where user accepted package',
+            'in': 'formData', 'required': True, 'type': 'string'
+        },
+        {
+            'name': 'kwargs', 'description': 'XDRs transaction in JSON format',
+            'in': 'formData', 'required': True, 'type': 'string'
+        }
+    ],
+    'responses': {
+        '200': {
+            'description': 'added event with XDRs transactions'
+        }
+    }
+}
+
 AVAILABLE_PACKAGES = {
     'tags': ['packages'],
     'parameters': [
