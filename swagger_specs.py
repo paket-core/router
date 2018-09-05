@@ -123,6 +123,12 @@ CREATE_PACKAGE = {
             'name': 'to_location', 'description': 'GPS location of place where package need to be delivered to',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
+            'name': 'from_address', 'description': 'Address of place where launcher will give package to courier',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'to_address', 'description': 'Address of place where package need to be delivered to',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
             'name': 'event_location', 'description': 'GPS location of place where launcher submited package info',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
