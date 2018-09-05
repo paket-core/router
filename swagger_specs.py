@@ -381,19 +381,13 @@ CREATE_MOCK_PACKAGE = {
             'name': 'to_location', 'description': 'GPS location of place where package need to be delivered to',
             'in': 'formData', 'required': False, 'type': 'string'},
         {
+            'name': 'from_address', 'description': 'Address of place where launcher will give package to courier',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'to_address', 'description': 'Address of place where package need to be delivered to',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
             'name': 'event_location', 'description': 'GPS location of place where launcher submited package info',
-            'in': 'formData', 'required': False, 'type': 'string'},
-        {
-            'name': 'set_options_transaction', 'description': 'Transaction with set signers',
-            'in': 'formData', 'required': False, 'type': 'string'},
-        {
-            'name': 'refund_transaction', 'description': 'Transaction for case of failed delivery',
-            'in': 'formData', 'required': False, 'type': 'string'},
-        {
-            'name': 'merge_transaction', 'description': 'Transaction for draining the remaining XLM to the launcher',
-            'in': 'formData', 'required': False, 'type': 'string'},
-        {
-            'name': 'payment_transaction', 'description': 'Transaction for case of successful delivery',
             'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'photo', 'description': 'package photo',

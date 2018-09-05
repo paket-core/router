@@ -167,9 +167,8 @@ def changed_location_handler(user_pubkey, escrow_pubkey, location):
 @BLUEPRINT.route("/v{}/debug/create_mock_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CREATE_MOCK_PACKAGE)
 @webserver.validation.call(
-    ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey', 'launcher_phone_number', 'recipient_phone_number'
-     'payment_buls', 'collateral_buls', 'deadline_timestamp', 'description',
-     'from_location', 'to_location', 'event_location'])
+    ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey', 'launcher_phone_number', 'recipient_phone_number',
+     'payment_buls', 'collateral_buls', 'deadline_timestamp'])
 def create_mock_package_handler(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number, payment_buls,
         collateral_buls, deadline_timestamp, description='mock_description', from_location='mock_location',
