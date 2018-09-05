@@ -52,9 +52,9 @@ def init_db():
                 description VARCHAR(300),
                 photo BLOB NULL,
                 from_location VARCHAR(24),
-                to_location VARCHAR(24)),
+                to_location VARCHAR(24),
                 from_address VARCHAR(200),
-                to_address VARCHAR(200)''')
+                to_address VARCHAR(200))''')
         LOGGER.debug('packages table created')
         sql.execute('''
             CREATE TABLE events(
@@ -158,7 +158,7 @@ def create_package(
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment,
                 collateral, deadline, description, photo, from_location, to_location, from_address, to_address))
     add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey)
-    return enrich_package(get_package(escrow_pubkey))
+    return get_package(escrow_pubkey)
 
 
 def get_package(escrow_pubkey, check_escrow=False):
