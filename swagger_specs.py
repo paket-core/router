@@ -198,8 +198,8 @@ AVAILABLE_PACKAGES = {
             'in': 'formData', 'required': True, 'type': 'string',
         },
         {
-            'name': 'radius', 'description': 'maximum search radius (in km)',
-            'in': 'formData', 'required': False, 'type': 'int'
+            'name': 'radius_num', 'description': 'maximum search radius (in km)',
+            'in': 'formData', 'required': False, 'type': 'integer'
         }
     ],
     'responses': {
