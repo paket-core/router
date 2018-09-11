@@ -176,9 +176,11 @@ def get_available_packages(location, radius=5):
     with SQL_CONNECTION() as sql:
         current_time = int(time.time())
         sql.execute("""
-            SELECT p.escrow_pubkey, p.* FROM packages p 
-            INNER JOIN events e ON p.escrow_pubkey = e.escrow_pubkey WHERE deadline > %s 
-            AND event_type NOT IN('received', 'couriered', 'assign package')""", (current_time,))
+            SELECT p.*
+            FROM packages p INNER JOIN events e ON p.escrow_pubkey = e.escrow_pubkey
+            WHERE deadline > %s AND p.escrow_pubkey NOT IN (
+            SELECT escrow_pubkey FROM events 
+            WHERE event_type IN('received', 'couriered', 'assign package'))""", (current_time,))
         packages = [enrich_package(row, check_solvency=True) for row in sql.fetchall()]
         filtered_by_location = [package for package in packages if util.distance.haversine(
             location, package['from_location']) <= radius]
