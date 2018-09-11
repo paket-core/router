@@ -164,6 +164,28 @@ ACCEPT_PACKAGE = {
     }
 }
 
+ASSIGN_PACKAGE = {
+    'tags': ['packages'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'in': 'formData', 'required': True, 'type': 'string',
+        },
+        {
+            'name': 'location', 'description': 'location of place where user choose package to be courier in',
+            'in': 'formData', 'required': True, 'type': 'string'
+        }
+    ],
+    'responses': {
+        '200': {
+            'description': 'user became courier for package'
+        }
+    }
+}
+
 ASSIGN_XDRS = {
     'tags': ['packages'],
     'parameters': [

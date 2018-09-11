@@ -85,6 +85,22 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location):
     return {'status': 200}
 
 
+@BLUEPRINT.route("/v{}/assign_package".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.ASSIGN_PACKAGE)
+@webserver.validation.call(['escrow_pubkey'], require_auth=True)
+def assign_package_handler(user_pubkey, escrow_pubkey, location):
+    """
+    Add event to package, which indicates that user became courier.
+    ---
+    :param user_pubkey:
+    :param escrow_pubkey:
+    :param location:
+    :return:
+    """
+    db.add_event(user_pubkey, 'assign package', location, escrow_pubkey)
+    return {'status': 200, 'package': db.enrich_package(escrow_pubkey, user_pubkey=user_pubkey)}
+
+
 @BLUEPRINT.route("/v{}/assign_xdrs".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ASSIGN_XDRS)
 @webserver.validation.call(['escrow_pubkey', 'location', 'kwargs'], require_auth=True)
