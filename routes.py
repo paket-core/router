@@ -98,7 +98,7 @@ def assign_package_handler(user_pubkey, escrow_pubkey, location):
     :return:
     """
     db.add_event(user_pubkey, 'assign package', location, escrow_pubkey)
-    return {'status': 200, 'package': db.enrich_package(escrow_pubkey, user_pubkey=user_pubkey)}
+    return {'status': 200, 'package': db.get_package(escrow_pubkey)}
 
 
 @BLUEPRINT.route("/v{}/assign_xdrs".format(VERSION), methods=['POST'])
