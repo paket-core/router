@@ -203,7 +203,7 @@ def get_packages(user_pubkey=None):
             SELECT * FROM packages
             WHERE escrow_pubkey IN (
                 SELECT escrow_pubkey FROM events
-                WHERE event_type = 'couriered' AND user_pubkey = %s)""", (user_pubkey,))
+                WHERE event_type IN('couriered', 'assign package') AND user_pubkey = %s)""", (user_pubkey,))
             couriered = [enrich_package(row, user_role='courier') for row in sql.fetchall()]
             return [
                 dict(package, custodian_pubkey=package['events'][-1]['user_pubkey'])
