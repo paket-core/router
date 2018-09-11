@@ -179,7 +179,8 @@ def get_available_packages(location, radius=5):
         SELECT escrow_pubkey as escrow_pubkey, packages.*
         FROM packages WHERE deadline > %s AND
         NOT EXISTS(SELECT escrow_pubkey FROM events WHERE escrow_pubkey = escrow_pubkey AND
-                   event_type = 'received' OR event_type = 'couriered')""", (current_time,))
+                   event_type = 'received' OR event_type = 'couriered' OR event_type = 'assign package')""",
+                    (current_time,))
         packages = [enrich_package(row, check_solvency=True) for row in sql.fetchall()]
         filtered_by_location = [package for package in packages if util.distance.haversine(
             location, package['from_location']) <= radius]
