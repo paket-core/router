@@ -69,7 +69,7 @@ def init_db():
         sql.execute('''
             CREATE TABLE photos(
             escrow_pubkey VARCHAR(56) NOT NULL,
-            photo LONGTEXT NOT NULL);''')
+            photo LONGTEXT NOT NULL)''')
         LOGGER.debug('photos table created')
 
 
@@ -233,5 +233,8 @@ def get_package_photo(escrow_pubkey):
     with SQL_CONNECTION() as sql:
         sql.execute('''
             SELECT * FROM photos
-            WHERE escrow_pubkey = %s LIMIT 1''', (escrow_pubkey,))
-        return sql.fetchall()
+            WHERE escrow_pubkey = %s''', (escrow_pubkey,))
+        try:
+            return sql.fetchall()[0]
+        except IndexError:
+            return None
