@@ -1,4 +1,5 @@
 """PaKeT database interface."""
+import base64
 import json
 import logging
 import os
@@ -50,7 +51,7 @@ def init_db():
                 collateral INTEGER,
                 deadline INTEGER,
                 description VARCHAR(300),
-                photo BLOB NULL,
+                photo LONGTEXT NULL,
                 from_location VARCHAR(24),
                 to_location VARCHAR(24),
                 from_address VARCHAR(200),
@@ -149,6 +150,8 @@ def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment, collateral,
         deadline, description, from_location, to_location, from_address, to_address, event_location, photo=None):
     """Create a new package row."""
+    if photo is not None:
+        photo = base64.b64encode(photo)
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO packages (
