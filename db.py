@@ -51,7 +51,6 @@ def init_db():
                 collateral INTEGER,
                 deadline INTEGER,
                 description VARCHAR(300),
-                photo LONGTEXT NULL,
                 from_location VARCHAR(24),
                 to_location VARCHAR(24),
                 from_address VARCHAR(200),
@@ -67,6 +66,11 @@ def init_db():
                 kwargs LONGTEXT NULL,
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
         LOGGER.debug('events table created')
+        sql.execute('''
+            CREATE TABLE photos(
+            escrow_pubkey VARCHAR(56) NOT NULL,
+            photo LONGTEXT NOT NULL);''')
+        LOGGER.debug('photos table created')
 
 
 def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None):
@@ -152,14 +156,15 @@ def create_package(
     """Create a new package row."""
     if photo is not None:
         photo = base64.b64encode(photo)
+        add_package_photo(escrow_pubkey, photo)
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO packages (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment,
-                collateral, deadline, description, photo, from_location, to_location, from_address, to_address
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
+                collateral, deadline, description, from_location, to_location, from_address, to_address
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment,
-                collateral, deadline, description, photo, from_location, to_location, from_address, to_address))
+                collateral, deadline, description, from_location, to_location, from_address, to_address))
     add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey)
     return get_package(escrow_pubkey)
 
@@ -213,3 +218,20 @@ def get_packages(user_pubkey=None):
                 for package in launched + received + couriered]
         sql.execute('SELECT * FROM packages')
         return [enrich_package(row) for row in sql.fetchall()]
+
+
+def add_package_photo(escrow_pubkey, photo):
+    """Add package photo."""
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            INSERT INTO photos (escrow_pubkey, photo)
+            VALUES (%s, %s)''', (escrow_pubkey, photo))
+
+
+def get_package_photo(escrow_pubkey):
+    """Get package photo."""
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            SELECT * FROM photos
+            WHERE escrow_pubkey = %s LIMIT 1''', (escrow_pubkey,))
+        return sql.fetchall()
