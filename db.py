@@ -179,11 +179,11 @@ def get_available_packages(location, radius=5):
     with SQL_CONNECTION() as sql:
         current_time = int(time.time())
         sql.execute("""
-        SELECT escrow_pubkey as escrow_pubkey, packages.*
-        FROM packages WHERE deadline > %s AND
-        NOT EXISTS(SELECT escrow_pubkey FROM events WHERE escrow_pubkey = escrow_pubkey AND
-                   event_type = 'received' OR event_type = 'couriered' OR event_type = 'assign package')""",
-                    (current_time,))
+            SELECT p.*
+            FROM packages p INNER JOIN events e ON p.escrow_pubkey = e.escrow_pubkey
+            WHERE deadline > %s AND p.escrow_pubkey NOT IN (
+            SELECT escrow_pubkey FROM events 
+            WHERE event_type IN('received', 'couriered', 'assign package'))""", (current_time,))
         packages = [enrich_package(row, check_solvency=True) for row in sql.fetchall()]
         filtered_by_location = [package for package in packages if util.distance.haversine(
             location, package['from_location']) <= radius]
@@ -206,7 +206,7 @@ def get_packages(user_pubkey=None):
             SELECT * FROM packages
             WHERE escrow_pubkey IN (
                 SELECT escrow_pubkey FROM events
-                WHERE event_type = 'couriered' AND user_pubkey = %s)""", (user_pubkey,))
+                WHERE event_type IN('couriered', 'assign package') AND user_pubkey = %s)""", (user_pubkey,))
             couriered = [enrich_package(row, user_role='courier') for row in sql.fetchall()]
             return [
                 dict(package, custodian_pubkey=package['events'][-1]['user_pubkey'])
