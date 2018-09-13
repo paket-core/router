@@ -104,7 +104,10 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
     package['events'] = get_package_events(package['escrow_pubkey'])
     event_types = {event['event_type'] for event in package['events']}
-    package['launch_date'] = package['events'][0]['timestamp']
+    if package['events']:
+        launch_event = next((event for event in package['events'] if event['event_type'] == 'launched'), None)
+        if launch_event is not None:
+            package['launch_date'] = launch_event['timestamp']
 
     xdrs_event = next((event for event in package['events'] if event['event_type'] == 'xdrs assigned'), None)
     if xdrs_event is not None:
