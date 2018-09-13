@@ -142,6 +142,20 @@ CREATE_PACKAGE = {
     }
 }
 
+PACKAGE_PHOTO = {
+    'tags': ['packages'],
+    'parameters': [
+        {
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'in': 'formData', 'required': True, 'type': 'string'}
+    ],
+    'responses': {
+        '200': {
+            'description': 'package photo'
+        }
+    }
+}
+
 ACCEPT_PACKAGE = {
     'tags': ['packages'],
     'parameters': [
