@@ -163,6 +163,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     return package
 
 
+# pylint: disable=too-many-locals
 def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment, collateral,
         deadline, description, from_location, to_location, from_address, to_address, event_location, photo=None):
@@ -180,6 +181,7 @@ def create_package(
                 collateral, deadline, description, from_location, to_location, from_address, to_address))
     add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey)
     return get_package(escrow_pubkey)
+# pylint: enable=too-many-locals
 
 
 def get_package(escrow_pubkey, check_escrow=False):

@@ -26,6 +26,7 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
 # Package routes.
 
 
+# pylint: disable=too-many-locals
 @BLUEPRINT.route("/v{}/create_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CREATE_PACKAGE)
 @webserver.validation.call(
@@ -63,6 +64,7 @@ def create_package_handler(
         payment_buls, collateral_buls, deadline_timestamp, description,
         from_location, to_location, from_address, to_address, event_location, photo)
     return {'status': 201, 'package': package_details}
+# pylint: enable=too-many-locals
 
 
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
