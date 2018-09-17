@@ -114,6 +114,19 @@ def set_package_status(package, event_types):
         package['status'] = 'unknown'
 
 
+def set_user_role(package, user_role, user_pubkey):
+    """Set user role."""
+    if user_role:
+        package['user_role'] = user_role
+    elif user_pubkey:
+        if user_pubkey == package['launcher_pubkey']:
+            package['user_role'] = 'launcher'
+        elif user_pubkey == package['recipient_pubkey']:
+            package['user_role'] = 'recipient'
+        else:
+            package['user_role'] = 'unknown'
+
+
 def extract_xdrs(package):
     """Extract XDR transactions from package events."""
     escrow_xdrs_event = next(
@@ -135,16 +148,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
 
     extract_xdrs(package)
     set_package_status(package, event_types)
-
-    if user_role:
-        package['user_role'] = user_role
-    elif user_pubkey:
-        if user_pubkey == package['launcher_pubkey']:
-            package['user_role'] = 'launcher'
-        elif user_pubkey == package['recipient_pubkey']:
-            package['user_role'] = 'recipient'
-        else:
-            package['user_role'] = 'unknown'
+    set_user_role(package, user_role, user_pubkey)
 
     if check_solvency:
         launcher_account = paket_stellar.get_bul_account(package['launcher_pubkey'])
