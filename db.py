@@ -102,6 +102,18 @@ def get_package_events(escrow_pubkey):
         return jsonable(sql.fetchall())
 
 
+def set_package_status(package, event_types):
+    """Set package status depending on package events."""
+    if 'received' in event_types:
+        package['status'] = 'delivered'
+    elif 'couriered' in event_types:
+        package['status'] = 'in transit'
+    elif 'launched' in event_types:
+        package['status'] = 'waiting pickup'
+    else:
+        package['status'] = 'unknown'
+
+
 def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=False, check_escrow=False):
     """Add some periferal data to the package object."""
     package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
@@ -121,14 +133,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
         package['merge_transaction'] = xdrs['merge_transaction']
         package['payment_transaction'] = xdrs['payment_transaction']
 
-    if 'received' in event_types:
-        package['status'] = 'delivered'
-    elif 'couriered' in event_types:
-        package['status'] = 'in transit'
-    elif 'launched' in event_types:
-        package['status'] = 'waiting pickup'
-    else:
-        package['status'] = 'unknown'
+    set_package_status(package, event_types)
 
     if user_role:
         package['user_role'] = user_role
