@@ -143,9 +143,12 @@ def set_user_role(package, user_role, user_pubkey):
 def extract_xdrs(package):
     """Extract XDR transactions from package events."""
     escrow_xdrs_event = next(
-        (event for event in package['events'] if event['event_type'] == 'xdrs assigned'), None)
+        (event for event in package['events'] if event['event_type'] == 'escrow xdrs assigned'), None)
     package['escrow_xdrs'] = json.loads(
         escrow_xdrs_event['kwargs'])['escrow_xdrs'] if escrow_xdrs_event is not None else None
+    relay_xdrs_events = [
+        event['kwargs']['relay_xdrs'] for event in package['events'] if event['event_type'] == 'relay xdrs assigned']
+    package['relays_xdrs'] = relay_xdrs_events
 
 
 def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=False, check_escrow=False):
