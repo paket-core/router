@@ -69,7 +69,7 @@ class RouterBaseTest(unittest.TestCase):
                 fail_message, response.get('error')))
         return response
 
-    def create_package(self, payment, collateral, deadline, location=None):
+    def create_package(self, payment, collateral, deadline, location):
         """Create launcher, courier, recipient, escrow accounts and call create_package."""
         launcher = create_account()
         courier = create_account()
@@ -81,10 +81,11 @@ class RouterBaseTest(unittest.TestCase):
             escrow[0], launcher[0], courier[0], recipient[0])
         package = self.call(
             'create_package', 201, 'can not create package', launcher[1],
-            escrow_pubkey=escrow[0], recipient_pubkey=recipient[0],
-            payment_buls=payment, collateral_buls=collateral, deadline_timestamp=deadline,
-            set_options_transaction='mock data', refund_transaction='mock data', merge_transaction='mock data',
-            payment_transaction='mock data', location=location)
+            escrow_pubkey=escrow[0], recipient_pubkey=recipient[0], launcher_phone_number='+380659731849',
+            recipient_phone_number='+380671976311', payment_buls=payment, collateral_buls=collateral,
+            deadline_timestamp=deadline, description='Package description', from_location='12.970686,77.595590',
+            to_location='41.156193,-8.637541', from_address='India Bengaluru',
+            to_address='Spain Porto', event_location=location)
 
         return {
             'launcher': launcher,
@@ -102,7 +103,7 @@ class CreatePackageTest(RouterBaseTest):
         payment, collateral = 50000000, 100000000
         deadline = int(time.time())
         LOGGER.info('preparing new escrow')
-        self.create_package(payment, collateral, deadline)
+        self.create_package(payment, collateral, deadline, '12.970686,77.595590')
 
     def test_create_with_location(self):
         """Test create_package endpoint with used optional location arg."""
@@ -128,12 +129,12 @@ class AcceptPackageTest(RouterBaseTest):
         """Test accepting package."""
         payment, collateral = 50000000, 100000000
         deadline = int(time.time())
-        package = self.create_package(payment, collateral, deadline)
+        package = self.create_package(payment, collateral, deadline, '12.970686,77.595590')
         for member in (package['courier'], package['recipient']):
             LOGGER.info('accepting package: %s for user %s', package['escrow'][0], member[1])
             self.call(
                 'accept_package', 200, 'member could not accept package',
-                member[1], escrow_pubkey=package['escrow'][0])
+                member[1], escrow_pubkey=package['escrow'][0], location='12.970686,77.595590')
             events = routes.db.get_package_events(package['escrow'][0])
             expected_event_type = 'couriered' if member == package['courier'] else 'received'
             self.assertEqual(
@@ -156,7 +157,7 @@ class MyPackagesTest(RouterBaseTest):
 
         payment, collateral = 50000000, 100000000
         deadline = int(time.time())
-        package = self.create_package(payment, collateral, deadline)
+        package = self.create_package(payment, collateral, deadline, '12.970686,77.595590')
         LOGGER.info('getting packages for user: %s', package['launcher'][0])
         packages = self.call(
             path='my_packages', expected_code=200,
@@ -177,7 +178,7 @@ class PackageTest(RouterBaseTest):
         payment, collateral = 50000000, 100000000
         deadline = int(time.time())
         LOGGER.info('preparing new package')
-        package = self.create_package(payment, collateral, deadline)
+        package = self.create_package(payment, collateral, deadline, '12.970686,77.595590')
         LOGGER.info('getting package with valid escrow pubkey: %s', package['escrow'][0])
         package_details = self.call(
             path='package', expected_code=200,
@@ -197,7 +198,7 @@ class AddEventTest(RouterBaseTest):
         payment, collateral = 50000000, 100000000
         deadline = int(time.time())
         LOGGER.info('preparing new package')
-        package = self.create_package(payment, collateral, deadline)
+        package = self.create_package(payment, collateral, deadline, '12.970686,77.595590')
         self.call(
             path='add_event', expected_code=200,
             fail_message='could not add event', seed=package['launcher'][1],
