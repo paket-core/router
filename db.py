@@ -82,6 +82,19 @@ def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None
         """, (user_pubkey, event_type, location, escrow_pubkey, kwargs))
 
 
+def assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs):
+    """Assign XDR transactions to package."""
+    package = get_package(escrow_pubkey)
+    if user_pubkey == package['launcher_pubkey']:
+        if package['escrow_xdrs'] is not None:
+            raise AssertionError('package already has escrow XDRs')
+        add_event(user_pubkey, 'escrow xdrs assigned', location, escrow_pubkey, kwargs)
+    elif user_pubkey in [event['user_pubkey'] for event in package['events'] if event['event_type'] == 'couriered']:
+        add_event(user_pubkey, 'relay xdrs assigned', location, escrow_pubkey, kwargs)
+    else:
+        raise AssertionError('user unauthorized to assign XDRs')
+
+
 def get_events(max_events_num):
     """Get all user and package events up to a limit."""
     with SQL_CONNECTION() as sql:

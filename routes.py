@@ -116,7 +116,7 @@ def assign_xdrs_handler(user_pubkey, escrow_pubkey, location, kwargs):
     :param kwargs:
     :return:
     """
-    db.add_event(user_pubkey, 'xdrs assigned', location, escrow_pubkey, kwargs)
+    db.assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs)
     return {'status': 200}
 
 
