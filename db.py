@@ -114,6 +114,14 @@ def set_package_status(package, event_types):
         package['status'] = 'unknown'
 
 
+def extract_xdrs(package):
+    """Extract XDR transactions from package events."""
+    escrow_xdrs_event = next(
+        (event for event in package['events'] if event['event_type'] == 'xdrs assigned'), None)
+    package['escrow_xdrs'] = json.loads(
+        escrow_xdrs_event['kwargs'])['escrow_xdrs'] if escrow_xdrs_event is not None else None
+
+
 def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=False, check_escrow=False):
     """Add some periferal data to the package object."""
     package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
@@ -125,14 +133,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
         if launch_event is not None:
             package['launch_date'] = launch_event['timestamp']
 
-    xdrs_event = next((event for event in package['events'] if event['event_type'] == 'xdrs assigned'), None)
-    if xdrs_event is not None:
-        xdrs = json.loads(xdrs_event['kwargs'])
-        package['set_options_transaction'] = xdrs['set_options_transaction']
-        package['refund_transaction'] = xdrs['refund_transaction']
-        package['merge_transaction'] = xdrs['merge_transaction']
-        package['payment_transaction'] = xdrs['payment_transaction']
-
+    extract_xdrs(package)
     set_package_status(package, event_types)
 
     if user_role:
