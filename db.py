@@ -148,8 +148,8 @@ def extract_xdrs(package):
         (event for event in package['events'] if event['event_type'] == 'escrow xdrs assigned'), None)
     package['escrow_xdrs'] = json.loads(
         escrow_xdrs_event['kwargs'])['escrow_xdrs'] if escrow_xdrs_event is not None else None
-    relay_xdrs_events = [
-        event['kwargs']['relay_xdrs'] for event in package['events'] if event['event_type'] == 'relay xdrs assigned']
+    relay_xdrs_events = [json.loads(event['kwargs'])['relay_xdrs']
+                         for event in package['events'] if event['event_type'] == 'relay xdrs assigned']
     package['relays_xdrs'] = relay_xdrs_events
 
 
