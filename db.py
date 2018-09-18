@@ -136,6 +136,8 @@ def set_user_role(package, user_role, user_pubkey):
             package['user_role'] = 'launcher'
         elif user_pubkey == package['recipient_pubkey']:
             package['user_role'] = 'recipient'
+        elif user_pubkey in [event['user_pubkey'] for event in package['events'] if event['event_type'] == 'couriered']:
+            package['user_role'] = 'courier'
         else:
             package['user_role'] = 'unknown'
 
