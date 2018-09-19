@@ -169,6 +169,10 @@ ACCEPT_PACKAGE = {
         {
             'name': 'location', 'description': 'location of place where user accepted package',
             'in': 'formData', 'required': True, 'type': 'string'
+        },
+        {
+            'name': 'leg_price', 'description': 'leg price',
+            'in': 'formData', 'required': True, 'type': 'string'
         }
     ],
     'responses': {

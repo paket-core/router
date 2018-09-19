@@ -70,7 +70,7 @@ def create_package_handler(
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ACCEPT_PACKAGE)
 @webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
-def accept_package_handler(user_pubkey, escrow_pubkey, location):
+def accept_package_handler(user_pubkey, escrow_pubkey, location, leg_price=None):
     """
     Accept a package.
     If the package requires collateral, commit it.
@@ -83,7 +83,7 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location):
     """
     package = db.get_package(escrow_pubkey)
     event_type = 'received' if package['recipient_pubkey'] == user_pubkey else 'couriered'
-    db.add_event(user_pubkey, event_type, location, escrow_pubkey)
+    db.add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=leg_price)
     return {'status': 200}
 
 
