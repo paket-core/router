@@ -95,6 +95,13 @@ def assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs):
         raise AssertionError('user unauthorized to assign XDRs')
 
 
+def request_delegation(user_pubkey, escrow_pubkey, location, kwargs):
+    """Add `delegate required` event."""
+    # check if package exist
+    get_package(escrow_pubkey)
+    add_event(user_pubkey, 'delegate required', location, escrow_pubkey, kwargs)
+
+
 def get_events(max_events_num):
     """Get all user and package events up to a limit."""
     with SQL_CONNECTION() as sql:

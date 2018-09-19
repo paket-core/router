@@ -133,6 +133,23 @@ def available_packages(location, radius_num=5):
     return {'status': 200, 'packages': db.get_available_packages(location, radius_num)}
 
 
+@BLUEPRINT.route("/v{}/request_delegation".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.REQUEST_DELEGATION)
+@webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
+def request_delegation_handler(user_pubkey, escrow_pubkey, location, kwargs=None):
+    """
+    Add `delegate required` event to package
+    ---
+    :param user_pubkey:
+    :param escrow_pubkey:
+    :param location:
+    :param kwargs:
+    :return:
+    """
+    db.request_delegation(user_pubkey, escrow_pubkey, location, kwargs)
+    return {'status': 200}
+
+
 @BLUEPRINT.route("/v{}/my_packages".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.MY_PACKAGES)
 @webserver.validation.call(require_auth=True)
