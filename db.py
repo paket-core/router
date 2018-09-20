@@ -73,6 +73,13 @@ def init_db():
         LOGGER.debug('photos table created')
 
 
+def accept_package(user_pubkey, escrow_pubkey, location, leg_price):
+    """Accept a package."""
+    package = get_package(escrow_pubkey)
+    event_type = 'received' if package['recipient_pubkey'] == user_pubkey else 'couriered'
+    add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=leg_price)
+
+
 def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None):
     """Add a package event."""
     with SQL_CONNECTION() as sql:

@@ -81,9 +81,7 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location, leg_price=None)
     :param location:
     :return:
     """
-    package = db.get_package(escrow_pubkey)
-    event_type = 'received' if package['recipient_pubkey'] == user_pubkey else 'couriered'
-    db.add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=leg_price)
+    db.accept_package(user_pubkey, escrow_pubkey, location, leg_price)
     return {'status': 200}
 
 
@@ -160,8 +158,7 @@ def my_packages_handler(user_pubkey):
     :param user_pubkey:
     :return:
     """
-    packages = db.get_packages(user_pubkey)
-    return {'status': 200, 'packages': packages}
+    return {'status': 200, 'packages': db.get_packages(user_pubkey)}
 
 
 @BLUEPRINT.route("/v{}/package".format(VERSION), methods=['POST'])
@@ -175,8 +172,7 @@ def package_handler(escrow_pubkey, check_escrow=None):
     :param check_escrow:
     :return:
     """
-    package = db.get_package(escrow_pubkey, bool(check_escrow))
-    return {'status': 200, 'package': package}
+    return {'status': 200, 'package': db.get_package(escrow_pubkey, bool(check_escrow))}
 
 
 @BLUEPRINT.route("/v{}/package_photo".format(VERSION), methods=['POST'])
