@@ -33,8 +33,8 @@ class UnknownPaket(Exception):
 def jsonable(list_of_dicts):
     """Fix for mysql-connector bug which makes sql.fetchall() return some keys as (unjsonable) bytes."""
     return [{
-        key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in dict_.items()}
-            for dict_ in list_of_dicts]
+        key.decode('utf8') if isinstance(key, bytes) else key: val for key, val in dict_.items()
+    } for dict_ in list_of_dicts]
 
 
 def init_db():
@@ -96,7 +96,11 @@ def get_package_events(escrow_pubkey):
     """Get a list of events relating to a package."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
+<<<<<<< HEAD
                     SELECT timestamp, user_pubkey, event_type, location, kwargs FROM events
+=======
+                    SELECT timestamp, user_pubkey, event_type, location FROM events
+>>>>>>> master
                     WHERE escrow_pubkey = %s
                     ORDER BY timestamp ASC""", (escrow_pubkey,))
         return jsonable(sql.fetchall())
