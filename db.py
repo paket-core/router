@@ -82,6 +82,11 @@ def accept_package(user_pubkey, escrow_pubkey, location, leg_price):
     add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=leg_price)
 
 
+def confirm_couriering(user_pubkey, escrow_pubkey, location):
+    """Add event to package, which indicates that user became courier."""
+    add_event(user_pubkey, events.COURIER_CONFIRMED, location, escrow_pubkey)
+
+
 def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None):
     """Add a package event."""
     with SQL_CONNECTION() as sql:

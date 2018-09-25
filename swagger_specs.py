@@ -182,7 +182,7 @@ ACCEPT_PACKAGE = {
     }
 }
 
-ASSIGN_PACKAGE = {
+CONFIRM_COURIERING = {
     'tags': ['packages'],
     'parameters': [
         {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
