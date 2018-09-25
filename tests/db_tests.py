@@ -65,11 +65,14 @@ class CreatePackageTest(DbBaseTest):
         package_members = self.prepare_package_members()
         db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-            50000000, 100000000, time.time(), None, None, None, None)
+            '+490857461783', '+4904597863891', 50000000, 100000000, time.time(), 'Package description',
+            '12.970686,77.595590', '41.156193,-8.637541', 'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
         events = db.get_package_events(package_members['escrow'][0])
         packages = db.get_packages(package_members['launcher'][0])
-        self.assertEqual(len(packages), 1, '')
-        self.assertEqual(len(events), 1, '')
+        self.assertEqual(len(packages), 1,
+                         "should be 1 created package, {} got instead".format(len(packages)))
+        self.assertEqual(len(events), 1,
+                         "created package should contain 1 event, {} got instead".format(len(events)))
         self.assertEqual(
             packages[0]['escrow_pubkey'], package_members['escrow'][0],
             "stored escrow_pubkey is: {}, but package was creating with: {}".format(
@@ -104,7 +107,8 @@ class GetPackageTest(DbBaseTest):
         package_members = self.prepare_package_members()
         db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-            50000000, 100000000, time.time(), None, None, None, None)
+            '+490857461783', '+4904597863891', 50000000, 100000000, time.time(), 'Package description',
+            '12.970686,77.595590', '41.156193,-8.637541', 'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
         package = db.get_package(package_members['escrow'][0])
         self.assertEqual(
             package['escrow_pubkey'], package_members['escrow'][0],
@@ -134,7 +138,9 @@ class GetPackagesTest(DbBaseTest):
             package_members = self.prepare_package_members()
             db.create_package(
                 package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-                i * 10 ** 7, i * 2 * 10 ** 7, time.time(), None, None, None, None)
+                '+490857461783', '+4904597863891', i * 10 ** 7, i * 2 * 10 ** 7, time.time(),
+                'Package description', '12.970686,77.595590', '41.156193,-8.637541',
+                'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
         packages = db.get_packages()
         self.assertEqual(len(packages), 5, "expected 5 packages, {} got instead".format(len(packages)))
 
@@ -145,18 +151,22 @@ class GetPackagesTest(DbBaseTest):
         LOGGER.info('creating package with user role: launcher')
         db.create_package(
             first_package_members['escrow'][0], user[0], first_package_members['recipient'][0],
-            50000000, 100000000, time.time(), None, None, None, None)
+            '+490857461783', '+4904597863891', 50000000, 100000000, time.time(), 'Package description',
+            '12.970686,77.595590', '41.156193,-8.637541', 'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
         second_package_members = self.prepare_package_members()
         LOGGER.info('creating package with user role: recipient')
         db.create_package(
             second_package_members['escrow'][0], second_package_members['launcher'][0], user[0],
-            50000000, 100000000, time.time(), None, None, None, None)
+            '+490857461783', '+4904597863891', 50000000, 100000000, time.time(), 'Package description',
+            '12.970686,77.595590', '41.156193,-8.637541', 'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
         third_package_members = self.prepare_package_members()
         LOGGER.info('creating package with user role: courier')
         db.create_package(
             third_package_members['escrow'][0], third_package_members['launcher'][0],
-            third_package_members['recipient'][0], 50000000, 100000000, time.time(), None, None, None, None)
-        db.add_event(third_package_members['escrow'][0], user[0], 'couriered', None)
+            third_package_members['recipient'][0], '+490857461783', '+4904597863891',
+            50000000, 100000000, time.time(), 'Package description', '12.970686,77.595590', '41.156193,-8.637541',
+            'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
+        db.add_event(user[0], 'couriered', '12.970686,77.595590', third_package_members['escrow'][0])
 
         packages = db.get_packages(user[0])
         self.assertEqual(len(packages), 3, "3 packages expected, {} got instead".format(len(packages)))
@@ -190,8 +200,9 @@ class AddEventTest(DbBaseTest):
         package_members = self.prepare_package_members()
         db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-            50000000, 100000000, time.time(), None, None, None, None)
-        db.add_event(package_members['escrow'][0], package_members['courier'][0], 'couriered', None)
+            '+490857461783', '+4904597863891', 50000000, 100000000, time.time(), 'Package description',
+            '12.970686,77.595590', '41.156193,-8.637541', 'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
+        db.add_event(package_members['courier'][0], 'couriered', '12.970686,77.595590', package_members['escrow'][0])
         events = db.get_package_events(package_members['escrow'][0])
         self.assertEqual(len(events), 2, "2 events expected, but {} got instead".format(len(events)))
         couriered_event = next((event for event in events if event['event_type'] == 'couriered'), None)
@@ -210,14 +221,17 @@ class GetEventsTest(DbBaseTest):
         package_members = self.prepare_package_members()
         db.create_package(
             package_members['escrow'][0], package_members['launcher'][0], package_members['recipient'][0],
-            50000000, 100000000, time.time(), None, None, None, None)
+            '+490857461783', '+4904597863891', 50000000, 100000000, time.time(), 'Package description',
+            '12.970686,77.595590', '41.156193,-8.637541', 'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
         new_package_members = self.prepare_package_members()
         db.create_package(
             new_package_members['escrow'][0], new_package_members['launcher'][0], new_package_members['recipient'][0],
-            50000000, 100000000, time.time(), None, None, None, None)
+            '+490857461783', '+4904597863891', 50000000, 100000000, time.time(), 'Package description',
+            '12.970686,77.595590', '41.156193,-8.637541', 'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
         for user in new_package_members:
-            db.add_event(new_package_members['escrow'][0], new_package_members[user][0], 'new event', None)
-            events = db.get_package_events(package_members['escrow'][0])
+            db.add_event(new_package_members[user][0], 'new event',
+                         '12.970686,77.595590', new_package_members['escrow'][0])
+        events = db.get_package_events(package_members['escrow'][0])
         self.assertEqual(len(events), 1, "expected 1 event for package: '{}', but '{}' got instead".format(
             package_members['escrow'][0], len(events)))
         events = db.get_package_events(new_package_members['escrow'][0])
@@ -228,17 +242,19 @@ class GetEventsTest(DbBaseTest):
         """Getting escrow events test."""
         packages_members = [self.prepare_package_members() for _ in range(3)]
         for members in packages_members:
-            db.create_package(
-                members['escrow'][0], members['launcher'][0], members['recipient'][0],
-                50000000, 100000000, time.time(), None, None, None, None)
+            db.create_package(members['escrow'][0], members['launcher'][0], members['recipient'][0],
+                              '+490857461783', '+4904597863891', 50000000, 100000000, time.time(),
+                              'Package description', '12.970686,77.595590', '41.156193,-8.637541',
+                              'India Bengaluru', 'Spain Porto', '12.970686,77.595590', None)
         for members in packages_members:
             events = db.get_package_events(members['escrow'][0])
-            self.assertEqual(len(events), 1, "1 event expected for escrow: {}, but {} got instead".format(
-                members['escrow'][0], len(events)))
+            self.assertEqual(len(events), 1,
+                             "1 event expected for escrow: {}, but {} got instead".format(
+                                 members['escrow'][0], len(events)))
 
         for index, members in enumerate(packages_members):
             for _ in range(index):
-                db.add_event(members['escrow'][0], members['courier'][0], 'couriered', None)
+                db.add_event(members['courier'][0], 'new event', '12.970686,77.595590', members['escrow'][0])
         for index, members in enumerate(packages_members):
             events = db.get_package_events(members['escrow'][0])
             self.assertEqual(len(events), index+1, "{} event expected for escrow: {}, but {} got instead".format(

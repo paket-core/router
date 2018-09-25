@@ -26,15 +26,18 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
 # Package routes.
 
 
+# pylint: disable=too-many-locals
 @BLUEPRINT.route("/v{}/create_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CREATE_PACKAGE)
 @webserver.validation.call(
-    ['escrow_pubkey', 'recipient_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp',
-     'set_options_transaction', 'refund_transaction', 'payment_transaction', 'merge_transaction'],
+    ['escrow_pubkey', 'recipient_pubkey', 'launcher_phone_number', 'recipient_phone_number',
+     'payment_buls', 'collateral_buls', 'deadline_timestamp', 'description',
+     'from_location', 'to_location', 'from_address', 'to_address', 'event_location'],
     require_auth=True)
 def create_package_handler(
-        user_pubkey, escrow_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location=None):
+        user_pubkey, escrow_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number,
+        payment_buls, collateral_buls, deadline_timestamp, description,
+        from_location, to_location, from_address, to_address, event_location, photo=None):
     """
     Create a package.
     Use this call to create a new package for delivery.
@@ -42,26 +45,32 @@ def create_package_handler(
     :param user_pubkey:
     :param escrow_pubkey:
     :param recipient_pubkey:
+    :param launcher_phone_number:
+    :param recipient_phone_number:
     :param payment_buls:
     :param collateral_buls:
     :param deadline_timestamp:
-    :param set_options_transaction:
-    :param refund_transaction:
-    :param merge_transaction:
-    :param payment_transaction:
-    :param location:
+    :param description:
+    :param from_location:
+    :param to_location:
+    :param from_address:
+    :param to_address:
+    :param event_location:
+    :param photo:
     :return:
     """
     package_details = db.create_package(
-        escrow_pubkey, user_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
-        set_options_transaction, refund_transaction, merge_transaction, payment_transaction, location)
-    return dict(status=201, package=package_details)
+        escrow_pubkey, user_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number,
+        payment_buls, collateral_buls, deadline_timestamp, description,
+        from_location, to_location, from_address, to_address, event_location, photo)
+    return {'status': 201, 'package': package_details}
+# pylint: enable=too-many-locals
 
 
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ACCEPT_PACKAGE)
-@webserver.validation.call(['escrow_pubkey'], require_auth=True)
-def accept_package_handler(user_pubkey, escrow_pubkey, location=None):
+@webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
+def accept_package_handler(user_pubkey, escrow_pubkey, location):
     """
     Accept a package.
     If the package requires collateral, commit it.
@@ -74,8 +83,54 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location=None):
     """
     package = db.get_package(escrow_pubkey)
     event_type = 'received' if package['recipient_pubkey'] == user_pubkey else 'couriered'
-    db.add_event(escrow_pubkey, user_pubkey, event_type, location)
+    db.add_event(user_pubkey, event_type, location, escrow_pubkey)
     return {'status': 200}
+
+
+@BLUEPRINT.route("/v{}/assign_package".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.ASSIGN_PACKAGE)
+@webserver.validation.call(['escrow_pubkey'], require_auth=True)
+def assign_package_handler(user_pubkey, escrow_pubkey, location):
+    """
+    Add event to package, which indicates that user became courier.
+    ---
+    :param user_pubkey:
+    :param escrow_pubkey:
+    :param location:
+    :return:
+    """
+    db.add_event(user_pubkey, 'assign package', location, escrow_pubkey)
+    return {'status': 200, 'package': db.get_package(escrow_pubkey)}
+
+
+@BLUEPRINT.route("/v{}/assign_xdrs".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.ASSIGN_XDRS)
+@webserver.validation.call(['escrow_pubkey', 'location', 'kwargs'], require_auth=True)
+def assign_xdrs_handler(user_pubkey, escrow_pubkey, location, kwargs):
+    """
+    Assign XDRs transaction to package.
+    ---
+    :param user_pubkey:
+    :param escrow_pubkey:
+    :param location:
+    :param kwargs:
+    :return:
+    """
+    db.add_event(user_pubkey, 'xdrs assigned', location, escrow_pubkey, kwargs)
+    return {'status': 200}
+
+
+@BLUEPRINT.route("/v{}/available_packages".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.AVAILABLE_PACKAGES)
+@webserver.validation.call(['location'])
+def available_packages(location, radius_num=5):
+    """
+    Get available for couriering packages with acceptable deadline.
+    Packages filtered by distance and launcher solvency.
+    ---
+    :return:
+    """
+    return {'status': 200, 'packages': db.get_available_packages(location, radius_num)}
 
 
 @BLUEPRINT.route("/v{}/my_packages".format(VERSION), methods=['POST'])
@@ -95,31 +150,46 @@ def my_packages_handler(user_pubkey):
 @BLUEPRINT.route("/v{}/package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.PACKAGE)
 @webserver.validation.call(['escrow_pubkey'])
-def package_handler(escrow_pubkey):
+def package_handler(escrow_pubkey, check_escrow=None):
     """
     Get a full info about a single package.
     ---
     :param escrow_pubkey:
+    :param check_escrow:
     :return:
     """
-    package = db.get_package(escrow_pubkey)
+    package = db.get_package(escrow_pubkey, bool(check_escrow))
     return {'status': 200, 'package': package}
+
+
+@BLUEPRINT.route("/v{}/package_photo".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.PACKAGE_PHOTO)
+@webserver.validation.call(['escrow_pubkey'])
+def package_photo_handler(escrow_pubkey):
+    """
+    Get package photo.
+    ---
+    :param escrow_pubkey:
+    :return:
+    """
+    return {'status': 200, 'package_photo': db.get_package_photo(escrow_pubkey)}
 
 
 @BLUEPRINT.route("/v{}/add_event".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ADD_EVENT)
-@webserver.validation.call(['escrow_pubkey', 'event_type', 'location'], require_auth=True)
-def add_event_handler(user_pubkey, escrow_pubkey, event_type, location):
+@webserver.validation.call(['event_type', 'location'], require_auth=True)
+def add_event_handler(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None):
     """
     Add new event for package.
     ---
     :param user_pubkey:
-    :param escrow_pubkey:
     :param event_type:
     :param location:
+    :param escrow_pubkey:
+    :param kwargs:
     :return:
     """
-    db.add_event(escrow_pubkey, user_pubkey, event_type, location)
+    db.add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs)
     return {'status': 200}
 
 
@@ -135,7 +205,7 @@ def changed_location_handler(user_pubkey, escrow_pubkey, location):
     :param location:
     :return:
     """
-    db.add_event(escrow_pubkey, user_pubkey, 'changed location', location)
+    db.add_event(user_pubkey, 'changed location', location, escrow_pubkey)
     return {'status': 200}
 
 
@@ -145,18 +215,37 @@ def changed_location_handler(user_pubkey, escrow_pubkey, location):
 @BLUEPRINT.route("/v{}/debug/create_mock_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CREATE_MOCK_PACKAGE)
 @webserver.validation.call(
-    ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey', 'payment_buls', 'collateral_buls', 'deadline_timestamp'])
+    ['escrow_pubkey', 'launcher_pubkey', 'recipient_pubkey', 'launcher_phone_number', 'recipient_phone_number',
+     'payment_buls', 'collateral_buls', 'deadline_timestamp'])
 def create_mock_package_handler(
-        escrow_pubkey, launcher_pubkey, recipient_pubkey,
-        payment_buls, collateral_buls, deadline_timestamp):
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number, payment_buls,
+        collateral_buls, deadline_timestamp, description='mock_description', from_location='mock_location',
+        to_location='mock_location', from_address='mock_address', to_address='mock_address',
+        event_location='mock_location', photo=None):
     """
     Create a mock package - for debug only.
     ---
+    :param escrow_pubkey:
+    :param launcher_pubkey:
+    :param recipient_pubkey:
+    :param launcher_phone_number:
+    :param recipient_phone_number:
+    :param payment_buls:
+    :param collateral_buls:
+    :param deadline_timestamp:
+    :param description:
+    :param from_location:
+    :param to_location:
+    :param from_address:
+    :param to_address:
+    :param event_location:
+    :param photo:
     :return:
     """
     return {'status': 201, 'package': db.create_package(
-        escrow_pubkey, launcher_pubkey, recipient_pubkey, payment_buls, collateral_buls, deadline_timestamp,
-        'mock_setopts', 'mock_refund', 'mock merge', 'mock payment')}
+        escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_phone_number, recipient_phone_number,
+        payment_buls, collateral_buls, deadline_timestamp, description,
+        from_location, to_location, from_address, to_address, event_location, photo)}
 
 
 @BLUEPRINT.route("/v{}/debug/packages".format(VERSION), methods=['POST'])
@@ -178,8 +267,8 @@ def events_handler(max_events_num=100, mock=None):
     """
     Get all events.
     ---
-    :param limit:
     :param max_events_num:
+    :param mock:
     :return:
     """
     if not bool(mock):

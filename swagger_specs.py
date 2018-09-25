@@ -96,10 +96,13 @@ CREATE_PACKAGE = {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'launcher_pubkey', 'description': 'launcher pubkey',
+            'name': 'recipient_pubkey', 'description': 'recipient pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'recipient_pubkey', 'description': 'recipient pubkey',
+            'name': 'launcher_phone_number', 'description': 'phone number of the launcher',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'recipient_phone_number', 'description': 'phone number of the recipient',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'payment_buls', 'description': 'BULs promised as payment',
@@ -111,24 +114,44 @@ CREATE_PACKAGE = {
             'name': 'deadline_timestamp', 'description': 'deadline timestamp',
             'in': 'formData', 'required': True, 'type': 'integer'},
         {
-            'name': 'set_options_transaction', 'description': 'Transaction with set signers',
+            'name': 'description', 'description': 'package description (300 characters max)',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'refund_transaction', 'description': 'Transaction for case of failed delivery',
+            'name': 'from_location', 'description': 'GPS location of place where launcher will give package to courier',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'merge_transaction', 'description': 'Transaction for draining the remaining XLM to the launcher',
+            'name': 'to_location', 'description': 'GPS location of place where package need to be delivered to',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'payment_transaction', 'description': 'Transaction for case of successful delivery',
+            'name': 'from_address', 'description': 'Address of place where launcher will give package to courier',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'location', 'description': 'GPS location in format "latitude, longitude"',
-            'in': 'formData', 'required': False, 'type': 'string'}
+            'name': 'to_address', 'description': 'Address of place where package need to be delivered to',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'event_location', 'description': 'GPS location of place where launcher submited package info',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'package photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
     'responses': {
         '201': {
             'description': 'package details',
+        }
+    }
+}
+
+PACKAGE_PHOTO = {
+    'tags': ['packages'],
+    'parameters': [
+        {
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'in': 'formData', 'required': True, 'type': 'string'}
+    ],
+    'responses': {
+        '200': {
+            'description': 'package photo'
         }
     }
 }
@@ -145,12 +168,79 @@ ACCEPT_PACKAGE = {
         },
         {
             'name': 'location', 'description': 'location of place where user accepted package',
-            'in': 'formData', 'required': False, 'type': 'string'
+            'in': 'formData', 'required': True, 'type': 'string'
         }
     ],
     'responses': {
         '200': {
             'description': 'package custodianship changed'
+        }
+    }
+}
+
+ASSIGN_PACKAGE = {
+    'tags': ['packages'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'in': 'formData', 'required': True, 'type': 'string',
+        },
+        {
+            'name': 'location', 'description': 'location of place where user choose package to be courier in',
+            'in': 'formData', 'required': True, 'type': 'string'
+        }
+    ],
+    'responses': {
+        '200': {
+            'description': 'user became courier for package'
+        }
+    }
+}
+
+ASSIGN_XDRS = {
+    'tags': ['packages'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'in': 'formData', 'required': True, 'type': 'string',
+        },
+        {
+            'name': 'location', 'description': 'location of place where user accepted package',
+            'in': 'formData', 'required': True, 'type': 'string'
+        },
+        {
+            'name': 'kwargs', 'description': 'XDRs transaction in JSON format',
+            'in': 'formData', 'required': True, 'type': 'string'
+        }
+    ],
+    'responses': {
+        '200': {
+            'description': 'added event with XDRs transactions'
+        }
+    }
+}
+
+AVAILABLE_PACKAGES = {
+    'tags': ['packages'],
+    'parameters': [
+        {
+            'name': 'location', 'description': 'location of place for searching packages nearby',
+            'in': 'formData', 'required': True, 'type': 'string',
+        },
+        {
+            'name': 'radius_num', 'description': 'maximum search radius (in km)',
+            'in': 'formData', 'required': False, 'type': 'integer'
+        }
+    ],
+    'responses': {
+        '200': {
+            'description': 'available for couriering packages'
         }
     }
 }
@@ -184,8 +274,10 @@ PACKAGE = {
     'parameters': [
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
-            'in': 'formData', 'required': True, 'type': 'string',
-        }
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'check_escrow', 'description': 'include information about payment and collateral if specified',
+            'in': 'formData', 'required': False, 'type': 'integer'}
     ],
     'definitions': {
         'Event': {
@@ -261,14 +353,18 @@ ADD_EVENT = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'escrow_pubkey', 'description': 'pubkey of package escrow',
-            'in': 'formData', 'required': True, 'type': 'string'},
-        {
             'name': 'event_type', 'description': 'type of event',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'GPS coordinates where event happened',
-            'in': 'formData', 'required': True, 'type': 'string'}
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'escrow_pubkey', 'description': 'pubkey of package escrow',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'kwargs', 'description': 'extra parameters in JSON format',
+            'in': 'formData', 'required': False, 'type': 'string'
+        }
     ],
     'responses': {
         '200': {'description': 'event successfully added'}
@@ -317,10 +413,16 @@ CREATE_MOCK_PACKAGE = {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'launcher_pubkey', 'description': 'launcher pubkey',
+            'name': 'launcher_pubkey', 'description': 'recipient pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'recipient_pubkey', 'description': 'recipient pubkey',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'launcher_phone_number', 'description': 'phone number of the launcher',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'recipient_phone_number', 'description': 'phone number of the recipient',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'payment_buls', 'description': 'BULs promised as payment',
@@ -331,6 +433,27 @@ CREATE_MOCK_PACKAGE = {
         {
             'name': 'deadline_timestamp', 'description': 'deadline timestamp',
             'in': 'formData', 'required': True, 'type': 'integer'},
+        {
+            'name': 'description', 'description': 'package description (300 characters max)',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'from_location', 'description': 'GPS location of place where launcher will give package to courier',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'to_location', 'description': 'GPS location of place where package need to be delivered to',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'from_address', 'description': 'Address of place where launcher will give package to courier',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'to_address', 'description': 'Address of place where package need to be delivered to',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'event_location', 'description': 'GPS location of place where launcher submited package info',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'package photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
     'responses': {
         '201': {
