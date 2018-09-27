@@ -68,8 +68,8 @@ def init_db():
         LOGGER.debug('events table created')
         sql.execute('''
             CREATE TABLE photos(
-            escrow_pubkey VARCHAR(56) NOT NULL,
-            photo LONGTEXT NOT NULL)''')
+                escrow_pubkey VARCHAR(56) NOT NULL,
+                photo LONGTEXT NOT NULL)''')
         LOGGER.debug('photos table created')
 
 
