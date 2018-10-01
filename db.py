@@ -241,15 +241,12 @@ def get_available_packages(location, radius=5):
         current_time = int(time.time())
         sql.execute("""
             SELECT escrow_pubkey as package_escrow_pubkey, packages.* FROM packages
-            HAVING ((SELECT COUNT(event_type) FROM events
-                     WHERE escrow_pubkey = package_escrow_pubkey) < 2 OR
-                    (SELECT COUNT(event_type) FROM events
-                     WHERE escrow_pubkey = package_escrow_pubkey
-                     AND event_type = %s) =
-                    (SELECT COUNT(event_type) FROM events
-                     WHERE escrow_pubkey = package_escrow_pubkey
-                     AND event_type = %s))
-            AND deadline > %s;""", (events.DELEGATE_REQUIRED, events.COURIER_CONFIRMED, current_time))
+            HAVING ((
+                SELECT event_type FROM events
+                WHERE escrow_pubkey = package_escrow_pubkey AND event_type != %s
+                ORDER BY timestamp DESC LIMIT 1)
+                IN (%s, %s))
+            AND deadline > %s""", (events.LOCATION_CHANGED, events.LAUNCHED, events.DELEGATE_REQUIRED, current_time))
         packages = [enrich_package(row, check_solvency=True) for row in sql.fetchall()]
         filtered_by_location = [package for package in packages if util.distance.haversine(
             location, package['from_location']) <= radius]
