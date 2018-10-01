@@ -61,10 +61,10 @@ def init_db():
         sql.execute('''
             CREATE TABLE events(
                 timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-                user_pubkey VARCHAR(56) NOT NULL, 
-                event_type VARCHAR(20) NOT NULL, 
-                location VARCHAR(24) NOT NULL, 
-                escrow_pubkey VARCHAR(56) NULL, 
+                user_pubkey VARCHAR(56) NOT NULL,
+                event_type VARCHAR(20) NOT NULL,
+                location VARCHAR(24) NOT NULL,
+                escrow_pubkey VARCHAR(56) NULL,
                 kwargs LONGTEXT NULL,
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
         LOGGER.debug('events table created')
@@ -241,13 +241,13 @@ def get_available_packages(location, radius=5):
         current_time = int(time.time())
         sql.execute("""
             SELECT escrow_pubkey as package_escrow_pubkey, packages.* FROM packages
-            HAVING ((SELECT COUNT(event_type) FROM events 
-                     WHERE escrow_pubkey = package_escrow_pubkey) < 2 OR 
-                    (SELECT COUNT(event_type) FROM events 
-                     WHERE escrow_pubkey = package_escrow_pubkey 
+            HAVING ((SELECT COUNT(event_type) FROM events
+                     WHERE escrow_pubkey = package_escrow_pubkey) < 2 OR
+                    (SELECT COUNT(event_type) FROM events
+                     WHERE escrow_pubkey = package_escrow_pubkey
                      AND event_type = %s) =
-                    (SELECT COUNT(event_type) FROM events 
-                     WHERE escrow_pubkey = package_escrow_pubkey 
+                    (SELECT COUNT(event_type) FROM events
+                     WHERE escrow_pubkey = package_escrow_pubkey
                      AND event_type = %s))
             AND deadline > %s;""", (events.DELEGATE_REQUIRED, events.COURIER_CONFIRMED, current_time))
         packages = [enrich_package(row, check_solvency=True) for row in sql.fetchall()]

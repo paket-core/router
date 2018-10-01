@@ -187,6 +187,7 @@ def package_photo_handler(escrow_pubkey):
     """
     return {'status': 200, 'package_photo': db.get_package_photo(escrow_pubkey)}
 
+
 @BLUEPRINT.route("/v{}/add_event".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ADD_EVENT)
 @webserver.validation.call(['event_type', 'location'], require_auth=True)
