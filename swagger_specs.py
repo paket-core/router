@@ -156,6 +156,20 @@ PACKAGE_PHOTO = {
     }
 }
 
+EVENT_PHOTO = {
+    'tags': ['packages'],
+    'parameters': [
+        {
+            'name': 'photo_id', 'description': 'unique photo id',
+            'in': 'formData', 'required': True, 'type': 'integer'}
+    ],
+    'responses': {
+        '200': {
+            'description': 'event photo'
+        }
+    }
+}
+
 ACCEPT_PACKAGE = {
     'tags': ['packages'],
     'parameters': [

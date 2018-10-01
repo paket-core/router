@@ -64,10 +64,12 @@ def init_db():
                 location VARCHAR(24) NOT NULL,
                 escrow_pubkey VARCHAR(56) NULL,
                 kwargs LONGTEXT NULL,
+                photo_id INTEGER NULL,
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
         LOGGER.debug('events table created')
         sql.execute('''
             CREATE TABLE photos(
+                photo_id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 escrow_pubkey VARCHAR(56) NOT NULL,
                 event_type VARCHAR(20) NOT NULL,
                 photo LONGTEXT NOT NULL)''')
@@ -77,15 +79,19 @@ def init_db():
 def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None, photo=None):
     """Add a package event."""
     with SQL_CONNECTION() as sql:
-        sql.execute("""
-            INSERT INTO events (user_pubkey, event_type, location, escrow_pubkey, kwargs)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (user_pubkey, event_type, location, escrow_pubkey, kwargs))
+        photo_id = None
         if photo is not None:
             photo = base64.b64encode(photo)
             sql.execute("""
                 INSERT INTO photos (escrow_pubkey, event_type, photo)
                 VALUES (%s, %s, %s)""", (escrow_pubkey, event_type, photo))
+            sql.execute('SELECT photo_id FROM photos ORDER BY photo_id DESC LIMIT 1')
+            photo_id = sql.fetchone()['photo_id']
+
+        sql.execute("""
+            INSERT INTO events (user_pubkey, event_type, location, escrow_pubkey, kwargs, photo_id)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (user_pubkey, event_type, location, escrow_pubkey, kwargs, photo_id))
 
 
 def get_events(max_events_num):
@@ -102,7 +108,8 @@ def get_package_events(escrow_pubkey):
     """Get a list of events relating to a package."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
-            SELECT timestamp, user_pubkey, event_type, location, kwargs FROM events
+            SELECT timestamp, user_pubkey, event_type, location, kwargs, photo_id
+            FROM events
             WHERE escrow_pubkey = %s
             ORDER BY timestamp ASC""", (escrow_pubkey,))
         return jsonable(sql.fetchall())
@@ -238,8 +245,20 @@ def get_packages(user_pubkey=None):
         return [enrich_package(row) for row in sql.fetchall()]
 
 
-def get_event_photo(escrow_pubkey, event_type):
-    """Get event photo."""
+def get_event_photo_by_id(photo_id):
+    """Get event photo by photo id."""
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            SELECT * FROM photos
+            WHERE photo_id = %s''', (photo_id,))
+        try:
+            return sql.fetchall()[0]
+        except IndexError:
+            return None
+
+
+def get_event_photos(escrow_pubkey, event_type):
+    """Get event photos."""
     with SQL_CONNECTION() as sql:
         sql.execute('''
             SELECT * FROM photos
@@ -249,4 +268,5 @@ def get_event_photo(escrow_pubkey, event_type):
 
 def get_package_photo(escrow_pubkey):
     """Get package photo."""
-    return get_event_photo(escrow_pubkey, 'launched') or None
+    event_photos = get_event_photos(escrow_pubkey, 'launched')
+    return event_photos[0] if event_photos else None

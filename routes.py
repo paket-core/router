@@ -21,6 +21,7 @@ BLUEPRINT = flask.Blueprint('router', __name__)
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_timestamp'] = webserver.validation.check_and_fix_natural
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_buls'] = webserver.validation.check_and_fix_natural
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.check_and_fix_natural
+webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_id'] = webserver.validation.check_and_fix_natural
 
 
 # Package routes.
@@ -175,6 +176,19 @@ def package_photo_handler(escrow_pubkey):
     :return:
     """
     return {'status': 200, 'package_photo': db.get_package_photo(escrow_pubkey)}
+
+
+@BLUEPRINT.route("/v{}/event_photo".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.EVENT_PHOTO)
+@webserver.validation.call
+def event_photo_handler(photo_id):
+    """
+    Get event photo by photo id.
+    ---
+    :param photo_id:
+    :return:
+    """
+    return {'status': 200, 'event_photo': db.get_event_photo_by_id(photo_id)}
 
 
 @BLUEPRINT.route("/v{}/add_event".format(VERSION), methods=['POST'])
