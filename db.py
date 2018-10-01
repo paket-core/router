@@ -69,17 +69,23 @@ def init_db():
         sql.execute('''
             CREATE TABLE photos(
                 escrow_pubkey VARCHAR(56) NOT NULL,
+                event_type VARCHAR(20) NOT NULL,
                 photo LONGTEXT NOT NULL)''')
         LOGGER.debug('photos table created')
 
 
-def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None):
+def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None, photo=None):
     """Add a package event."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO events (user_pubkey, event_type, location, escrow_pubkey, kwargs)
             VALUES (%s, %s, %s, %s, %s)
         """, (user_pubkey, event_type, location, escrow_pubkey, kwargs))
+        if photo is not None:
+            photo = base64.b64encode(photo)
+            sql.execute("""
+                INSERT INTO photos (escrow_pubkey, event_type, photo)
+                VALUES (%s, %s, %s)""", (escrow_pubkey, event_type, photo))
 
 
 def get_events(max_events_num):
@@ -168,9 +174,6 @@ def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment, collateral,
         deadline, description, from_location, to_location, from_address, to_address, event_location, photo=None):
     """Create a new package row."""
-    if photo is not None:
-        photo = base64.b64encode(photo)
-        add_package_photo(escrow_pubkey, photo)
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO packages (
@@ -179,7 +182,7 @@ def create_package(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment,
                 collateral, deadline, description, from_location, to_location, from_address, to_address))
-    add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey)
+    add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey, photo=photo)
     return get_package(escrow_pubkey)
 # pylint: enable=too-many-locals
 
@@ -235,21 +238,15 @@ def get_packages(user_pubkey=None):
         return [enrich_package(row) for row in sql.fetchall()]
 
 
-def add_package_photo(escrow_pubkey, photo):
-    """Add package photo."""
+def get_event_photo(escrow_pubkey, event_type):
+    """Get event photo."""
     with SQL_CONNECTION() as sql:
         sql.execute('''
-            INSERT INTO photos (escrow_pubkey, photo)
-            VALUES (%s, %s)''', (escrow_pubkey, photo))
+            SELECT * FROM photos
+            WHERE escrow_pubkey = %s AND event_type = %s''', (escrow_pubkey, event_type))
+        return sql.fetchall()
 
 
 def get_package_photo(escrow_pubkey):
     """Get package photo."""
-    with SQL_CONNECTION() as sql:
-        sql.execute('''
-            SELECT * FROM photos
-            WHERE escrow_pubkey = %s''', (escrow_pubkey,))
-        try:
-            return sql.fetchall()[0]
-        except IndexError:
-            return None
+    return get_event_photo(escrow_pubkey, 'launched') or None
