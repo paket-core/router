@@ -8,6 +8,7 @@ import time
 import paket_stellar
 import util.db
 import util.distance
+import util.geodecoding
 
 LOGGER = logging.getLogger('pkt.db')
 DB_HOST = os.environ.get('PAKET_DB_HOST', '127.0.0.1')
@@ -114,6 +115,18 @@ def set_package_status(package, event_types):
         package['status'] = 'unknown'
 
 
+def set_short_package_id(package):
+    """Set short package id, based on country code of destination and last three letters of package id."""
+    try:
+        country_code = util.geodecoding.gps_to_country_code(package['to_location'])
+    except util.geodecoding.GeodecodingError as exc:
+        LOGGER.error(str(exc))
+        country_code = ''
+    three_letters_code = package['escrow_pubkey'][-3:]
+    package['short-package-id'] = "{}-{}".format(
+        country_code, three_letters_code) if country_code else three_letters_code
+
+
 def set_user_role(package, user_role, user_pubkey):
     """Set user role."""
     if user_role:
@@ -149,6 +162,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     extract_xdrs(package)
     set_package_status(package, event_types)
     set_user_role(package, user_role, user_pubkey)
+    set_short_package_id(package)
 
     if check_solvency:
         launcher_account = paket_stellar.get_bul_account(package['launcher_pubkey'])
