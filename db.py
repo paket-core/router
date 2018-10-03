@@ -9,6 +9,8 @@ import paket_stellar
 import util.db
 import util.distance
 
+import events
+
 LOGGER = logging.getLogger('pkt.db')
 DB_HOST = os.environ.get('PAKET_DB_HOST', '127.0.0.1')
 DB_PORT = int(os.environ.get('PAKET_DB_PORT', 3306))
@@ -76,6 +78,18 @@ def init_db():
         LOGGER.debug('photos table created')
 
 
+def accept_package(user_pubkey, escrow_pubkey, location, leg_price, photo=None):
+    """Accept a package."""
+    package = get_package(escrow_pubkey)
+    event_type = events.RECEIVED if package['recipient_pubkey'] == user_pubkey else events.COURIERED
+    add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=leg_price, photo=photo)
+
+
+def confirm_couriering(user_pubkey, escrow_pubkey, location, photo=None):
+    """Add event to package, which indicates that user became courier."""
+    add_event(user_pubkey, events.COURIER_CONFIRMED, location, escrow_pubkey, photo=photo)
+
+
 def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None, photo=None):
     """Add a package event."""
     with SQL_CONNECTION() as sql:
@@ -94,14 +108,35 @@ def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None
         """, (user_pubkey, event_type, location, escrow_pubkey, kwargs, photo_id))
 
 
+def assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs, photo=None):
+    """Assign XDR transactions to package."""
+    package = get_package(escrow_pubkey)
+    if user_pubkey == package['launcher_pubkey']:
+        if package['escrow_xdrs'] is not None:
+            raise AssertionError('package already has escrow XDRs')
+        add_event(user_pubkey, events.ESCROW_XDRS_ASSIGNED, location, escrow_pubkey, kwargs, photo=photo)
+    elif user_pubkey in [event['user_pubkey']
+                         for event in package['events'] if event['event_type'] == events.COURIERED]:
+        add_event(user_pubkey, events.RELAY_XDRS_ASSIGNED, location, escrow_pubkey, kwargs, photo=photo)
+    else:
+        raise AssertionError('user unauthorized to assign XDRs')
+
+
+def request_delegation(user_pubkey, escrow_pubkey, location, kwargs, photo=None):
+    """Add `delegate required` event."""
+    # check if package exist
+    get_package(escrow_pubkey)
+    add_event(user_pubkey, events.DELEGATE_REQUIRED, location, escrow_pubkey, kwargs=kwargs, photo=photo)
+
+
 def get_events(max_events_num):
     """Get all user and package events up to a limit."""
     with SQL_CONNECTION() as sql:
         sql.execute("SELECT * FROM events LIMIT %s", (int(max_events_num),))
-        events = jsonable(sql.fetchall())
+        events_ = jsonable(sql.fetchall())
         return {
-            'packages_events': [event for event in events if event['escrow_pubkey'] is not None],
-            'user_events': [event for event in events if event['escrow_pubkey'] is None]}
+            'packages_events': [event for event in events_ if event['escrow_pubkey'] is not None],
+            'user_events': [event for event in events_ if event['escrow_pubkey'] is None]}
 
 
 def get_package_events(escrow_pubkey):
@@ -136,6 +171,9 @@ def set_user_role(package, user_role, user_pubkey):
             package['user_role'] = 'launcher'
         elif user_pubkey == package['recipient_pubkey']:
             package['user_role'] = 'recipient'
+        elif user_pubkey in [event['user_pubkey']
+                             for event in package['events'] if event['event_type'] == events.COURIERED]:
+            package['user_role'] = 'courier'
         else:
             package['user_role'] = 'unknown'
 
@@ -143,9 +181,12 @@ def set_user_role(package, user_role, user_pubkey):
 def extract_xdrs(package):
     """Extract XDR transactions from package events."""
     escrow_xdrs_event = next(
-        (event for event in package['events'] if event['event_type'] == 'xdrs assigned'), None)
+        (event for event in package['events'] if event['event_type'] == events.ESCROW_XDRS_ASSIGNED), None)
     package['escrow_xdrs'] = json.loads(
         escrow_xdrs_event['kwargs'])['escrow_xdrs'] if escrow_xdrs_event is not None else None
+    relay_xdrs_events = [json.loads(event['kwargs'])['relay_xdrs']
+                         for event in package['events'] if event['event_type'] == events.RELAY_XDRS_ASSIGNED]
+    package['relays_xdrs'] = relay_xdrs_events
 
 
 def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=False, check_escrow=False):
@@ -155,7 +196,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     package['events'] = get_package_events(package['escrow_pubkey'])
     event_types = {event['event_type'] for event in package['events']}
     if package['events']:
-        launch_event = next((event for event in package['events'] if event['event_type'] == 'launched'), None)
+        launch_event = next((event for event in package['events'] if event['event_type'] == events.LAUNCHED), None)
         if launch_event is not None:
             package['launch_date'] = launch_event['timestamp']
 
@@ -189,7 +230,7 @@ def create_package(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment,
                 collateral, deadline, description, from_location, to_location, from_address, to_address))
-    add_event(launcher_pubkey, 'launched', event_location, escrow_pubkey, photo=photo)
+    add_event(launcher_pubkey, events.LAUNCHED, event_location, escrow_pubkey, photo=photo)
     return get_package(escrow_pubkey)
 # pylint: enable=too-many-locals
 
@@ -209,11 +250,13 @@ def get_available_packages(location, radius=5):
     with SQL_CONNECTION() as sql:
         current_time = int(time.time())
         sql.execute("""
-            SELECT p.*
-            FROM packages p INNER JOIN events e ON p.escrow_pubkey = e.escrow_pubkey
-            WHERE deadline > %s AND p.escrow_pubkey NOT IN (
-            SELECT escrow_pubkey FROM events
-            WHERE event_type IN('received', 'couriered', 'assign package'))""", (current_time,))
+            SELECT escrow_pubkey as package_escrow_pubkey, packages.* FROM packages
+            HAVING ((
+                SELECT event_type FROM events
+                WHERE escrow_pubkey = package_escrow_pubkey AND event_type != %s
+                ORDER BY timestamp DESC LIMIT 1)
+                IN (%s, %s))
+            AND deadline > %s""", (events.LOCATION_CHANGED, events.LAUNCHED, events.DELEGATE_REQUIRED, current_time))
         packages = [enrich_package(row, check_solvency=True) for row in sql.fetchall()]
         filtered_by_location = [package for package in packages if util.distance.haversine(
             location, package['from_location']) <= radius]
@@ -236,7 +279,8 @@ def get_packages(user_pubkey=None):
             SELECT * FROM packages
             WHERE escrow_pubkey IN (
                 SELECT escrow_pubkey FROM events
-                WHERE event_type IN('couriered', 'assign package') AND user_pubkey = %s)""", (user_pubkey,))
+                WHERE event_type IN(%s, %s) AND user_pubkey = %s)""",
+                        (events.COURIERED, events.COURIER_CONFIRMED, user_pubkey))
             couriered = [enrich_package(row, user_role='courier') for row in sql.fetchall()]
             return [
                 dict(package, custodian_pubkey=package['events'][-1]['user_pubkey'])

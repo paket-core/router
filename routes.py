@@ -71,7 +71,7 @@ def create_package_handler(
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ACCEPT_PACKAGE)
 @webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
-def accept_package_handler(user_pubkey, escrow_pubkey, location, photo=None):
+def accept_package_handler(user_pubkey, escrow_pubkey, location, leg_price=None, photo=None):
     """
     Accept a package.
     If the package requires collateral, commit it.
@@ -80,28 +80,28 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location, photo=None):
     :param user_pubkey:
     :param escrow_pubkey:
     :param location:
+    :param leg_price:
     :param photo:
     :return:
     """
-    package = db.get_package(escrow_pubkey)
-    event_type = 'received' if package['recipient_pubkey'] == user_pubkey else 'couriered'
-    db.add_event(user_pubkey, event_type, location, escrow_pubkey, photo=photo)
+    db.accept_package(user_pubkey, escrow_pubkey, location, leg_price, photo)
     return {'status': 200}
 
 
-@BLUEPRINT.route("/v{}/assign_package".format(VERSION), methods=['POST'])
-@flasgger.swag_from(swagger_specs.ASSIGN_PACKAGE)
+@BLUEPRINT.route("/v{}/confirm_couriering".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.CONFIRM_COURIERING)
 @webserver.validation.call(['escrow_pubkey'], require_auth=True)
-def assign_package_handler(user_pubkey, escrow_pubkey, location, photo=None):
+def confirm_couriering_handler(user_pubkey, escrow_pubkey, location, photo=None):
     """
     Add event to package, which indicates that user became courier.
     ---
     :param user_pubkey:
     :param escrow_pubkey:
     :param location:
+    :param photo:
     :return:
     """
-    db.add_event(user_pubkey, 'assign package', location, escrow_pubkey, photo=photo)
+    db.confirm_couriering(user_pubkey, escrow_pubkey, location, photo)
     return {'status': 200, 'package': db.get_package(escrow_pubkey)}
 
 
@@ -119,7 +119,7 @@ def assign_xdrs_handler(user_pubkey, escrow_pubkey, location, kwargs, photo=None
     :param photo:
     :return:
     """
-    db.add_event(user_pubkey, 'xdrs assigned', location, escrow_pubkey, kwargs=kwargs, photo=photo)
+    db.assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs, photo)
     return {'status': 200}
 
 
@@ -136,6 +136,24 @@ def available_packages(location, radius_num=5):
     return {'status': 200, 'packages': db.get_available_packages(location, radius_num)}
 
 
+@BLUEPRINT.route("/v{}/request_delegation".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.REQUEST_DELEGATION)
+@webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
+def request_delegation_handler(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
+    """
+    Add `delegate required` event to package
+    ---
+    :param user_pubkey:
+    :param escrow_pubkey:
+    :param location:
+    :param photo:
+    :param kwargs:
+    :return:
+    """
+    db.request_delegation(user_pubkey, escrow_pubkey, location, kwargs=kwargs, photo=photo)
+    return {'status': 200}
+
+
 @BLUEPRINT.route("/v{}/my_packages".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.MY_PACKAGES)
 @webserver.validation.call(require_auth=True)
@@ -146,8 +164,7 @@ def my_packages_handler(user_pubkey):
     :param user_pubkey:
     :return:
     """
-    packages = db.get_packages(user_pubkey)
-    return {'status': 200, 'packages': packages}
+    return {'status': 200, 'packages': db.get_packages(user_pubkey)}
 
 
 @BLUEPRINT.route("/v{}/package".format(VERSION), methods=['POST'])
@@ -161,8 +178,7 @@ def package_handler(escrow_pubkey, check_escrow=None):
     :param check_escrow:
     :return:
     """
-    package = db.get_package(escrow_pubkey, bool(check_escrow))
-    return {'status': 200, 'package': package}
+    return {'status': 200, 'package': db.get_package(escrow_pubkey, bool(check_escrow))}
 
 
 @BLUEPRINT.route("/v{}/package_photo".format(VERSION), methods=['POST'])
@@ -220,6 +236,7 @@ def changed_location_handler(user_pubkey, escrow_pubkey, location, photo=None):
     :param user_pubkey:
     :param escrow_pubkey:
     :param location:
+    :param photo:
     :return:
     """
     db.add_event(user_pubkey, 'changed location', location, escrow_pubkey, photo=photo)
