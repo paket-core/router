@@ -66,55 +66,67 @@ def init_db():
                 location VARCHAR(24) NOT NULL,
                 escrow_pubkey VARCHAR(56) NULL,
                 kwargs LONGTEXT NULL,
+                photo_id INTEGER NULL,
                 FOREIGN KEY(escrow_pubkey) REFERENCES packages(escrow_pubkey))''')
         LOGGER.debug('events table created')
         sql.execute('''
             CREATE TABLE photos(
+                photo_id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 escrow_pubkey VARCHAR(56) NOT NULL,
+                event_type VARCHAR(20) NOT NULL,
                 photo LONGTEXT NOT NULL)''')
         LOGGER.debug('photos table created')
 
 
-def accept_package(user_pubkey, escrow_pubkey, location, leg_price):
+def accept_package(user_pubkey, escrow_pubkey, location, leg_price, photo=None):
     """Accept a package."""
     package = get_package(escrow_pubkey)
     event_type = events.RECEIVED if package['recipient_pubkey'] == user_pubkey else events.COURIERED
-    add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=leg_price)
+    add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=leg_price, photo=photo)
 
 
-def confirm_couriering(user_pubkey, escrow_pubkey, location):
+def confirm_couriering(user_pubkey, escrow_pubkey, location, photo=None):
     """Add event to package, which indicates that user became courier."""
-    add_event(user_pubkey, events.COURIER_CONFIRMED, location, escrow_pubkey)
+    add_event(user_pubkey, events.COURIER_CONFIRMED, location, escrow_pubkey, photo=photo)
 
 
-def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None):
+def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None, photo=None):
     """Add a package event."""
     with SQL_CONNECTION() as sql:
+        photo_id = None
+        if photo is not None:
+            photo = base64.b64encode(photo)
+            sql.execute("""
+                INSERT INTO photos (escrow_pubkey, event_type, photo)
+                VALUES (%s, %s, %s)""", (escrow_pubkey, event_type, photo))
+            sql.execute('SELECT photo_id FROM photos ORDER BY photo_id DESC LIMIT 1')
+            photo_id = sql.fetchone()['photo_id']
+
         sql.execute("""
-            INSERT INTO events (user_pubkey, event_type, location, escrow_pubkey, kwargs)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (user_pubkey, event_type, location, escrow_pubkey, kwargs))
+            INSERT INTO events (user_pubkey, event_type, location, escrow_pubkey, kwargs, photo_id)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (user_pubkey, event_type, location, escrow_pubkey, kwargs, photo_id))
 
 
-def assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs):
+def assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs, photo=None):
     """Assign XDR transactions to package."""
     package = get_package(escrow_pubkey)
     if user_pubkey == package['launcher_pubkey']:
         if package['escrow_xdrs'] is not None:
             raise AssertionError('package already has escrow XDRs')
-        add_event(user_pubkey, events.ESCROW_XDRS_ASSIGNED, location, escrow_pubkey, kwargs)
+        add_event(user_pubkey, events.ESCROW_XDRS_ASSIGNED, location, escrow_pubkey, kwargs, photo=photo)
     elif user_pubkey in [event['user_pubkey']
                          for event in package['events'] if event['event_type'] == events.COURIERED]:
-        add_event(user_pubkey, events.RELAY_XDRS_ASSIGNED, location, escrow_pubkey, kwargs)
+        add_event(user_pubkey, events.RELAY_XDRS_ASSIGNED, location, escrow_pubkey, kwargs, photo=photo)
     else:
         raise AssertionError('user unauthorized to assign XDRs')
 
 
-def request_delegation(user_pubkey, escrow_pubkey, location, kwargs):
+def request_delegation(user_pubkey, escrow_pubkey, location, kwargs, photo=None):
     """Add `delegate required` event."""
     # check if package exist
     get_package(escrow_pubkey)
-    add_event(user_pubkey, events.DELEGATE_REQUIRED, location, escrow_pubkey, kwargs)
+    add_event(user_pubkey, events.DELEGATE_REQUIRED, location, escrow_pubkey, kwargs=kwargs, photo=photo)
 
 
 def get_events(max_events_num):
@@ -131,7 +143,8 @@ def get_package_events(escrow_pubkey):
     """Get a list of events relating to a package."""
     with SQL_CONNECTION() as sql:
         sql.execute("""
-            SELECT timestamp, user_pubkey, event_type, location, kwargs FROM events
+            SELECT timestamp, user_pubkey, event_type, location, kwargs, photo_id
+            FROM events
             WHERE escrow_pubkey = %s
             ORDER BY timestamp ASC""", (escrow_pubkey,))
         return jsonable(sql.fetchall())
@@ -209,9 +222,6 @@ def create_package(
         escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment, collateral,
         deadline, description, from_location, to_location, from_address, to_address, event_location, photo=None):
     """Create a new package row."""
-    if photo is not None:
-        photo = base64.b64encode(photo)
-        add_package_photo(escrow_pubkey, photo)
     with SQL_CONNECTION() as sql:
         sql.execute("""
             INSERT INTO packages (
@@ -220,7 +230,7 @@ def create_package(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment,
                 collateral, deadline, description, from_location, to_location, from_address, to_address))
-    add_event(launcher_pubkey, events.LAUNCHED, event_location, escrow_pubkey)
+    add_event(launcher_pubkey, events.LAUNCHED, event_location, escrow_pubkey, photo=photo)
     return get_package(escrow_pubkey)
 # pylint: enable=too-many-locals
 
@@ -279,21 +289,28 @@ def get_packages(user_pubkey=None):
         return [enrich_package(row) for row in sql.fetchall()]
 
 
-def add_package_photo(escrow_pubkey, photo):
-    """Add package photo."""
-    with SQL_CONNECTION() as sql:
-        sql.execute('''
-            INSERT INTO photos (escrow_pubkey, photo)
-            VALUES (%s, %s)''', (escrow_pubkey, photo))
-
-
-def get_package_photo(escrow_pubkey):
-    """Get package photo."""
+def get_event_photo_by_id(photo_id):
+    """Get event photo by photo id."""
     with SQL_CONNECTION() as sql:
         sql.execute('''
             SELECT * FROM photos
-            WHERE escrow_pubkey = %s''', (escrow_pubkey,))
+            WHERE photo_id = %s''', (photo_id,))
         try:
             return sql.fetchall()[0]
         except IndexError:
             return None
+
+
+def get_event_photos(escrow_pubkey, event_type):
+    """Get event photos."""
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            SELECT * FROM photos
+            WHERE escrow_pubkey = %s AND event_type = %s''', (escrow_pubkey, event_type))
+        return sql.fetchall()
+
+
+def get_package_photo(escrow_pubkey):
+    """Get package photo."""
+    event_photos = get_event_photos(escrow_pubkey, 'launched')
+    return event_photos[0] if event_photos else None

@@ -156,6 +156,20 @@ PACKAGE_PHOTO = {
     }
 }
 
+EVENT_PHOTO = {
+    'tags': ['packages'],
+    'parameters': [
+        {
+            'name': 'photo_id', 'description': 'unique photo id',
+            'in': 'formData', 'required': True, 'type': 'integer'}
+    ],
+    'responses': {
+        '200': {
+            'description': 'event photo'
+        }
+    }
+}
+
 ACCEPT_PACKAGE = {
     'tags': ['packages'],
     'parameters': [
@@ -164,16 +178,16 @@ ACCEPT_PACKAGE = {
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
-            'in': 'formData', 'required': True, 'type': 'string',
-        },
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'location of place where user accepted package',
-            'in': 'formData', 'required': True, 'type': 'string'
-        },
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'leg_price', 'description': 'leg price',
-            'in': 'formData', 'required': True, 'type': 'string'
-        }
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'optional photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
     'responses': {
         '200': {
@@ -190,12 +204,13 @@ CONFIRM_COURIERING = {
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
-            'in': 'formData', 'required': True, 'type': 'string',
-        },
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'location of place where user choose package to be courier in',
-            'in': 'formData', 'required': True, 'type': 'string'
-        }
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'optional photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
     'responses': {
         '200': {
@@ -212,16 +227,16 @@ ASSIGN_XDRS = {
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
-            'in': 'formData', 'required': True, 'type': 'string',
-        },
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'location of place where user accepted package',
-            'in': 'formData', 'required': True, 'type': 'string'
-        },
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'kwargs', 'description': 'XDRs transaction in JSON format',
-            'in': 'formData', 'required': True, 'type': 'string'
-        }
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'optional photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
     'responses': {
         '200': {
@@ -288,6 +303,9 @@ REQUEST_DELEGATION = {
         {
             'name': 'kwargs', 'description': 'extra parameters in JSON format',
             'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'optional photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
 
     ],
     'responses': {
@@ -391,8 +409,10 @@ ADD_EVENT = {
             'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'kwargs', 'description': 'extra parameters in JSON format',
-            'in': 'formData', 'required': False, 'type': 'string'
-        }
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'optional photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
     'responses': {
         '200': {'description': 'event successfully added'}
@@ -410,7 +430,10 @@ CHANGED_LOCATION = {
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'GPS coordinates where user is at this moment',
-            'in': 'formData', 'required': True, 'type': 'string'}
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'photo', 'description': 'optional photo',
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],
     'responses': {
         '200': {'description': 'event successfully added'}
