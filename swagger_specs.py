@@ -209,6 +209,9 @@ CONFIRM_COURIERING = {
             'name': 'location', 'description': 'location of place where user choose package to be courier in',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
+            'name': 'kwargs', 'description': 'XDRs transaction in JSON format',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
             'name': 'photo', 'description': 'optional photo',
             'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],

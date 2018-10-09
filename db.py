@@ -86,9 +86,9 @@ def accept_package(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None
     add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=kwargs, photo=photo)
 
 
-def confirm_couriering(user_pubkey, escrow_pubkey, location, photo=None):
+def confirm_couriering(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
     """Add event to package, which indicates that user became courier."""
-    add_event(user_pubkey, events.COURIER_CONFIRMED, location, escrow_pubkey, photo=photo)
+    add_event(user_pubkey, events.COURIER_CONFIRMED, location, escrow_pubkey, kwargs=kwargs, photo=photo)
 
 
 def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None, photo=None):

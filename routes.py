@@ -91,17 +91,18 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location, kwargs=None, ph
 @BLUEPRINT.route("/v{}/confirm_couriering".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CONFIRM_COURIERING)
 @webserver.validation.call(['escrow_pubkey'], require_auth=True)
-def confirm_couriering_handler(user_pubkey, escrow_pubkey, location, photo=None):
+def confirm_couriering_handler(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
     """
     Add event to package, which indicates that user became courier.
     ---
     :param user_pubkey:
     :param escrow_pubkey:
     :param location:
+    :param kwargs:
     :param photo:
     :return:
     """
-    db.confirm_couriering(user_pubkey, escrow_pubkey, location, photo)
+    db.confirm_couriering(user_pubkey, escrow_pubkey, location, kwargs=kwargs, photo=photo)
     return {'status': 200, 'package': db.get_package(escrow_pubkey)}
 
 
@@ -119,7 +120,7 @@ def assign_xdrs_handler(user_pubkey, escrow_pubkey, location, kwargs, photo=None
     :param photo:
     :return:
     """
-    db.assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs, photo)
+    db.assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs=kwargs, photo=photo)
     return {'status': 200}
 
 
