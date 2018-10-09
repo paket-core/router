@@ -71,7 +71,7 @@ def create_package_handler(
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ACCEPT_PACKAGE)
 @webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
-def accept_package_handler(user_pubkey, escrow_pubkey, location, leg_price=None, photo=None):
+def accept_package_handler(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
     """
     Accept a package.
     If the package requires collateral, commit it.
@@ -80,11 +80,11 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location, leg_price=None,
     :param user_pubkey:
     :param escrow_pubkey:
     :param location:
-    :param leg_price:
+    :param kwargs:
     :param photo:
     :return:
     """
-    db.accept_package(user_pubkey, escrow_pubkey, location, leg_price, photo)
+    db.accept_package(user_pubkey, escrow_pubkey, location, kwargs=kwargs, photo=photo)
     return {'status': 200}
 
 

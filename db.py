@@ -79,11 +79,11 @@ def init_db():
         LOGGER.debug('photos table created')
 
 
-def accept_package(user_pubkey, escrow_pubkey, location, leg_price, photo=None):
+def accept_package(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
     """Accept a package."""
     package = get_package(escrow_pubkey)
     event_type = events.RECEIVED if package['recipient_pubkey'] == user_pubkey else events.COURIERED
-    add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=leg_price, photo=photo)
+    add_event(user_pubkey, event_type, location, escrow_pubkey, kwargs=kwargs, photo=photo)
 
 
 def confirm_couriering(user_pubkey, escrow_pubkey, location, photo=None):
