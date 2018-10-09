@@ -327,3 +327,8 @@ def get_package_photo(escrow_pubkey):
     """Get package photo."""
     event_photos = get_event_photos(escrow_pubkey, 'launched')
     return event_photos[0] if event_photos else None
+
+
+def changed_location(user_pubkey, location, escrow_pubkey, kwargs=None, photo=None):
+    """Add new `location changed` event for package."""
+    add_event(user_pubkey, events.LOCATION_CHANGED, location, escrow_pubkey, kwargs=kwargs, photo=photo)

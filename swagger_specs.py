@@ -432,6 +432,9 @@ CHANGED_LOCATION = {
             'name': 'location', 'description': 'GPS coordinates where user is at this moment',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
+            'name': 'kwargs', 'description': 'extra parameters in JSON format',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
             'name': 'photo', 'description': 'optional photo',
             'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
     ],

@@ -229,17 +229,18 @@ def add_event_handler(user_pubkey, event_type, location, escrow_pubkey=None, kwa
 @BLUEPRINT.route("/v{}/changed_location".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CHANGED_LOCATION)
 @webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
-def changed_location_handler(user_pubkey, escrow_pubkey, location, photo=None):
+def changed_location_handler(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
     """
     Add new `changed_location` event for package.
     ---
     :param user_pubkey:
     :param escrow_pubkey:
     :param location:
+    :param kwargs:
     :param photo:
     :return:
     """
-    db.add_event(user_pubkey, 'changed location', location, escrow_pubkey, photo=photo)
+    db.changed_location(user_pubkey, location, escrow_pubkey, kwargs=kwargs, photo=photo)
     return {'status': 200}
 
 
