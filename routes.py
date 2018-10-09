@@ -71,7 +71,7 @@ def create_package_handler(
 @BLUEPRINT.route("/v{}/accept_package".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.ACCEPT_PACKAGE)
 @webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
-def accept_package_handler(user_pubkey, escrow_pubkey, location, leg_price=None, photo=None):
+def accept_package_handler(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
     """
     Accept a package.
     If the package requires collateral, commit it.
@@ -80,28 +80,29 @@ def accept_package_handler(user_pubkey, escrow_pubkey, location, leg_price=None,
     :param user_pubkey:
     :param escrow_pubkey:
     :param location:
-    :param leg_price:
+    :param kwargs:
     :param photo:
     :return:
     """
-    db.accept_package(user_pubkey, escrow_pubkey, location, leg_price, photo)
+    db.accept_package(user_pubkey, escrow_pubkey, location, kwargs=kwargs, photo=photo)
     return {'status': 200}
 
 
 @BLUEPRINT.route("/v{}/confirm_couriering".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CONFIRM_COURIERING)
 @webserver.validation.call(['escrow_pubkey'], require_auth=True)
-def confirm_couriering_handler(user_pubkey, escrow_pubkey, location, photo=None):
+def confirm_couriering_handler(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
     """
     Add event to package, which indicates that user became courier.
     ---
     :param user_pubkey:
     :param escrow_pubkey:
     :param location:
+    :param kwargs:
     :param photo:
     :return:
     """
-    db.confirm_couriering(user_pubkey, escrow_pubkey, location, photo)
+    db.confirm_couriering(user_pubkey, escrow_pubkey, location, kwargs=kwargs, photo=photo)
     return {'status': 200, 'package': db.get_package(escrow_pubkey)}
 
 
@@ -119,7 +120,7 @@ def assign_xdrs_handler(user_pubkey, escrow_pubkey, location, kwargs, photo=None
     :param photo:
     :return:
     """
-    db.assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs, photo)
+    db.assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs=kwargs, photo=photo)
     return {'status': 200}
 
 
@@ -229,17 +230,18 @@ def add_event_handler(user_pubkey, event_type, location, escrow_pubkey=None, kwa
 @BLUEPRINT.route("/v{}/changed_location".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.CHANGED_LOCATION)
 @webserver.validation.call(['escrow_pubkey', 'location'], require_auth=True)
-def changed_location_handler(user_pubkey, escrow_pubkey, location, photo=None):
+def changed_location_handler(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
     """
     Add new `changed_location` event for package.
     ---
     :param user_pubkey:
     :param escrow_pubkey:
     :param location:
+    :param kwargs:
     :param photo:
     :return:
     """
-    db.add_event(user_pubkey, 'changed location', location, escrow_pubkey, photo=photo)
+    db.changed_location(user_pubkey, location, escrow_pubkey, kwargs=kwargs, photo=photo)
     return {'status': 200}
 
 

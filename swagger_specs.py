@@ -183,8 +183,8 @@ ACCEPT_PACKAGE = {
             'name': 'location', 'description': 'location of place where user accepted package',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'leg_price', 'description': 'leg price',
-            'in': 'formData', 'required': False, 'type': 'string'},
+            'name': 'kwargs', 'description': 'XDRs transaction in JSON format',
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'photo', 'description': 'optional photo',
             'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
@@ -207,6 +207,9 @@ CONFIRM_COURIERING = {
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'location of place where user choose package to be courier in',
+            'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'kwargs', 'description': 'XDRs transaction in JSON format',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'photo', 'description': 'optional photo',
@@ -431,6 +434,9 @@ CHANGED_LOCATION = {
         {
             'name': 'location', 'description': 'GPS coordinates where user is at this moment',
             'in': 'formData', 'required': True, 'type': 'string'},
+        {
+            'name': 'kwargs', 'description': 'extra parameters in JSON format',
+            'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'photo', 'description': 'optional photo',
             'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
