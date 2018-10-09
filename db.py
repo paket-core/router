@@ -203,7 +203,7 @@ def extract_xdrs(package):
 
 def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=False, check_escrow=False):
     """Add some periferal data to the package object."""
-    package['blockchain_url'] = "https://testnet.stellarchain.io/address/{}".format(package['escrow_pubkey'])
+    package['blockchain_url'] = "https://testnet.steexp.com/account/{}#signing".format(package['escrow_pubkey'])
     package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
     package['events'] = get_package_events(package['escrow_pubkey'])
     event_types = {event['event_type'] for event in package['events']}
