@@ -171,7 +171,7 @@ def set_short_package_id(package):
         LOGGER.error(str(exc))
         country_code = ''
     three_letters_code = package['escrow_pubkey'][-3:]
-    package['short-package-id'] = "{}-{}".format(country_code or 'XX', three_letters_code)
+    package['short_package_id'] = "{}-{}".format(country_code or 'XX', three_letters_code)
 
 
 def set_user_role(package, user_role, user_pubkey):
