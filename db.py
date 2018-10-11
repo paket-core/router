@@ -213,6 +213,8 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
             package['launch_date'] = launch_event['timestamp']
     if package['events']:
         package['custodian_pubkey'] = package['events'][-1]['user_pubkey']
+    else:
+        LOGGER.warning("eventless package: %s", package)
 
     extract_xdrs(package)
     set_package_status(package, event_types)
