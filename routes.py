@@ -309,12 +309,14 @@ def events_handler(max_events_num=100):
     events = db.get_events(max_events_num)
 
     # Extra data to help client with indexing.
-    package_index = []
-    package_event_types = []
-    for idx, event in events.items():
+    package_index = {}
+    package_event_types = {}
+    for idx, event in enumerate(events):
         key = event['escrow_pubkey'] or 'user'
         if key not in package_index:
             package_index[key] = []
+        if key not in package_event_types:
+            package_event_types[key] = []
         package_index[key].append(idx)
         package_event_types[key].append(event['event_type'])
 
