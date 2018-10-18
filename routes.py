@@ -307,27 +307,20 @@ def events_handler(max_events_num=100):
     :return:
     """
     events = db.get_events(max_events_num)
+    package_events = [event for event in events if event['escrow_pubkey'] is not None]
 
     # Extra data to help client with indexing.
     package_index = {}
     package_event_types = {}
-    for idx, event in enumerate(events):
-        key = event['escrow_pubkey'] or 'user'
-        if key not in package_index:
-            package_index[key] = []
-        if key not in package_event_types:
-            package_event_types[key] = []
-        package_index[key].append(idx)
-        package_event_types[key].append(event['event_type'])
+    for idx, event in enumerate(package_events):
+        if event['escrow_pubkey'] not in package_index:
+            package_index[event['escrow_pubkey']] = []
+        if event['escrow_pubkey'] not in package_event_types:
+            package_event_types[event['escrow_pubkey']] = []
+        package_index[event['escrow_pubkey']].append(idx)
+        package_event_types[event['escrow_pubkey']].append(event['event_type'])
 
-    # For backward compatibility.
-    package_events = [event for event in events if event['escrow_pubkey'] is not None]
-    user_events = [event for event in events if event['escrow_pubkey'] is None]
-
-    return {
-        'status': 200, 'events': events,
-        'package_index': package_index, 'package_event_types': package_event_types,
-        'packages_events': package_events, 'user_events': user_events}
+    return {'status': 200, 'events': events, 'package_index': package_index, 'package_event_types': package_event_types}
 
 
 @BLUEPRINT.route("/v{}/debug/log".format(VERSION), methods=['POST'])
