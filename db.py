@@ -134,10 +134,7 @@ def get_events(max_events_num):
     """Get all user and package events up to a limit."""
     with SQL_CONNECTION() as sql:
         sql.execute("SELECT * FROM events LIMIT %s", (int(max_events_num),))
-        events_ = jsonable(sql.fetchall())
-        return {
-            'packages_events': [event for event in events_ if event['escrow_pubkey'] is not None],
-            'user_events': [event for event in events_ if event['escrow_pubkey'] is None]}
+        return {'events': jsonable(sql.fetchall())}
 
 
 def get_package_events(escrow_pubkey):
