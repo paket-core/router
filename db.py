@@ -11,6 +11,7 @@ import util.distance
 import util.geodecoding
 
 import events
+import notifications
 
 LOGGER = logging.getLogger('pkt.db')
 DB_HOST = os.environ.get('PAKET_DB_HOST', '127.0.0.1')
@@ -91,6 +92,36 @@ def confirm_couriering(user_pubkey, escrow_pubkey, location, kwargs=None, photo=
     add_event(user_pubkey, events.COURIER_CONFIRMED, location, escrow_pubkey, kwargs=kwargs, photo=photo)
 
 
+def send_notification(event_type, escrow_pubkey):
+    """Send notification to users."""
+    if not escrow_pubkey or event_type not in (
+            events.LAUNCHED, events.COURIER_CONFIRMED, events.COURIERED, events.RECEIVED):
+        return
+
+    package = get_package(escrow_pubkey)
+    notification_body = 'Please check your Packages archive for more details'
+    if event_type == events.LAUNCHED:
+        notifications.send_notifications(
+            get_user_notification_tokens(package['recipient_pubkey']),
+            title="You have new package {}".format(package['short_package_id']),
+            body=notification_body)
+    elif event_type == events.COURIER_CONFIRMED:
+        notifications.send_notifications(
+            get_user_notification_tokens(package['launcher_pubkey']),
+            title="Courier confirmed for package {}".format(package['short_package_id']),
+            body=notification_body)
+    elif event_type == events.COURIERED:
+        notifications.send_notifications(
+            get_user_notification_tokens(package['recipient_pubkey']),
+            title="Your package {} in transit".format(package['short_package_id']),
+            body=notification_body)
+    elif event_type == events.RECEIVED:
+        notifications.send_notifications(
+            get_user_notification_tokens(package['launcher_pubkey']),
+            title="Your package {} delivered".format(package['short_package_id']),
+            body=notification_body)
+
+
 def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None, photo=None):
     """Add a package event."""
     with SQL_CONNECTION() as sql:
@@ -107,6 +138,7 @@ def add_event(user_pubkey, event_type, location, escrow_pubkey=None, kwargs=None
             INSERT INTO events (user_pubkey, event_type, location, escrow_pubkey, kwargs, photo_id)
             VALUES (%s, %s, %s, %s, %s, %s)
         """, (user_pubkey, event_type, location, escrow_pubkey, kwargs, photo_id))
+    send_notification(event_type, escrow_pubkey)
 
 
 def assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs, photo=None):
@@ -332,3 +364,15 @@ def get_package_photo(escrow_pubkey):
 def changed_location(user_pubkey, location, escrow_pubkey, kwargs=None, photo=None):
     """Add new `location changed` event for package."""
     add_event(user_pubkey, events.LOCATION_CHANGED, location, escrow_pubkey, kwargs=kwargs, photo=photo)
+
+
+def get_user_notification_tokens(user_pubkey):
+    """Get all user active notification tokens."""
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            SELECT DISTINCT token FROM notification_tokens
+            WHERE token NOT IN(
+                SELECT token FROM notification_tokens
+                WHERE active = FALSE AND user_pubkey = %s)
+            AND user_pubkey = %s''', (user_pubkey, user_pubkey))
+        return [row['token'] for row in sql.fetchall()]
