@@ -102,22 +102,22 @@ def send_notification(event_type, escrow_pubkey):
     notification_body = 'Please check your Packages archive for more details'
     if event_type == events.LAUNCHED:
         notifications.send_notifications(
-            get_user_notification_tokens(package['recipient_pubkey']),
+            get_active_tokens(package['recipient_pubkey']),
             title="You have new package {}".format(package['short_package_id']),
             body=notification_body)
     elif event_type == events.COURIER_CONFIRMED:
         notifications.send_notifications(
-            get_user_notification_tokens(package['launcher_pubkey']),
+            get_active_tokens(package['launcher_pubkey']),
             title="Courier confirmed for package {}".format(package['short_package_id']),
             body=notification_body)
     elif event_type == events.COURIERED:
         notifications.send_notifications(
-            get_user_notification_tokens(package['recipient_pubkey']),
+            get_active_tokens(package['recipient_pubkey']),
             title="Your package {} in transit".format(package['short_package_id']),
             body=notification_body)
     elif event_type == events.RECEIVED:
         notifications.send_notifications(
-            get_user_notification_tokens(package['launcher_pubkey']),
+            get_active_tokens(package['launcher_pubkey']),
             title="Your package {} delivered".format(package['short_package_id']),
             body=notification_body)
 
@@ -366,13 +366,15 @@ def changed_location(user_pubkey, location, escrow_pubkey, kwargs=None, photo=No
     add_event(user_pubkey, events.LOCATION_CHANGED, location, escrow_pubkey, kwargs=kwargs, photo=photo)
 
 
-def get_user_notification_tokens(user_pubkey):
-    """Get all user active notification tokens."""
+def get_active_tokens(user_pubkey):
+    """Get all active user notification tokens."""
     with SQL_CONNECTION() as sql:
         sql.execute('''
-            SELECT DISTINCT token FROM notification_tokens
-            WHERE token NOT IN(
-                SELECT token FROM notification_tokens
-                WHERE active = FALSE AND user_pubkey = %s)
-            AND user_pubkey = %s''', (user_pubkey, user_pubkey))
-        return [row['token'] for row in sql.fetchall()]
+            SELECT DISTINCT token AS notification_token FROM notification_tokens
+            WHERE user_pubkey = %s
+            HAVING ((
+                SELECT active FROM notification_tokens
+                WHERE user_pubkey = %s
+                AND token = notification_token
+                ORDER BY timestamp DESC LIMIT 1) = TRUE)''', (user_pubkey, user_pubkey))
+        return [row['notification_token'] for row in sql.fetchall()]
