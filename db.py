@@ -50,8 +50,8 @@ def init_db():
                 recipient_pubkey VARCHAR(56),
                 launcher_contact VARCHAR(32),
                 recipient_contact VARCHAR(32),
-                payment INTEGER,
-                collateral INTEGER,
+                payment BIGINT,
+                collateral BIGINT,
                 deadline INTEGER,
                 description VARCHAR(300),
                 from_location VARCHAR(24),
@@ -134,10 +134,7 @@ def get_events(max_events_num):
     """Get all user and package events up to a limit."""
     with SQL_CONNECTION() as sql:
         sql.execute("SELECT * FROM events LIMIT %s", (int(max_events_num),))
-        events_ = jsonable(sql.fetchall())
-        return {
-            'packages_events': [event for event in events_ if event['escrow_pubkey'] is not None],
-            'user_events': [event for event in events_ if event['escrow_pubkey'] is None]}
+        return jsonable(sql.fetchall())
 
 
 def get_package_events(escrow_pubkey):
