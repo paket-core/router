@@ -31,14 +31,6 @@ notifications.NOTIFICATION_CODES[events.ESCROW_XDRS_ASSIGNED] = 110
 notifications.NOTIFICATION_CODES[events.RELAY_XDRS_ASSIGNED] = 111
 
 
-class UnknownUser(Exception):
-    """Unknown user ID."""
-
-
-class DuplicateUser(Exception):
-    """Duplicate user."""
-
-
 class UnknownPaket(Exception):
     """Unknown paket ID."""
 
