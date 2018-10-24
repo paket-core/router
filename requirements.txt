@@ -2,3 +2,4 @@
 ../py-stellar-base
 ../util
 ../webserver
+firebase-admin==2.13.0
