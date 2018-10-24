@@ -1,7 +1,7 @@
 """Events constants."""
 COURIERED = 'couriered'
 COURIER_CONFIRMED = 'courier confirmed'
-DELEGATE_REQUIRED = 'delegate required'
+RELAY_REQUIRED = 'relay required'
 ESCROW_XDRS_ASSIGNED = 'escrow XDRs assigned'
 LAUNCHED = 'launched'
 LOCATION_CHANGED = 'location changed'

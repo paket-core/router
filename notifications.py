@@ -13,11 +13,18 @@ CREDENTIALS = firebase_admin.credentials.Certificate(PATH_TO_CERT)
 FIREBASE_APP = firebase_admin.initialize_app(CREDENTIALS)
 
 
-def send_notifications(tokens, title, body):
+# internal notification codes
+NOTIFICATION_CODES = {}
+
+
+def send_notifications(tokens, title, body, notification_code, short_package_id):
     """Send notification to all devices which tokens was provided."""
     for token in tokens:
         notification = messaging.Notification(title=title, body=body)
-        message = messaging.Message(notification=notification, token=token)
+        data = {
+            'notification_code': str(notification_code),
+            'short_package_id': str(short_package_id)}
+        message = messaging.Message(data=data, notification=notification, token=token)
         try:
             response = messaging.send(message, app=FIREBASE_APP)
             LOGGER.info(response)
