@@ -182,11 +182,11 @@ def get_package_events(escrow_pubkey):
 
 def set_package_status(package, event_types):
     """Set package status depending on package events."""
-    if 'received' in event_types:
+    if events.RECEIVED in event_types:
         package['status'] = 'delivered'
-    elif 'couriered' in event_types:
+    elif events.COURIERED in event_types:
         package['status'] = 'in transit'
-    elif 'launched' in event_types:
+    elif events.LAUNCHED in event_types:
         package['status'] = 'waiting pickup'
     else:
         package['status'] = 'unknown'
