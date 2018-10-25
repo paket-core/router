@@ -108,7 +108,7 @@ def send_notification(event_type, escrow_pubkey):
 
     package = get_package(escrow_pubkey)
     notification_body = 'Please check your Packages archive for more details'
-    notification_code = notifications.NOTIFICATION_CODES[event_type]
+    notification_code = notifications.NOTIFICATION_CODES.get(event_type, default=0)
     if event_type == events.LAUNCHED:
         notifications.send_notifications(
             tokens=get_active_tokens(package['recipient_pubkey']),
