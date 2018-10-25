@@ -165,8 +165,8 @@ def assign_xdrs(escrow_pubkey, user_pubkey, location, kwargs, photo=None):
         raise AssertionError('user unauthorized to assign XDRs')
 
 
-def request_delegation(user_pubkey, escrow_pubkey, location, kwargs, photo=None):
-    """Add `delegate required` event."""
+def request_relay(user_pubkey, escrow_pubkey, location, kwargs, photo=None):
+    """Add `relay required` event."""
     # check if package exist
     get_package(escrow_pubkey)
     add_event(user_pubkey, events.RELAY_REQUIRED, location, escrow_pubkey, kwargs=kwargs, photo=photo)

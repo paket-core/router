@@ -291,7 +291,7 @@ MY_PACKAGES = {
     }
 }
 
-REQUEST_DELEGATION = {
+REQUEST_RELAY = {
     'tags': ['packages'],
     'parameters': [
         {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
