@@ -458,6 +458,24 @@ EVENTS = {
     }
 }
 
+SET_NOTIFICATION_TOKEN = {
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'notification_token', 'in': 'formData', 'type': 'string', 'required': True}],
+    'responses': {
+        '200': {'description': 'token saved'}}}
+
+REMOVE_NOTIFICATION_TOKEN = {
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'notification_token', 'in': 'formData', 'type': 'string', 'required': True}],
+    'responses': {
+        '200': {'description': 'token removed'}}}
+
 CREATE_MOCK_PACKAGE = {
     'tags': [
         'debug'

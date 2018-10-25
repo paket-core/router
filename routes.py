@@ -245,6 +245,28 @@ def changed_location_handler(user_pubkey, escrow_pubkey, location, kwargs=None, 
     return {'status': 200}
 
 
+@BLUEPRINT.route("/v{}/set_notification_token".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.SET_NOTIFICATION_TOKEN)
+@webserver.validation.call(['notification_token'], require_auth=True)
+def set_notification_token_handler(user_pubkey, notification_token):
+    """
+    Set notification token.
+    """
+    db.set_notification_token(user_pubkey, notification_token)
+    return {'status': 200}
+
+
+@BLUEPRINT.route("/v{}/remove_notification_token".format(VERSION), methods=['POST'])
+@flasgger.swag_from(swagger_specs.REMOVE_NOTIFICATION_TOKEN)
+@webserver.validation.call(['notification_token'], require_auth=True)
+def remove_notification_token_handler(user_pubkey, notification_token):
+    """
+    Remove notification token.
+    """
+    db.remove_notification_token(user_pubkey, notification_token)
+    return {'status': 200}
+
+
 # Debug routes.
 
 

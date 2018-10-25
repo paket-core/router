@@ -79,6 +79,13 @@ def init_db():
                 event_type VARCHAR(20) NOT NULL,
                 photo LONGTEXT NOT NULL)''')
         LOGGER.debug('photos table created')
+        sql.execute('''
+            CREATE TABLE notification_tokens(
+                user_pubkey VARCHAR(56),
+                token VARCHAR(200),
+                active BOOLEAN,
+                timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6))''')
+        LOGGER.debug('notification_tokens table created')
 
 
 def accept_package(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
@@ -373,6 +380,56 @@ def get_package_photo(escrow_pubkey):
 def changed_location(user_pubkey, location, escrow_pubkey, kwargs=None, photo=None):
     """Add new `location changed` event for package."""
     add_event(user_pubkey, events.LOCATION_CHANGED, location, escrow_pubkey, kwargs=kwargs, photo=photo)
+
+
+def set_notification_token(user_pubkey, notification_token):
+    """Set notification token."""
+    short_token = notification_token[-7:]
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            SELECT active FROM notification_tokens
+            WHERE user_pubkey = %s AND token = %s
+            ORDER BY timestamp DESC LIMIT 1''', (user_pubkey, notification_token))
+        try:
+            last_token = sql.fetchall()[-1]
+        except IndexError:
+            LOGGER.info("user %s has not token %s yet", user_pubkey, short_token)
+        else:
+            if last_token['active']:
+                LOGGER.info("token %s already active and no need to be updated", short_token)
+                return
+            LOGGER.info("token %s is inactive and will be updated", short_token)
+
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            INSERT INTO notification_tokens (user_pubkey, token, active)
+            VALUES (%s, %s, %s)''', (user_pubkey, notification_token, True))
+    LOGGER.info("token %s added for %s", short_token, user_pubkey)
+
+
+def remove_notification_token(user_pubkey, notification_token):
+    """Remove notification token."""
+    short_token = notification_token[-7:]
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            SELECT active FROM notification_tokens
+            WHERE user_pubkey = %s AND token = %s
+            ORDER BY timestamp DESC LIMIT 1''', (user_pubkey, notification_token))
+        try:
+            last_token = sql.fetchall()[-1]
+        except IndexError:
+            LOGGER.info("user %s has not token %s yet", user_pubkey, short_token)
+            return
+        else:
+            if not last_token['active']:
+                LOGGER.info("token %s already inactive and no need to be updated", short_token)
+                return
+            LOGGER.info("token %s is active and will be updated", short_token)
+
+    with SQL_CONNECTION() as sql:
+        sql.execute('''
+            INSERT INTO notification_tokens (user_pubkey, token, active)
+            VALUES (%s, %s, %s)''', (user_pubkey, notification_token, False))
 
 
 def get_active_tokens(user_pubkey):
