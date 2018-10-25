@@ -247,9 +247,13 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     package['events'] = get_package_events(package['escrow_pubkey'])
     event_types = {event['event_type'] for event in package['events']}
     if package['events']:
+        package['custodian_pubkey'] = package['events'][-1]['user_pubkey']
         launch_event = next((event for event in package['events'] if event['event_type'] == events.LAUNCHED), None)
-        if launch_event is not None:
-            package['launch_date'] = launch_event['timestamp']
+        package['launch_date'] = launch_event['timestamp'] if launch_event is not None else None
+    else:
+        package['custodian_pubkey'] = None
+        package['launch_date'] = None
+        LOGGER.warning("eventless package: %s", package)
 
     extract_xdrs(package)
     set_package_status(package, event_types)
@@ -334,9 +338,7 @@ def get_packages(user_pubkey=None):
                 WHERE event_type IN(%s, %s) AND user_pubkey = %s)""",
                         (events.COURIERED, events.COURIER_CONFIRMED, user_pubkey))
             couriered = [enrich_package(row, user_role='courier') for row in sql.fetchall()]
-            return [
-                dict(package, custodian_pubkey=package['events'][-1]['user_pubkey'])
-                for package in launched + received + couriered]
+            return launched + received + couriered
         sql.execute('SELECT * FROM packages')
         return [enrich_package(row) for row in sql.fetchall()]
 
