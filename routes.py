@@ -151,7 +151,7 @@ def request_relay_handler(user_pubkey, escrow_pubkey, location, kwargs=None, pho
     :param kwargs:
     :return:
     """
-    db.request_delegation(user_pubkey, escrow_pubkey, location, kwargs=kwargs, photo=photo)
+    db.request_relay(user_pubkey, escrow_pubkey, location, kwargs=kwargs, photo=photo)
     return {'status': 200}
 
 
