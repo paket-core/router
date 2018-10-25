@@ -25,6 +25,10 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_id'] = webserver.validation.ch
 
 
 # Internal error codes
+webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.NotOnTestnet] = 120
+webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.StellarTransactionFailed] = 200
+webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.stellar_base.address.AccountNotExistError] = 201
+webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.TrustError] = 202
 webserver.validation.INTERNAL_ERROR_CODES[db.UnknownPackage] = 400
 
 
