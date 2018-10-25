@@ -24,6 +24,10 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.c
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_id'] = webserver.validation.check_and_fix_natural
 
 
+# Internal error codes
+webserver.validation.INTERNAL_ERROR_CODES[db.UnknownPackage] = 400
+
+
 # Package routes.
 
 

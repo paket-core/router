@@ -31,8 +31,8 @@ notifications.NOTIFICATION_CODES[events.ESCROW_XDRS_ASSIGNED] = 110
 notifications.NOTIFICATION_CODES[events.RELAY_XDRS_ASSIGNED] = 111
 
 
-class UnknownPaket(Exception):
-    """Unknown paket ID."""
+class UnknownPackage(Exception):
+    """Unknown package ID."""
 
 
 def jsonable(list_of_dicts):
@@ -298,7 +298,7 @@ def get_package(escrow_pubkey, check_escrow=False):
         try:
             return enrich_package(sql.fetchone(), check_escrow=check_escrow)
         except TypeError:
-            raise UnknownPaket("paket {} is not valid".format(escrow_pubkey))
+            raise UnknownPackage("paket {} is not valid".format(escrow_pubkey))
 
 
 def get_available_packages(location, radius=5):
