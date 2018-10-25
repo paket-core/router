@@ -6,10 +6,10 @@ import firebase_admin
 from firebase_admin import messaging
 
 LOGGER = logging.getLogger('pkt.notification')
-PATH_TO_CERT = os.environ.get('PAKET_PATH_TO_CERT')
+PATH_TO_FIREBASE_CERT = os.environ.get('PAKET_PATH_TO_FIREBASE_CERT')
 
 
-CREDENTIALS = firebase_admin.credentials.Certificate(PATH_TO_CERT)
+CREDENTIALS = firebase_admin.credentials.Certificate(PATH_TO_FIREBASE_CERT)
 FIREBASE_APP = firebase_admin.initialize_app(CREDENTIALS)
 
 
