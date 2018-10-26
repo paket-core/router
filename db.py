@@ -298,7 +298,7 @@ def get_package(escrow_pubkey, check_escrow=False):
         try:
             return enrich_package(sql.fetchone(), check_escrow=check_escrow)
         except TypeError:
-            raise UnknownPackage("paket {} is not valid".format(escrow_pubkey))
+            raise UnknownPackage("package {} is not valid".format(escrow_pubkey))
 
 
 def get_available_packages(location, radius=5):
