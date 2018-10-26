@@ -22,6 +22,7 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_timestamp'] = webserver.valida
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_buls'] = webserver.validation.check_and_fix_natural
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.check_and_fix_natural
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_id'] = webserver.validation.check_and_fix_natural
+webserver.validation.CUSTOM_EXCEPTION_STATUSES[db.UnknownPackage] = 404
 
 
 # Internal error codes
