@@ -22,6 +22,16 @@ webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_timestamp'] = webserver.valida
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_buls'] = webserver.validation.check_and_fix_natural
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_num'] = webserver.validation.check_and_fix_natural
 webserver.validation.KWARGS_CHECKERS_AND_FIXERS['_id'] = webserver.validation.check_and_fix_natural
+webserver.validation.CUSTOM_EXCEPTION_STATUSES[db.UnknownPackage] = 404
+
+
+# Internal error codes
+webserver.validation.INTERNAL_ERROR_CODES[db.util.geodecoding.GeodecodingError] = 110
+webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.NotOnTestnet] = 120
+webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.StellarTransactionFailed] = 200
+webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.stellar_base.address.AccountNotExistError] = 201
+webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.TrustError] = 202
+webserver.validation.INTERNAL_ERROR_CODES[db.UnknownPackage] = 400
 
 
 # Package routes.

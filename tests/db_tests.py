@@ -125,7 +125,7 @@ class GetPackageTest(DbBaseTest):
 
     def test_invalid_package(self):
         """Getting package with invalid pubkey"""
-        with self.assertRaises(db.UnknownPaket, msg='UnknownPaket was not raised on invalid pubkey'):
+        with self.assertRaises(db.UnknownPackage, msg='UnknownPackage was not raised on invalid pubkey'):
             db.get_package('invalid pubkey')
 
 
