@@ -85,9 +85,7 @@ for generating key pairs: https://www.stellar.org/laboratory/#account-creator
 
 
 CREATE_PACKAGE = {
-    'tags': [
-        'packages'
-    ],
+    'tags': ['packages'],
     'parameters': [
         {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
@@ -133,42 +131,30 @@ CREATE_PACKAGE = {
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'photo', 'description': 'package photo',
-            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
-    ],
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}],
     'responses': {
         '201': {
-            'description': 'package details',
-        }
-    }
-}
+            'description': 'package details'}}}
 
 PACKAGE_PHOTO = {
     'tags': ['packages'],
     'parameters': [
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
-            'in': 'formData', 'required': True, 'type': 'string'}
-    ],
+            'in': 'formData', 'required': True, 'type': 'string'}],
     'responses': {
         '200': {
-            'description': 'package photo'
-        }
-    }
-}
+            'description': 'package photo'}}}
 
 EVENT_PHOTO = {
     'tags': ['packages'],
     'parameters': [
         {
             'name': 'photo_id', 'description': 'unique photo id',
-            'in': 'formData', 'required': True, 'type': 'integer'}
-    ],
+            'in': 'formData', 'required': True, 'type': 'integer'}],
     'responses': {
         '200': {
-            'description': 'event photo'
-        }
-    }
-}
+            'description': 'event photo'}}}
 
 ACCEPT_PACKAGE = {
     'tags': ['packages'],
@@ -183,18 +169,14 @@ ACCEPT_PACKAGE = {
             'name': 'location', 'description': 'location of place where user accepted package',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'kwargs', 'description': 'XDRs transaction in JSON format',
-            'in': 'formData', 'required': True, 'type': 'string'},
+            'name': 'kwargs', 'description': 'extra parameters in JSON format',
+            'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'photo', 'description': 'optional photo',
-            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
-    ],
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}],
     'responses': {
         '200': {
-            'description': 'package custodianship changed'
-        }
-    }
-}
+            'description': 'package custodianship changed'}}}
 
 CONFIRM_COURIERING = {
     'tags': ['packages'],
@@ -209,18 +191,14 @@ CONFIRM_COURIERING = {
             'name': 'location', 'description': 'location of place where user choose package to be courier in',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'kwargs', 'description': 'XDRs transaction in JSON format',
-            'in': 'formData', 'required': True, 'type': 'string'},
+            'name': 'kwargs', 'description': 'extra parameters in JSON format',
+            'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'photo', 'description': 'optional photo',
-            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
-    ],
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}],
     'responses': {
         '200': {
-            'description': 'user became courier for package'
-        }
-    }
-}
+            'description': 'user became courier for package'}}}
 
 ASSIGN_XDRS = {
     'tags': ['packages'],
@@ -239,41 +217,30 @@ ASSIGN_XDRS = {
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'photo', 'description': 'optional photo',
-            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
-    ],
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}],
     'responses': {
         '200': {
-            'description': 'added event with XDRs transactions'
-        }
-    }
-}
+            'description': 'added event with XDRs transactions'}}}
 
 AVAILABLE_PACKAGES = {
     'tags': ['packages'],
     'parameters': [
         {
             'name': 'location', 'description': 'location of place for searching packages nearby',
-            'in': 'formData', 'required': True, 'type': 'string',
-        },
+            'in': 'formData', 'required': True, 'type': 'string',},
         {
             'name': 'radius_num', 'description': 'maximum search radius (in km)',
-            'in': 'formData', 'required': False, 'type': 'integer'
-        }
-    ],
+            'in': 'formData', 'required': False, 'type': 'integer'}],
     'responses': {
         '200': {
-            'description': 'available for couriering packages'
-        }
-    }
-}
+            'description': 'available for couriering packages'}}}
 
 MY_PACKAGES = {
     'tags': ['packages'],
     'parameters': [
         {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
-        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
-    ],
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'}],
     'responses': {
         '200': {
             'description': 'list of packages',
@@ -282,14 +249,7 @@ MY_PACKAGES = {
                     'packages': {
                         'type': 'array',
                         'items': {
-                            '$ref': '#/definitions/Package-info'
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+                            '$ref': '#/definitions/Package-info'}}}}}}}
 
 REQUEST_RELAY = {
     'tags': ['packages'],
@@ -308,15 +268,10 @@ REQUEST_RELAY = {
             'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'photo', 'description': 'optional photo',
-            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
-
-    ],
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}],
     'responses': {
         '200': {
-            'description': '`delegate required` event added'
-        }
-    }
-}
+            'description': '`delegate required` event added'}}}
 
 PACKAGE = {
     'tags': ['packages'],
@@ -326,74 +281,49 @@ PACKAGE = {
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'check_escrow', 'description': 'include information about payment and collateral if specified',
-            'in': 'formData', 'required': False, 'type': 'integer'}
-    ],
+            'in': 'formData', 'required': False, 'type': 'integer'}],
     'definitions': {
         'Event': {
             'type': 'object',
             'properties': {
                 'event-type': {
-                    'type': 'string'
-                },
+                    'type': 'string'},
                 'timestamp': {
-                    'type': 'integer'
-                },
+                    'type': 'integer'},
                 'pubkey': {
-                    'type': 'string'
-                },
+                    'type': 'string'},
                 'location': {
-                    'type': 'string'
-                }
-            }
-        },
+                    'type': 'string'}}},
         'Package-info': {
             'type': 'object',
             'properties': {
                 'PKT-id': {
-                    'type': 'string'
-                },
+                    'type': 'string'},
                 'blockchain-url': {
-                    'type': 'string'
-                },
+                    'type': 'string'},
                 'collateral': {
-                    'type': 'integer'
-                },
+                    'type': 'integer'},
                 'deadline-timestamp': {
-                    'type': 'integer'
-                },
+                    'type': 'integer'},
                 'paket-url': {
-                    'type': 'string'
-                },
+                    'type': 'string'},
                 'payment': {
-                    'type': 'integer'
-                },
+                    'type': 'integer'},
                 'recipient-id': {
-                    'type': 'string'
-                },
+                    'type': 'string'},
                 'send-timestamp': {
-                    'type': 'integer'
-                },
+                    'type': 'integer'},
                 'status': {
-                    'type': 'string'
-                },
+                    'type': 'string'},
                 'events': {
                     'type': 'array',
                     'items': {
-                        '$ref': '#/definitions/Event'
-                    }
-                }
-            }
-        }
-    },
+                        '$ref': '#/definitions/Event'}}}}},
     'responses': {
         '200': {
             'description': 'a single packages',
             'schema': {
-                '$ref': '#/definitions/Package-info'
-            }
-        }
-    }
-}
+                '$ref': '#/definitions/Package-info'}}}}
 
 ADD_EVENT = {
     'tags': ['packages'],
@@ -415,12 +345,9 @@ ADD_EVENT = {
             'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'photo', 'description': 'optional photo',
-            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
-    ],
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}],
     'responses': {
-        '200': {'description': 'event successfully added'}
-    }
-}
+        '200': {'description': 'event successfully added'}}}
 
 CHANGED_LOCATION = {
     'tags': ['packages'],
@@ -439,29 +366,41 @@ CHANGED_LOCATION = {
             'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'photo', 'description': 'optional photo',
-            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
-    ],
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}],
     'responses': {
-        '200': {'description': 'event successfully added'}
-    }
-}
+        '200': {'description': 'event successfully added'}}}
 
 EVENTS = {
     'tags': ['packages'],
     'parameters': [
         {
             'name': 'max_events_num', 'description': 'limit of queried events',
-            'in': 'formData', 'required': False, 'type': 'integer'}
-    ],
+            'in': 'formData', 'required': False, 'type': 'integer'}],
     'responses': {
-        '200': {'description': 'a list of events'}
-    }
-}
+        '200': {'description': 'a list of events'}}}
+
+SET_NOTIFICATION_TOKEN = {
+    'tags': ['notifications'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'notification_token', 'in': 'formData', 'type': 'string', 'required': True}],
+    'responses': {
+        '200': {'description': 'token saved'}}}
+
+REMOVE_NOTIFICATION_TOKEN = {
+    'tags': ['notifications'],
+    'parameters': [
+        {'name': 'Pubkey', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
+        {'name': 'notification_token', 'in': 'formData', 'type': 'string', 'required': True}],
+    'responses': {
+        '200': {'description': 'token removed'}}}
 
 CREATE_MOCK_PACKAGE = {
-    'tags': [
-        'debug'
-    ],
+    'tags': ['debug'],
     'parameters': [
         {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey',
@@ -507,26 +446,18 @@ CREATE_MOCK_PACKAGE = {
             'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'photo', 'description': 'package photo',
-            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}
-    ],
+            'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}],
     'responses': {
         '201': {
-            'description': 'package details',
-        }
-    }
-}
+            'description': 'package details',}}}
 
 PACKAGES = {
     'tags': ['debug'],
     'responses': {
-        '200': {'description': 'a list of packages'}
-    }
-}
+        '200': {'description': 'a list of packages'}}}
 
 LOG = {
-    'tags': [
-        'debug'
-    ],
+    'tags': ['debug'],
     'parameters': [
         {
             'name': 'lines_num',
@@ -534,13 +465,7 @@ LOG = {
             'in': 'formData',
             'schema': {
                 'type': 'integer',
-                'format': 'integer'
-            }
-        },
-    ],
+                'format': 'integer'}}],
     'responses': {
         '200': {
-            'description': 'log lines',
-        }
-    }
-}
+            'description': 'log lines'}}}
