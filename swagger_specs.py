@@ -227,7 +227,7 @@ AVAILABLE_PACKAGES = {
     'parameters': [
         {
             'name': 'location', 'description': 'location of place for searching packages nearby',
-            'in': 'formData', 'required': True, 'type': 'string',},
+            'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'radius_num', 'description': 'maximum search radius (in km)',
             'in': 'formData', 'required': False, 'type': 'integer'}],
@@ -448,8 +448,7 @@ CREATE_MOCK_PACKAGE = {
             'name': 'photo', 'description': 'package photo',
             'in': 'formData', 'required': False, 'type': 'file', 'format': 'binary'}],
     'responses': {
-        '201': {
-            'description': 'package details',}}}
+        '201': {'description': 'package details'}}}
 
 PACKAGES = {
     'tags': ['debug'],

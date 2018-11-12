@@ -282,10 +282,10 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
             package['payment_deposited'] = package['collateral_deposited'] = package['correctly_deposited'] = False
         else:
             package['payment_deposited'] = escrow_account['bul_balance'] >= package['payment']
-            package['collateral_deposited'] = escrow_account['bul_balance'] >= \
-                                              package['payment'] + package['collateral']
-            package['correctly_deposited'] = escrow_account['bul_balance'] == \
-                                             package['payment'] + package['collateral']
+            package['collateral_deposited'] = (
+                escrow_account['bul_balance'] >= package['payment'] + package['collateral'])
+            package['correctly_deposited'] = (
+                escrow_account['bul_balance'] == package['payment'] + package['collateral'])
 
     return package
 
