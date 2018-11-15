@@ -9,7 +9,7 @@ CONFIG = {
         'route': '/apispec.json',
     }],
     'info': {
-        'title': 'The PAKET Router Server',
+        'title': 'The PAKET Routing Server',
         'version': VERSION,
         'contact': {
             'name': 'The PAKET Project',
@@ -21,11 +21,11 @@ CONFIG = {
             'url': 'http://www.gnu.org/licenses/'
         },
         'description': '''
-Router Server for The PAKET Project
+Routing Server for The PAKET Project
 
 What is this?
 =============
-This page is used as both documentation of our router server and as a sandbox to
+This page is used as both documentation of our routing server and as a sandbox to
 test interaction with it. You can use this page to call the RESTful API while
 specifying any required or optional parameter. The page also presents curl
 commands that can be used to call the server.
