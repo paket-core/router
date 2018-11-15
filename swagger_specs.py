@@ -1,7 +1,7 @@
 """Swagger specifications of Identity Server."""
 VERSION = 3
 CONFIG = {
-    'title': 'PaKeT Router',
+    'title': 'PAKET Router',
     'uiversion': 2,
     'specs_route': '/',
     'specs': [{
@@ -9,10 +9,10 @@ CONFIG = {
         'route': '/apispec.json',
     }],
     'info': {
-        'title': 'The PaKeT Router Server',
+        'title': 'The PAKET Router Server',
         'version': VERSION,
         'contact': {
-            'name': 'The PaKeT Project',
+            'name': 'The PAKET Project',
             'email': 'israel@paket.global',
             'url': 'https://router.paket.global',
         },
@@ -21,7 +21,7 @@ CONFIG = {
             'url': 'http://www.gnu.org/licenses/'
         },
         'description': '''
-Router Server for The PaKeT Project
+Router Server for The PAKET Project
 
 What is this?
 =============

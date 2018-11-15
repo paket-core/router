@@ -1,4 +1,4 @@
-"""JSON swagger API to PaKeT."""
+"""Routes for Routing Server API."""
 import os
 
 import flasgger
@@ -11,7 +11,7 @@ import webserver.validation
 import db
 import swagger_specs
 
-LOGGER = util.logger.logging.getLogger('pkt.router')
+LOGGER = util.logger.logging.getLogger('pkt.router.routes')
 VERSION = swagger_specs.VERSION
 PORT = os.environ.get('PAKET_ROUTER_PORT', 8000)
 BLUEPRINT = flask.Blueprint('router', __name__)
