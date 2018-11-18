@@ -1,4 +1,5 @@
 """Routes for Routing Server API."""
+import datetime
 import os
 
 import flasgger
@@ -331,14 +332,22 @@ def packages_handler():
 @BLUEPRINT.route("/v{}/events".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.EVENTS)
 @webserver.validation.call
-def events_handler(max_events_num=100):
+def events_handler(from_time=None, till_time=None):
     """
     Get all events.
     ---
-    :param max_events_num:
+    :param from_time:
+    :param till_time:
     :return:
     """
-    events = db.get_events(max_events_num)
+    if from_time is None:
+        if till_time is None:
+            till_time = datetime.datetime.now().timestamp()
+        from_time = int(till_time) - (60 * 60 * 24)
+    elif till_time is None:
+        till_time = int(from_time) + (60 * 60 * 24)
+
+    events = db.get_events(from_time or 0, till_time or datetime.datetime.now().timestamp())
     package_events = [event for event in events if event['escrow_pubkey'] is not None]
 
     # Extra data to help client with indexing.

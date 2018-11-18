@@ -374,7 +374,10 @@ EVENTS = {
     'tags': ['packages'],
     'parameters': [
         {
-            'name': 'max_events_num', 'description': 'limit of queried events',
+            'name': 'from_time', 'description': 'start time of query (inclusive)',
+            'in': 'formData', 'required': False, 'type': 'integer'},
+        {
+            'name': 'till_time', 'description': 'end time of query (inclusive)',
             'in': 'formData', 'required': False, 'type': 'integer'}],
     'responses': {
         '200': {'description': 'a list of events'}}}

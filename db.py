@@ -179,10 +179,13 @@ def request_relay(user_pubkey, escrow_pubkey, location, kwargs, photo=None):
     add_event(user_pubkey, events.RELAY_REQUIRED, location, escrow_pubkey, kwargs=kwargs, photo=photo)
 
 
-def get_events(max_events_num):
+def get_events(from_time, till_time):
     """Get all user and package events up to a limit."""
     with SQL_CONNECTION() as sql:
-        sql.execute("SELECT * FROM events LIMIT %s", (int(max_events_num),))
+        LOGGER.warning("SELECT * FROM events WHERE timestamp BETWEEN FROM_UNIXTIME(%s) AND FROM_UNIXTIME(%s)", from_time, till_time);
+        sql.execute("SELECT * FROM events WHERE timestamp BETWEEN FROM_UNIXTIME(%s) AND FROM_UNIXTIME(%s)", (
+            from_time, till_time))
+        #sql.execute("SELECT * FROM events")
         return jsonable(sql.fetchall())
 
 
