@@ -374,10 +374,10 @@ EVENTS = {
     'tags': ['packages'],
     'parameters': [
         {
-            'name': 'from_time', 'description': 'start time of query (inclusive)',
+            'name': 'from_timestamp', 'description': 'start time of query (inclusive)',
             'in': 'formData', 'required': False, 'type': 'integer'},
         {
-            'name': 'till_time', 'description': 'end time of query (inclusive)',
+            'name': 'till_timestamp', 'description': 'end time of query (inclusive)',
             'in': 'formData', 'required': False, 'type': 'integer'}],
     'responses': {
         '200': {'description': 'a list of events'}}}

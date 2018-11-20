@@ -63,6 +63,7 @@ def init_db():
         LOGGER.debug('packages table created')
         sql.execute('''
             CREATE TABLE events(
+                idx INTEGER AUTO_INCREMENT,
                 timestamp TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 user_pubkey VARCHAR(56) NOT NULL,
                 event_type VARCHAR(20) NOT NULL,
@@ -182,10 +183,11 @@ def request_relay(user_pubkey, escrow_pubkey, location, kwargs, photo=None):
 def get_events(from_time, till_time):
     """Get all user and package events up to a limit."""
     with SQL_CONNECTION() as sql:
-        LOGGER.warning("SELECT * FROM events WHERE timestamp BETWEEN FROM_UNIXTIME(%s) AND FROM_UNIXTIME(%s)", from_time, till_time);
-        sql.execute("SELECT * FROM events WHERE timestamp BETWEEN FROM_UNIXTIME(%s) AND FROM_UNIXTIME(%s)", (
-            from_time, till_time))
-        #sql.execute("SELECT * FROM events")
+        sql.execute("""
+            SELECT * FROM events
+            WHERE timestamp BETWEEN FROM_UNIXTIME(%s) AND FROM_UNIXTIME(%s)
+            ORDER BY idx DESC""", (
+                from_time, till_time))
         return jsonable(sql.fetchall())
 
 

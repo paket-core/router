@@ -332,29 +332,32 @@ def packages_handler():
 @BLUEPRINT.route("/v{}/events".format(VERSION), methods=['POST'])
 @flasgger.swag_from(swagger_specs.EVENTS)
 @webserver.validation.call
-def events_handler(from_time=None, till_time=None):
+def events_handler(from_timestamp=None, till_timestamp=None):
     """
     Get all events.
     ---
-    :param from_time:
-    :param till_time:
+    :param from_timestamp:
+    :param till_timestamp:
     :return:
     """
-    events = db.get_events(from_time or 0, till_time or datetime.datetime.now().timestamp())
+    events = db.get_events(from_timestamp or 0, till_timestamp or datetime.datetime.now().timestamp())
     package_events = [event for event in events if event['escrow_pubkey'] is not None]
 
     # Extra data to help client with indexing.
-    package_index = {}
-    package_event_types = {}
+    event_indexes_by_package = {}
+    event_types_by_package = {}
     for idx, event in enumerate(package_events):
-        if event['escrow_pubkey'] not in package_index:
-            package_index[event['escrow_pubkey']] = []
-        if event['escrow_pubkey'] not in package_event_types:
-            package_event_types[event['escrow_pubkey']] = []
-        package_index[event['escrow_pubkey']].append(idx)
-        package_event_types[event['escrow_pubkey']].append(event['event_type'])
+        if event['escrow_pubkey'] not in event_indexes_by_package:
+            event_indexes_by_package[event['escrow_pubkey']] = []
+        if event['escrow_pubkey'] not in event_types_by_package:
+            event_types_by_package[event['escrow_pubkey']] = []
+        event_indexes_by_package[event['escrow_pubkey']].append(idx)
+        event_types_by_package[event['escrow_pubkey']].append(event['event_type'])
 
-    return {'status': 200, 'events': events, 'package_index': package_index, 'package_event_types': package_event_types}
+    return {
+        'status': 200, 'events': events,
+        'event_indexes_by_package': event_indexes_by_package,
+        'event_types_by_package': event_types_by_package}
 
 
 @BLUEPRINT.route("/v{}/debug/log".format(VERSION), methods=['POST'])
