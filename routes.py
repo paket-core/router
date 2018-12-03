@@ -30,7 +30,6 @@ webserver.validation.CUSTOM_EXCEPTION_STATUSES[db.UnknownPackage] = 404
 webserver.validation.INTERNAL_ERROR_CODES[db.util.geodecoding.GeodecodingError] = 110
 webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.NotOnTestnet] = 120
 webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.StellarTransactionFailed] = 200
-webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.stellar_base.address.AccountNotExistError] = 201
 webserver.validation.INTERNAL_ERROR_CODES[db.paket_stellar.TrustError] = 202
 webserver.validation.INTERNAL_ERROR_CODES[db.UnknownPackage] = 400
 
