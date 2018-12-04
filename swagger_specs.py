@@ -91,8 +91,11 @@ CREATE_PACKAGE = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
+            'name': 'package_id', 'description': 'unique package identifier',
+            'in': 'formData', 'required': False, 'type': 'string'},
+        {
             'name': 'escrow_pubkey', 'description': 'escrow pubkey',
-            'in': 'formData', 'required': True, 'type': 'string'},
+            'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'recipient_pubkey', 'description': 'recipient pubkey',
             'in': 'formData', 'required': True, 'type': 'string'},
@@ -140,7 +143,7 @@ PACKAGE_PHOTO = {
     'tags': ['packages'],
     'parameters': [
         {
-            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'name': 'package_id', 'description': 'package identifier',
             'in': 'formData', 'required': True, 'type': 'string'}],
     'responses': {
         '200': {
@@ -163,7 +166,7 @@ ACCEPT_PACKAGE = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'name': 'package_id', 'description': 'package identifier',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'location of place where user accepted package',
@@ -185,7 +188,7 @@ CONFIRM_COURIERING = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'name': 'package_id', 'description': 'package identifier',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'location of place where user choose package to be courier in',
@@ -207,7 +210,7 @@ ASSIGN_XDRS = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'name': 'package_id', 'description': 'package identifier',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'location of place where user accepted package',
@@ -258,7 +261,7 @@ REQUEST_RELAY = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'name': 'package_id', 'description': 'package identifier',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'GPS coordinates where event happened',
@@ -277,7 +280,7 @@ PACKAGE = {
     'tags': ['packages'],
     'parameters': [
         {
-            'name': 'escrow_pubkey', 'description': 'escrow pubkey (the package ID)',
+            'name': 'package_id', 'description': 'package identifier',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'check_escrow', 'description': 'include information about payment and collateral if specified',
@@ -338,7 +341,7 @@ ADD_EVENT = {
             'name': 'location', 'description': 'GPS coordinates where event happened',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
-            'name': 'escrow_pubkey', 'description': 'pubkey of package escrow',
+            'name': 'package_id', 'description': 'package identifier',
             'in': 'formData', 'required': False, 'type': 'string'},
         {
             'name': 'kwargs', 'description': 'extra parameters in JSON format',
@@ -356,7 +359,7 @@ CHANGED_LOCATION = {
         {'name': 'Fingerprint', 'in': 'header', 'required': True, 'type': 'string'},
         {'name': 'Signature', 'in': 'header', 'required': True, 'type': 'string'},
         {
-            'name': 'escrow_pubkey', 'description': 'pubkey of package escrow',
+            'name': 'package_id', 'description': 'package identifier',
             'in': 'formData', 'required': True, 'type': 'string'},
         {
             'name': 'location', 'description': 'GPS coordinates where user is at this moment',
