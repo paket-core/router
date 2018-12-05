@@ -275,7 +275,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     if check_solvency:
         try:
             launcher_account = paket_stellar.get_bul_account(package['launcher_pubkey'])
-        except (paket_stellar.TrustError, paket_stellar.stellar_base.address.AccountNotExistError):
+        except (paket_stellar.TrustError, paket_stellar.StellarAccountNotExists):
             package['launcher_solvency'] = False
         else:
             package['launcher_solvency'] = launcher_account['bul_balance'] >= package['payment']
@@ -283,7 +283,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     if check_escrow:
         try:
             escrow_account = paket_stellar.get_bul_account(package['escrow_pubkey'])
-        except (paket_stellar.TrustError, paket_stellar.stellar_base.address.AccountNotExistError):
+        except (paket_stellar.TrustError, paket_stellar.StellarAccountNotExists):
             package['payment_deposited'] = package['collateral_deposited'] = package['correctly_deposited'] = False
         else:
             package['payment_deposited'] = escrow_account['bul_balance'] >= package['payment']
