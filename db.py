@@ -271,13 +271,14 @@ def get_short_package_id(package):
     location_added_events = [event for event in package['events'] if event['event_type'] == events.LOCATION_ADDED]
     last_event = next(
         (event for event in reversed(location_added_events) if 'short_package_id' in event['kwargs']), None)
+
     if last_event is not None:
         return json.loads(last_event['kwargs'])['short_package_id']
-    else:
-        add_to_location(
-            package['launcher_pubkey'], package['escrow_pubkey'],
-            package['from_location'], package['to_location'])
-        return generate_short_package_id(package['to_location'], package['escrow_pubkey'])
+
+    add_to_location(
+        package['launcher_pubkey'], package['escrow_pubkey'],
+        package['from_location'], package['to_location'])
+    return generate_short_package_id(package['to_location'], package['escrow_pubkey'])
 
 
 def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=False, check_escrow=False):
