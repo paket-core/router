@@ -336,8 +336,8 @@ def create_package(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment,
                 collateral, deadline, description, from_location, to_location, from_address, to_address))
+    add_to_location(launcher_pubkey, escrow_pubkey, event_location, to_location, photo=photo)
     add_event(launcher_pubkey, events.LAUNCHED, event_location, escrow_pubkey, photo=photo)
-    add_to_location(launcher_pubkey, escrow_pubkey, event_location, to_location, photo=None)
     return get_package(escrow_pubkey)
 # pylint: enable=too-many-locals
 
