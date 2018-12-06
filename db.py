@@ -89,6 +89,15 @@ def init_db():
         LOGGER.debug('notification_tokens table created')
 
 
+def add_to_location(user_pubkey, escrow_pubkey, location, to_location, kwargs=None, photo=None):
+    """Add new `location added` event with destination location for package."""
+    short_package_id = generate_short_package_id(to_location, escrow_pubkey)
+    updated_kwargs = json.loads(kwargs) if kwargs is not None else {}
+    updated_kwargs['short_package_id'] = short_package_id
+    updated_kwargs['to_location'] = to_location
+    add_event(user_pubkey, events.LOCATION_ADDED, location, escrow_pubkey, json.dumps(updated_kwargs), photo)
+
+
 def accept_package(user_pubkey, escrow_pubkey, location, kwargs=None, photo=None):
     """Accept a package."""
     package = get_package(escrow_pubkey)
@@ -214,15 +223,20 @@ def set_package_status(package, event_types):
         package['status'] = 'unknown'
 
 
-def set_short_package_id(package):
-    """Set short package id, based on country code of destination and last three letters of package id."""
+def generate_short_package_id(location, escrow_pubkey):
+    """Generate short package id, based on country code of destination and last three letters of package id."""
+    country_code = get_country_code(location)
+    three_letters_code = escrow_pubkey[-3:]
+    return "{}-{}".format(country_code or 'XX', three_letters_code)
+
+
+def get_country_code(location):
+    """Get country two-letters code by location."""
     try:
-        country_code = util.geodecoding.gps_to_country_code(package['to_location'])
+        return util.geodecoding.gps_to_country_code(location)
     except util.geodecoding.GeodecodingError as exc:
         LOGGER.error(str(exc))
-        country_code = ''
-    three_letters_code = package['escrow_pubkey'][-3:]
-    package['short_package_id'] = "{}-{}".format(country_code or 'XX', three_letters_code)
+        return ''
 
 
 def set_user_role(package, user_role, user_pubkey):
@@ -252,6 +266,20 @@ def extract_xdrs(package):
     package['relays_xdrs'] = relay_xdrs_events
 
 
+def get_short_package_id(package):
+    """Extract short package id from package events."""
+    location_added_events = [event for event in package['events'] if event['event_type'] == events.LOCATION_ADDED]
+    last_event = next(
+        (event for event in reversed(location_added_events) if 'short_package_id' in event['kwargs']), None)
+    if last_event is not None:
+        return json.loads(last_event['kwargs'])['short_package_id']
+    else:
+        add_to_location(
+            package['launcher_pubkey'], package['escrow_pubkey'],
+            package['from_location'], package['to_location'])
+        return generate_short_package_id(package['to_location'], package['escrow_pubkey'])
+
+
 def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=False, check_escrow=False):
     """Add some periferal data to the package object."""
     package['blockchain_url'] = "https://testnet.steexp.com/account/{}#signing".format(package['escrow_pubkey'])
@@ -270,7 +298,7 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     extract_xdrs(package)
     set_package_status(package, event_types)
     set_user_role(package, user_role, user_pubkey)
-    set_short_package_id(package)
+    package['short_package_id'] = get_short_package_id(package)
 
     if check_solvency:
         try:
@@ -309,6 +337,7 @@ def create_package(
                 escrow_pubkey, launcher_pubkey, recipient_pubkey, launcher_contact, recipient_contact, payment,
                 collateral, deadline, description, from_location, to_location, from_address, to_address))
     add_event(launcher_pubkey, events.LAUNCHED, event_location, escrow_pubkey, photo=photo)
+    add_to_location(launcher_pubkey, escrow_pubkey, event_location, to_location, photo=None)
     return get_package(escrow_pubkey)
 # pylint: enable=too-many-locals
 
