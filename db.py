@@ -1,5 +1,6 @@
 """PAKET database interface."""
 import base64
+import functools
 import json
 import logging
 import os
@@ -192,7 +193,6 @@ def get_events(from_time, till_time):
             recent_package_events = sql.fetchall()
             from_time = from_time or recent_package_events[-1][b'timestamp']
             till_time = till_time or recent_package_events[0][b'timestamp']
-        LOGGER.error((from_time, till_time))
         sql.execute("""
             SELECT * FROM events
             WHERE timestamp BETWEEN FROM_UNIXTIME(%s) AND FROM_UNIXTIME(%s)
@@ -224,15 +224,16 @@ def set_package_status(package, event_types):
         package['status'] = 'unknown'
 
 
-def set_short_package_id(package):
+@functools.lru_cache()
+def get_short_package_id(escrow_pubkey, to_location):
     """Set short package id, based on country code of destination and last three letters of package id."""
     try:
-        country_code = util.geodecoding.gps_to_country_code(package['to_location'])
+        country_code = util.geodecoding.gps_to_country_code(to_location)
     except util.geodecoding.GeodecodingError as exc:
         LOGGER.error(str(exc))
         country_code = ''
-    three_letters_code = package['escrow_pubkey'][-3:]
-    package['short_package_id'] = "{}-{}".format(country_code or 'XX', three_letters_code)
+    three_letters_code = escrow_pubkey[-3:]
+    return "{}-{}".format(country_code or 'XX', three_letters_code)
 
 
 def set_user_role(package, user_role, user_pubkey):
@@ -264,6 +265,7 @@ def extract_xdrs(package):
 
 def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=False, check_escrow=False):
     """Add some periferal data to the package object."""
+    package['short_package_id'] = get_short_package_id(package['escrow_pubkey'], package['to_location'])
     package['blockchain_url'] = "https://testnet.steexp.com/account/{}#signing".format(package['escrow_pubkey'])
     package['paket_url'] = "https://paket.global/paket/{}".format(package['escrow_pubkey'])
     package['events'] = get_package_events(package['escrow_pubkey'])
@@ -280,7 +282,6 @@ def enrich_package(package, user_role=None, user_pubkey=None, check_solvency=Fal
     extract_xdrs(package)
     set_package_status(package, event_types)
     set_user_role(package, user_role, user_pubkey)
-    set_short_package_id(package)
 
     if check_solvency:
         try:
