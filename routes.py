@@ -1,5 +1,4 @@
 """Routes for Routing Server API."""
-import datetime
 import os
 
 import flasgger
@@ -339,7 +338,7 @@ def events_handler(from_timestamp=None, till_timestamp=None):
     :param till_timestamp:
     :return:
     """
-    events = db.get_events(from_timestamp or 0, till_timestamp or datetime.datetime.now().timestamp())
+    events = db.get_events(from_timestamp, till_timestamp)
     package_events = [event for event in events if event['escrow_pubkey'] is not None]
 
     # Extra data to help client with indexing.

@@ -183,6 +183,16 @@ def request_relay(user_pubkey, escrow_pubkey, location, kwargs, photo=None):
 def get_events(from_time, till_time):
     """Get all user and package events up to a limit."""
     with SQL_CONNECTION() as sql:
+        if not from_time or not till_time:
+            sql.execute('''
+                SELECT UNIX_TIMESTAMP(timestamp) AS timestamp
+                FROM events WHERE escrow_pubkey IS NOT NULL
+                ORDER BY idx DESC LIMIT 50
+            ''')
+            recent_package_events = sql.fetchall()
+            from_time = from_time or recent_package_events[-1][b'timestamp']
+            till_time = till_time or recent_package_events[0][b'timestamp']
+        LOGGER.error((from_time, till_time))
         sql.execute("""
             SELECT * FROM events
             WHERE timestamp BETWEEN FROM_UNIXTIME(%s) AND FROM_UNIXTIME(%s)
